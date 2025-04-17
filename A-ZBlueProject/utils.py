@@ -5,8 +5,14 @@ from gtts import gTTS
 import os
 import pandas as pd
 import speech_recognition as sr
-import imageio
-imageio.plugins.ffmpeg.download()  
+#import imageio
+#imageio.plugins.ffmpeg.download() 
+
+import os
+import imageio_ffmpeg
+
+# Set environment variable so moviepy knows where to find ffmpeg
+os.environ["IMAGEIO_FFMPEG_EXE"] = imageio_ffmpeg.get_ffmpeg_exe()
 from moviepy.editor import VideoFileClip, AudioFileClip, vfx
 #from moviepy.video.fx import loop  # lowercase "loop"
 from moviepy.video.fx.all import loop
