@@ -5,8 +5,7 @@ from gtts import gTTS
 import os
 import pandas as pd
 import speech_recognition as sr
-from moviepy.video.io.VideoFileClip import VideoFileClip
-from moviepy.audio.io.AudioFileClip import AudioFileClip
+from moviepy.editor import VideoFileClip, AudioFileClip, vfx
 #from moviepy.video.fx import loop  # lowercase "loop"
 from moviepy.video.fx.all import loop
 from pydub import AudioSegment
