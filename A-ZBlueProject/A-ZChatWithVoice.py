@@ -167,7 +167,7 @@ else:
         </div>""", unsafe_allow_html=True)
 
     # Display Default Talking Lady Video
-    st.video("talking_lady.mp4")
+    st.video("A-ZBlueProject/fixed_talking_lady.mp4")
 
     if "speech_file" not in st.session_state:
         st.session_state["speech_file"] = None
