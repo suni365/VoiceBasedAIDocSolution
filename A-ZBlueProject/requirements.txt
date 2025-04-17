@@ -13,4 +13,4 @@ numpy
 moviepy
 pydub
 imageio-ffmpeg
-moviepy
+moviepy==2.1.2
