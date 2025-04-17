@@ -199,13 +199,14 @@ else:
     with col3:
         speech_file = st.session_state.get("speech_file", "")
         if speech_file and os.path.exists(speech_file):
-            if st.button("🎬 Download Lip-Synced Video"):
-                # Generate lip-synced video only when button is clicked
-                video_file = generate_lipsync_video("talking_lady.mp4", speech_file)
-                if video_file and os.path.exists(video_file):
-                    with open(video_file, "rb") as file:
-                        st.download_button("🎬 Download Lip-Synced Video", data=file, file_name="LipSynced_Response.mp4", mime="video/mp4")
-                else:
-                    st.error("Error generating lip-synced video.")
+            st.button("Disabled for testing purpose")
+            # if st.button("🎬 Download Lip-Synced Video"):
+            #     # Generate lip-synced video only when button is clicked
+            #     video_file = generate_lipsync_video("talking_lady.mp4", speech_file)
+            #     if video_file and os.path.exists(video_file):
+            #         with open(video_file, "rb") as file:
+            #             st.download_button("🎬 Download Lip-Synced Video", data=file, file_name="LipSynced_Response.mp4", mime="video/mp4")
+            #     else:
+            #         st.error("Error generating lip-synced video.")
         else:
             st.button("🎬 Download Lip-Synced Video", disabled=True)
