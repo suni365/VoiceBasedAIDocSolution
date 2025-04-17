@@ -12,3 +12,4 @@ beautifulsoup4
 numpy
 moviepy
 pydub
+imageio-ffmpeg
