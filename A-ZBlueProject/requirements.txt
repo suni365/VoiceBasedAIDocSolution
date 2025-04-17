@@ -1,0 +1,14 @@
+streamlit
+python-docx
+speechrecognition
+gtts
+ffmpeg-python
+PyMuPDF
+pandas
+openpyxl
+xlrd
+requests
+beautifulsoup4
+numpy
+moviepy
+pydub
