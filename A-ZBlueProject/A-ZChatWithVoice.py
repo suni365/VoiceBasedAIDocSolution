@@ -18,7 +18,8 @@ img_base64 = get_base64_image("A-ZBlueProject/sunita.png")
 img_data_uri = f"data:image/png;base64,{img_base64}"
 # User authentication
 st.sidebar.title("Voice-Driven Intelligent Document Assistant")
-st.sidebar.image("AIChatbot.png",use_container_width=True)
+st.sidebar.image("A-ZBlueProject/AIChatbot.png", use_container_width=True)
+#st.sidebar.image("AIChatbot.png",use_container_width=True)
 st.sidebar.title("🔑 User Authentication")
 
 if "authenticated" not in st.session_state:
