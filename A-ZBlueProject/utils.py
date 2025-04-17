@@ -17,7 +17,8 @@ from moviepy.editor import VideoFileClip, AudioFileClip, vfx
 #from moviepy.video.fx import loop  # lowercase "loop"
 from moviepy.video.fx.all import loop
 from pydub import AudioSegment
-from moviepy.editor import VideoFileClip, AudioFileClip, vfx
+import moviepy.editor as mp
+#from moviepy.editor import VideoFileClip, AudioFileClip, vfx
 import uuid
 import fitz
 import base64
@@ -253,8 +254,8 @@ def process_uploaded_voice(audio_file):
 def generate_lipsync_video(original_video, audio_file):
     try:
         # Load video and audio
-        video = VideoFileClip(original_video)
-        audio = AudioFileClip(audio_file).set_fps(44100)  # Ensure proper sample rate
+        video = mp.VideoFileClip(original_video)
+        audio = mp.AudioFileClip(audio_file).set_fps(44100)  # Ensure proper sample rate
 
         # Match video duration to audio
         if video.duration < audio.duration:
