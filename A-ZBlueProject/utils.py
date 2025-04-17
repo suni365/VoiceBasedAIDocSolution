@@ -9,15 +9,16 @@ import speech_recognition as sr
 #imageio.plugins.ffmpeg.download() 
 
 import os
-import imageio_ffmpeg
+# 
+##import imageio_ffmpeg
 
 # Set environment variable so moviepy knows where to find ffmpeg
-os.environ["IMAGEIO_FFMPEG_EXE"] = imageio_ffmpeg.get_ffmpeg_exe()
-from moviepy.editor import VideoFileClip, AudioFileClip, vfx
+###os.environ["IMAGEIO_FFMPEG_EXE"] = imageio_ffmpeg.get_ffmpeg_exe()
+###from moviepy.editor import VideoFileClip, AudioFileClip, vfx
 #from moviepy.video.fx import loop  # lowercase "loop"
-from moviepy.video.fx.all import loop
+###from moviepy.video.fx.all import loop
 from pydub import AudioSegment
-import moviepy.editor as mp
+###import moviepy.editor as mp
 #from moviepy.editor import VideoFileClip, AudioFileClip, vfx
 import uuid
 import fitz
@@ -251,42 +252,42 @@ def process_uploaded_voice(audio_file):
  #       return None  # Return None if there's an error
 
 
-def generate_lipsync_video(original_video, audio_file):
-    try:
-        # Load video and audio
-        video = mp.VideoFileClip(original_video)
-        audio = mp.AudioFileClip(audio_file).set_fps(44100)  # Ensure proper sample rate
+# def generate_lipsync_video(original_video, audio_file):
+#     try:
+#         # Load video and audio
+#         video = mp.VideoFileClip(original_video)
+#         audio = mp.AudioFileClip(audio_file).set_fps(44100)  # Ensure proper sample rate
 
-        # Match video duration to audio
-        if video.duration < audio.duration:
-            video = video.loop(duration=audio.duration)
-        else:
-            video = video.set_duration(audio.duration)
+#         # Match video duration to audio
+#         if video.duration < audio.duration:
+#             video = video.loop(duration=audio.duration)
+#         else:
+#             video = video.set_duration(audio.duration)
 
-        video = video.resize(height=480)
+#         video = video.resize(height=480)
 
-        # Set the audio to the video
-        video = video.set_audio(audio)
+#         # Set the audio to the video
+#         video = video.set_audio(audio)
 
-        # Generate unique output file
-        output_video = f"LipSynced_Response.mp4"
+#         # Generate unique output file
+#         output_video = f"LipSynced_Response.mp4"
 
-        # Reduce CPU usage while encoding
-        video.write_videofile(
-            output_video,
-            codec="libx264",
-            fps=30,
-            audio_codec="aac",
-            preset="ultrafast",  # Faster encoding
-            threads=1,  # Reduce CPU usage 
-            verbose=True,
-            logger="bar"
-        )
+#         # Reduce CPU usage while encoding
+#         video.write_videofile(
+#             output_video,
+#             codec="libx264",
+#             fps=30,
+#             audio_codec="aac",
+#             preset="ultrafast",  # Faster encoding
+#             threads=1,  # Reduce CPU usage 
+#             verbose=True,
+#             logger="bar"
+#         )
 
-        return output_video
+#         return output_video
 
-    except Exception as e:
-        print(f"Error generating lip-sync video: {e}")
-        return None
+#     except Exception as e:
+#         print(f"Error generating lip-sync video: {e}")
+#         return None
 
 
