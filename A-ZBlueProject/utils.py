@@ -72,7 +72,7 @@ def handle_conversation(user_input):
 
 # Authenticate user
 def authenticate_user(username, password, excel_file="A-ZBlueProject/users.xlsx"):
-      try:
+    try:
         df = pd.read_excel(excel_file)
         df.columns = df.columns.str.strip()
         df["Username"] = df["Username"].astype(str).str.strip()
