@@ -14,8 +14,7 @@ from utils import (
 # User authentication
 st.set_page_config(layout="wide")
 
-img_base64 = get_base64_image("sunita.png")
-
+img_base64 = get_base64_image("A-ZBlueProject/sunita.png")
 img_data_uri = f"data:image/png;base64,{img_base64}"
 # User authentication
 st.sidebar.title("Voice-Driven Intelligent Document Assistant")
