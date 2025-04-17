@@ -1,4 +1,3 @@
-# streamlit_app.py
 import streamlit as st
 import streamlit.components.v1 as components
 from gtts import gTTS
@@ -8,7 +7,7 @@ import os
 st.set_page_config(page_title="Voice Test", layout="centered")
 st.title("🎙️ Live Voice Input + Response")
 
-# Web Speech API button for browser-based voice input
+# Web Speech API button
 components.html("""
     <script>
     const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
@@ -26,7 +25,7 @@ components.html("""
     <button onclick="startRecognition()">🎤 Speak Now</button>
 """, height=100)
 
-# Listener for speech transcript
+# Capture speech result via query
 components.html("""
     <script>
     window.addEventListener("message", (event) => {
@@ -39,23 +38,20 @@ components.html("""
     </script>
 """, height=0)
 
-# Get speech query from URL
-voice_text = st.experimental_get_query_params().get('q', [''])[0]
+# ✅ NEW query param access method
+voice_text = st.query_params.get('q', [''])[0]
 
-# If voice input is captured
 if voice_text:
     st.markdown(f"✅ You said: **{voice_text}**")
 
-    # Generate speech using gTTS
+    # Convert response to speech
     tts = gTTS(f"You said: {voice_text}")
     tts.save("output.mp3")
 
-    # Convert to base64
     with open("output.mp3", "rb") as f:
         audio_data = f.read()
         b64_audio = base64.b64encode(audio_data).decode()
 
-    # Auto-play audio response
     st.markdown(f"""
         <audio autoplay controls>
             <source src="data:audio/mp3;base64,{b64_audio}" type="audio/mp3">
