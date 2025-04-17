@@ -5,6 +5,8 @@ from gtts import gTTS
 import os
 import pandas as pd
 import speech_recognition as sr
+import imageio
+imageio.plugins.ffmpeg.download()  
 from moviepy.editor import VideoFileClip, AudioFileClip, vfx
 #from moviepy.video.fx import loop  # lowercase "loop"
 from moviepy.video.fx.all import loop
