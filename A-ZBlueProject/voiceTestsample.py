@@ -7,7 +7,7 @@ import os
 st.set_page_config(page_title="Voice Test", layout="centered")
 st.title("🎙️ Live Voice Input + Response")
 
-# Web Speech API button
+# 🔊 JavaScript + Button for voice input
 components.html("""
     <script>
     const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
@@ -15,36 +15,40 @@ components.html("""
     recognition.continuous = false;
 
     function startRecognition() {
+        console.log("🎤 Starting speech recognition...");
         recognition.start();
+
         recognition.onresult = function(event) {
             const transcript = event.results[0][0].transcript;
-            window.parent.postMessage({ type: 'SPEECH', text: transcript }, '*');
+            console.log("✅ Got transcript:", transcript);
+            window.postMessage({ type: 'SPEECH', text: transcript }, '*');
+        };
+
+        recognition.onerror = function(event) {
+            console.error("❌ Speech recognition error:", event.error);
         };
     }
-    </script>
-    <button onclick="startRecognition()">🎤 Speak Now</button>
-""", height=100)
 
-# Capture speech result via query
-components.html("""
-    <script>
     window.addEventListener("message", (event) => {
         if (event.data.type === 'SPEECH') {
+            console.log("📨 Message received:", event.data.text);
             const msg = event.data.text;
             const newUrl = window.location.origin + window.location.pathname + '?q=' + encodeURIComponent(msg);
             window.location.href = newUrl;
         }
     });
     </script>
-""", height=0)
 
-# ✅ NEW query param access method
+    <button onclick="startRecognition()">🎤 Speak Now</button>
+""", height=150)
+
+# ✅ Access speech result from query string
 voice_text = st.query_params.get('q', [''])[0]
 
 if voice_text:
     st.markdown(f"✅ You said: **{voice_text}**")
 
-    # Convert response to speech
+    # Convert text to speech and play it
     tts = gTTS(f"You said: {voice_text}")
     tts.save("output.mp3")
 
