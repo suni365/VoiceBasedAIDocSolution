@@ -197,7 +197,7 @@ else:
 
     with col3:
         st.button("🎬 Download Lip-Synced Video", disabled=True)  # Placeholder
-
+    ctx = None
     with col4:
         ctx = webrtc_streamer(
             key="speech-to-text",
@@ -207,7 +207,7 @@ else:
             async_processing=True,
         )  
 
-if ctx.AudioProcessor:
+if ctx and ctx.AudioProcessor:
     if st.button("🗣️ Transcribe Live Voice"):
         with st.spinner("Listening and transcribing..."):
             time.sleep(3)  # Let it collect some audio
