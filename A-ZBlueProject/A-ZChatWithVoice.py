@@ -207,7 +207,7 @@ else:
             async_processing=True,
         )  
 
-if ctx.audio_processor:
+if ctx.AudioProcessor:
     if st.button("🗣️ Transcribe Live Voice"):
         with st.spinner("Listening and transcribing..."):
             time.sleep(3)  # Let it collect some audio
