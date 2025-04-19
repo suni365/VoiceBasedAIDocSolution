@@ -2,7 +2,7 @@ import streamlit as st
 import docx
 import os
 import speech_recognition as sr
-from streamlit_webrtc import webrtc_streamer, WebRtcMode, ClientSettings
+from streamlit_webrtc import webrtc_streamer, WebRtcMode
 import av
 import gtts
 import ffmpeg
