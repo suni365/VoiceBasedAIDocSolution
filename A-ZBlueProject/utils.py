@@ -7,7 +7,7 @@ import pandas as pd
 import speech_recognition as sr
 #import imageio
 #imageio.plugins.ffmpeg.download() 
-
+import av
 import os
 # 
 ##import imageio_ffmpeg
@@ -194,6 +194,19 @@ def clean_text(text_list):
 #    formatted_text = text.replace("\n", " ")  # Replace newlines with spaces to form proper sentences
 #    tts = gtts.gTTS(formatted_text) 
 #    return speech_file 
+
+class AudioProcessor:
+    def __init__(self):
+        self.recognizer = sr.Recognizer()
+def recv(self, frame):
+        audio = frame.to_ndarray()
+        with sr.AudioData(audio.tobytes(), 16000, 2) as source:
+            try:
+                text = self.recognizer.recognize_google(source)
+                st.session_state['user_input'] = text
+            except:
+                pass
+        return av.AudioFrame.from_ndarray(audio, layout="stereo")
 
 def speak(text):
     speech_file = "Chatbot_Response.mp3"
