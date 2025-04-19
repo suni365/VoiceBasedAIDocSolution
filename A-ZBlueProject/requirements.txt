@@ -14,3 +14,7 @@ moviepy
 pydub
 imageio-ffmpeg
 moviepy==2.1.2
+streamlit-webrtc
+av
+nltk
+
