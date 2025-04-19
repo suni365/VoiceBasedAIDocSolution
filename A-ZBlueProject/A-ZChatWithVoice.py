@@ -220,6 +220,6 @@ else:
     ),
     audio_processor_factory=AudioProcessor,
 )
-        else:
-            st.button("🎬 Download Lip-Synced Video", disabled=True)
+else:
+    st.button("🎬 Download Lip-Synced Video", disabled=True)
             
