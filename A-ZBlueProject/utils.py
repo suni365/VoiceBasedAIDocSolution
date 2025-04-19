@@ -5,6 +5,7 @@ from gtts import gTTS
 import os
 import pandas as pd
 import speech_recognition as sr
+from streamlit_webrtc import AudioProcessorBase
 #import imageio
 #imageio.plugins.ffmpeg.download() 
 import av
@@ -195,18 +196,41 @@ def clean_text(text_list):
 #    tts = gtts.gTTS(formatted_text) 
 #    return speech_file 
 
-class AudioProcessor:
+# class AudioProcessor:
+#     def __init__(self):
+#         self.recognizer = sr.Recognizer()
+# def recv(self, frame):
+#         audio = frame.to_ndarray()
+#         with sr.AudioData(audio.tobytes(), 16000, 2) as source:
+#             try:
+#                 text = self.recognizer.recognize_google(source)
+#                 st.session_state['user_input'] = text
+#             except:
+#                 pass
+#         return av.AudioFrame.from_ndarray(audio, layout="stereo")
+
+
+class AudioProcessor(AudioProcessorBase):
     def __init__(self):
         self.recognizer = sr.Recognizer()
-def recv(self, frame):
-        audio = frame.to_ndarray()
-        with sr.AudioData(audio.tobytes(), 16000, 2) as source:
-            try:
-                text = self.recognizer.recognize_google(source)
-                st.session_state['user_input'] = text
-            except:
-                pass
-        return av.AudioFrame.from_ndarray(audio, layout="stereo")
+        self.audio_data = b""
+        self.transcribed_text = ""
+
+    def recv(self, frame):
+        # Convert raw audio frame to bytes
+        self.audio_data += frame.to_ndarray().tobytes()
+        return frame
+
+    def get_text(self):
+        try:
+            audio = sr.AudioData(self.audio_data, sample_rate=16000, sample_width=2)
+            text = self.recognizer.recognize_google(audio)
+            self.transcribed_text = text
+            self.audio_data = b""  # Reset after processing
+            return text
+        except Exception as e:
+            return f"Could not recognize speech: {str(e)}"
+
 
 def speak(text):
     speech_file = "Chatbot_Response.mp3"
