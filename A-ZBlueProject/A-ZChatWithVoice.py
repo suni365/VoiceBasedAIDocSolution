@@ -2,6 +2,8 @@ import streamlit as st
 import docx
 import os
 import speech_recognition as sr
+from streamlit_webrtc import webrtc_streamer, WebRtcMode, ClientSettings
+import av
 import gtts
 import ffmpeg
 import fitz
@@ -178,7 +180,7 @@ else:
         st.session_state["speech_file"] = speak(cleaned_response[:2000])
 
     # Always show download buttons, enable them only if the file exists
-    col1, col2, col3 = st.columns(3)
+    col1, col2, col3, col4 = st.columns(4)
 
     with col1:
         text_file = st.session_state.get("text_file", "")
@@ -208,5 +210,16 @@ else:
             #             st.download_button("🎬 Download Lip-Synced Video", data=file, file_name="LipSynced_Response.mp4", mime="video/mp4")
             #     else:
             #         st.error("Error generating lip-synced video.")
+    with col4:
+        webrtc_streamer(
+        key="speech",
+        mode=WebRtcMode.SENDONLY,
+        client_settings=ClientSettings(
+        media_stream_constraints={"audio": True, "video": False},
+        rtc_configuration={"iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]},
+    ),
+    audio_processor_factory=AudioProcessor,
+)
         else:
             st.button("🎬 Download Lip-Synced Video", disabled=True)
+            
