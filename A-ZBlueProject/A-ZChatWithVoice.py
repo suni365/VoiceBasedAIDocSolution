@@ -2,7 +2,7 @@ import streamlit as st
 import docx
 import os
 import speech_recognition as sr
-from streamlit_webrtc import webrtc_streamer, WebRtcMode
+from streamlit_webrtc import webrtc_streamer, WebRtcMode,AudioProcessorBase
 import av
 import gtts
 import ffmpeg
@@ -12,7 +12,7 @@ import base64
 from utils import (
     authenticate_user, clean_text, handle_conversation, search_in_doc,
     search_web, save_text_response, speak, search_excel, search_pdf,
-    process_uploaded_voice, get_base64_image, AudioProcessor  # ← AudioProcessor added here
+    process_uploaded_voice, get_base64_image, AudioProcessor
 )
 
 # Set Streamlit layout
@@ -200,12 +200,12 @@ else:
 
     with col4:
         ctx = webrtc_streamer(
-    key="live-voice",
-    mode=WebRtcMode.SENDRECV,
-    audio_processor_factory=AudioProcessor,
-    media_stream_constraints={"video": False, "audio": True},
-    async_processing=True,
-)
+            key="speech-to-text",
+            mode="SENDRECV",
+            audio_processor_factory=AudioProcessor,
+            media_stream_constraints={"audio": True, "video": False},
+            async_processing=True,
+        )  
 
 if ctx.audio_processor:
     if st.button("🗣️ Transcribe Live Voice"):
