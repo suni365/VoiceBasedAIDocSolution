@@ -199,10 +199,46 @@ else:
         st.button("🎬 Download Lip-Synced Video", disabled=True)  # Placeholder
 
     with col4:
-        webrtc_streamer(
-        key="example",
-        mode=WebRtcMode.SENDRECV,
-        audio_processor_factory=AudioProcessor
-        )
+        ctx = webrtc_streamer(
+    key="live-voice",
+    mode=WebRtcMode.SENDRECV,
+    audio_processor_factory=AudioProcessor,
+    media_stream_constraints={"video": False, "audio": True},
+    async_processing=True,
+)
+
+if ctx.audio_processor:
+    if st.button("🗣️ Transcribe Live Voice"):
+        with st.spinner("Listening and transcribing..."):
+            time.sleep(3)  # Let it collect some audio
+            text = ctx.audio_processor.get_text()
+            if text:
+                st.success(f"**You said:** {text}")
+                # Trigger the chatbot pipeline with transcribed input
+                response = handle_conversation(text)
+
+                if uploaded_file:
+                    doc_match = search_in_doc(doc_text, text)
+                    if doc_match:
+                        response = doc_match
+
+                if not response:
+                    search_results = search_web(text)
+                    response = "\n\n".join(search_results) if search_results else "Sorry, I couldn’t find anything relevant."
+
+                # Display and speak the response
+                st.markdown(f"""
+                <div style="padding:15px; border-radius:10px; background-color:#f2f2f2; color:black; border-left: 5px solid #4CAF50;">
+                <b>🤖 A-Z Blue Bot Response:</b><br>{response}
+                </div>""", unsafe_allow_html=True)
+
+                cleaned_response = clean_text(response)
+                st.session_state["speech_file"] = speak(cleaned_response[:2000])
+
+                with st.spinner("Generating audio response..."):
+                    audio_path = st.session_state["speech_file"]
+                    if audio_path and os.path.exists(audio_path):
+                        audio_file = open(audio_path, "rb")
+                        st.audio(audio_file.read(), format="audio/mp3")
             
         
