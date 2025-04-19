@@ -200,11 +200,9 @@ else:
 
     with col4:
         webrtc_streamer(
-            key="speech",
-            mode=WebRtcMode.SENDONLY,
-            client_settings=ClientSettings(
-                media_stream_constraints={"audio": True, "video": False},
-                rtc_configuration={"iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]},
-            ),
-            audio_processor_factory=AudioProcessor,
+        key="example",
+        mode=WebRtcMode.SENDRECV,
+        audio_processor_factory=AudioProcessor
         )
+            
+        
