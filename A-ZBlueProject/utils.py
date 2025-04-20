@@ -210,26 +210,26 @@ def clean_text(text_list):
 #         return av.AudioFrame.from_ndarray(audio, layout="stereo")
 
 
-class AudioProcessor(AudioProcessorBase):
-    def __init__(self):
-        self.recognizer = sr.Recognizer()
-        self.audio_data = b""
-        self.transcribed_text = ""
+# class AudioProcessor(AudioProcessorBase):
+#     def __init__(self):
+#         self.recognizer = sr.Recognizer()
+#         self.audio_data = b""
+#         self.transcribed_text = ""
 
-    def recv(self, frame):
-        # Convert raw audio frame to bytes
-        self.audio_data += frame.to_ndarray().tobytes()
-        return frame
+#     def recv(self, frame):
+#         # Convert raw audio frame to bytes
+#         self.audio_data += frame.to_ndarray().tobytes()
+#         return frame
 
-    def get_text(self):
-        try:
-            audio = sr.AudioData(self.audio_data, sample_rate=16000, sample_width=2)
-            text = self.recognizer.recognize_google(audio)
-            self.transcribed_text = text
-            self.audio_data = b""  # Reset after processing
-            return text
-        except Exception as e:
-            return f"Could not recognize speech: {str(e)}"
+#     def get_text(self):
+#         try:
+#             audio = sr.AudioData(self.audio_data, sample_rate=16000, sample_width=2)
+#             text = self.recognizer.recognize_google(audio)
+#             self.transcribed_text = text
+#             self.audio_data = b""  # Reset after processing
+#             return text
+#         except Exception as e:
+#             return f"Could not recognize speech: {str(e)}"
 
 
 def speak(text):
@@ -250,18 +250,30 @@ def speak(text):
 
     return speech_file
 # Process uploaded voice file
-def process_uploaded_voice(audio_file):
-    try:
-        audio = AudioSegment.from_file(audio_file)  # Auto-detect format
-        wav_path = "converted_audio.wav"
-        audio.export(wav_path, format="wav")  # Convert to WAV
+# def process_uploaded_voice(audio_file):
+#     try:
+#         audio = AudioSegment.from_file(audio_file)  # Auto-detect format
+#         wav_path = "converted_audio.wav"
+#         audio.export(wav_path, format="wav")  # Convert to WAV
 
-        recognizer = sr.Recognizer()
-        with sr.AudioFile(wav_path) as source:
-            audio_data = recognizer.record(source)
-            return recognizer.recognize_google(audio_data)
-    except Exception as e:
-        return "Error processing voice file: " + str(e)
+#         recognizer = sr.Recognizer()
+#         with sr.AudioFile(wav_path) as source:
+#             audio_data = recognizer.record(source)
+#             return recognizer.recognize_google(audio_data)
+#     except Exception as e:
+#         return "Error processing voice file: " + str(e)
+
+
+def process_uploaded_voice(audio_file):
+    recognizer = sr.Recognizer()
+    with sr.AudioFile(audio_file) as source:
+        audio = recognizer.record(source)
+    try:
+        return recognizer.recognize_google(audio)
+    except sr.UnknownValueError:
+        return "Sorry, I could not understand the audio."
+    except sr.RequestError:
+        return "Speech recognition service is unavailable."
 
 #     return output_video
 #def generate_lipsync_video(original_video, audio_file):
