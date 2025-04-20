@@ -201,7 +201,7 @@ else:
     with col4:
         ctx = webrtc_streamer(
             key="speech-to-text",
-            mode="SENDRECV",
+            mode=WebRtcMode.SENDRECV,
             audio_processor_factory=AudioProcessor,
             media_stream_constraints={"audio": True, "video": False},
             async_processing=True,
