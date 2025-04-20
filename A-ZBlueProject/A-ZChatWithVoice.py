@@ -200,14 +200,14 @@ else:
     ctx = None
     with col4:
         ctx = webrtc_streamer(
-            key="speech-to-text",
+            key="example",
             mode=WebRtcMode.SENDRECV,
             audio_processor_factory=AudioProcessor,
             media_stream_constraints={"audio": True, "video": False},
             async_processing=True,
         )  
 
-if ctx and ctx.AudioProcessor:
+if ctx is not None and hasattr(ctx, "AudioProcessor"):
     if st.button("🗣️ Transcribe Live Voice"):
         with st.spinner("Listening and transcribing..."):
             time.sleep(3)  # Let it collect some audio
