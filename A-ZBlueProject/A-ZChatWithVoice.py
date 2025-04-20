@@ -197,34 +197,38 @@ else:
 
     with col3:
         st.button("🎬 Download Lip-Synced Video", disabled=True)  # Placeholder
-    ctx = None
     with col4:
-        ctx = webrtc_streamer(
-            key="example",
-            mode=WebRtcMode.SENDRECV,
-            audio_processor_factory=AudioProcessor,
-            media_stream_constraints={"audio": True, "video": False},
-            async_processing=True,
-        )  
+        ctx = None
+        try:
+            ctx = webrtc_streamer(
+                key="example",
+                mode=WebRtcMode.SENDRECV,
+                audio_processor_factory=AudioProcessor,
+                media_stream_constraints={"audio": True, "video": False},
+                async_processing=True,
+            )
+        except Exception as e:
+            st.error(f"WebRTC initialization failed: {e}")
 
-if ctx is not None and hasattr(ctx, "AudioProcessor"):
-    if st.button("🗣️ Transcribe Live Voice"):
-        with st.spinner("Listening and transcribing..."):
-            time.sleep(3)  # Let it collect some audio
-            text = ctx.audio_processor.get_text()
-            if text:
-                st.success(f"**You said:** {text}")
-                # Trigger the chatbot pipeline with transcribed input
-                response = handle_conversation(text)
+    # Correct attribute check
+        if ctx and hasattr(ctx, "audio_processor") and ctx.audio_processor:
+            processor = ctx.audio_processor
+            if st.button("🗣️ Transcribe Live Voice"):
+                with st.spinner("Listening and transcribing..."):
+                    time.sleep(3)  # Let it collect some audio
+                    text = processor.get_text()
+                    if text:
+                        st.success(f"**You said:** {text}")
+                    # Trigger the chatbot pipeline with transcribed input
+                        response = handle_conversation(text)
+        if uploaded_file:
+            doc_match = search_in_doc(doc_text, text)
+            if doc_match:
+                response = doc_match
 
-                if uploaded_file:
-                    doc_match = search_in_doc(doc_text, text)
-                    if doc_match:
-                        response = doc_match
-
-                if not response:
-                    search_results = search_web(text)
-                    response = "\n\n".join(search_results) if search_results else "Sorry, I couldn’t find anything relevant."
+            if not response:
+                search_results = search_web(text)
+                response = "\n\n".join(search_results) if search_results else "Sorry, I couldn’t find anything relevant."
 
                 # Display and speak the response
                 st.markdown(f"""
