@@ -8,6 +8,7 @@ import gtts
 import ffmpeg
 import fitz
 import base64
+import time
 
 from utils import (
     authenticate_user, clean_text, handle_conversation, search_in_doc,
