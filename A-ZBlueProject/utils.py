@@ -264,16 +264,47 @@ def speak(text):
 #         return "Error processing voice file: " + str(e)
 
 
+# def process_uploaded_voice(audio_file):
+#     recognizer = sr.Recognizer()
+#     with sr.AudioFile(audio_file) as source:
+#         audio = recognizer.record(source)
+#     try:
+#         return recognizer.recognize_google(audio)
+#     except sr.UnknownValueError:
+#         return "Sorry, I could not understand the audio."
+#     except sr.RequestError:
+#         return "Speech recognition service is unavailable."
+
+
 def process_uploaded_voice(audio_file):
     recognizer = sr.Recognizer()
-    with sr.AudioFile(audio_file) as source:
+
+    # Save uploaded BytesIO to a temporary file
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".m4a") as tmp_file:
+        tmp_file.write(audio_file.read())
+        tmp_file_path = tmp_file.name
+
+    # Convert .m4a to .wav using ffmpeg-python (needs ffmpeg installed)
+    wav_path = tmp_file_path.replace(".m4a", ".wav")
+
+    try:
+        import ffmpeg
+        ffmpeg.input(tmp_file_path).output(wav_path).run(overwrite_output=True)
+    except Exception as e:
+        return f"FFmpeg conversion failed: {str(e)}"
+
+    # Now use the wav file for recognition
+    with sr.AudioFile(wav_path) as source:
         audio = recognizer.record(source)
+
     try:
         return recognizer.recognize_google(audio)
     except sr.UnknownValueError:
         return "Sorry, I could not understand the audio."
     except sr.RequestError:
         return "Speech recognition service is unavailable."
+
+
 
 #     return output_video
 #def generate_lipsync_video(original_video, audio_file):
