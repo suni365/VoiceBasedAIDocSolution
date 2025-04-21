@@ -178,7 +178,7 @@ else:
         st.session_state["speech_file"] = speak(cleaned_response[:2000])
 
     # Downloads
-    col1, col2, col3  = st.columns(3)
+    col1, col2, col3, col4  = st.columns(4)
 
     with col1:
         text_file = st.session_state.get("text_file", "")
