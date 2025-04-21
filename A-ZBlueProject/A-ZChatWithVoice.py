@@ -212,13 +212,11 @@ else:
                         {"urls": ["stun:stun.l.google.com:19302"]}, # Free STUN
                         {
                             "urls": [
-                                "turn:openrelay.metered.ca:80",
-                                "turn:openrelay.metered.ca:443",
-                                "turn:openrelay.metered.ca:443?transport=tcp"
+                                "turn:turn.anyfirewall.com:443?transport=tcp"  # A tested public TURN (Xirsys/Google-compatible)
                             ],
-                            "username": "openrelayproject",
-                            "credential": "openrelayproject"
-                        }
+                                "username": "webrtc",
+                                "credential": "webrtc"
+                         }
                     ]
                 }
             )
