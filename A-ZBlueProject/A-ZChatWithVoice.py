@@ -212,14 +212,16 @@ else:
                         {"urls": ["stun:stun.l.google.com:19302"]}, # Free STUN
                         {
                             "urls": [
-                                "turn:turn.anyfirewall.com:443?transport=tcp"  # A tested public TURN (Xirsys/Google-compatible)
+                                "turn:openrelay.metered.ca:80",
+                                "turn:openrelay.metered.ca:443",
+                                "turn:openrelay.metered.ca:443?transport=tcp"
                             ],
-                                "username": "webrtc",
-                                "credential": "webrtc"
-                         }
-                    ]
-                }
-            )
+                                "username": "openrelayproject",
+                                "credential": "openrelayproject"
+                            }
+                        ]
+                    }
+                )
         except Exception as e:
             st.error(f"WebRTC initialization failed: {e}")
 
