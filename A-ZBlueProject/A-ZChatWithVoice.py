@@ -13,7 +13,7 @@ import time
 from utils import (
     authenticate_user, clean_text, handle_conversation, search_in_doc,
     search_web, save_text_response, speak, search_excel, search_pdf,
-    process_uploaded_voice, get_base64_image
+    process_uploaded_voice, get_base64_image, AudioProcessor
 )
 
 # Set Streamlit layout
