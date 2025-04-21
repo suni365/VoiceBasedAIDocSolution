@@ -210,26 +210,26 @@ def clean_text(text_list):
 #         return av.AudioFrame.from_ndarray(audio, layout="stereo")
 
 
-# class AudioProcessor(AudioProcessorBase):
-#     def __init__(self):
-#         self.recognizer = sr.Recognizer()
-#         self.audio_data = b""
-#         self.transcribed_text = ""
+class AudioProcessor(AudioProcessorBase):
+    def __init__(self):
+        self.recognizer = sr.Recognizer()
+        self.audio_data = b""
+        self.transcribed_text = ""
 
-#     def recv(self, frame):
-#         # Convert raw audio frame to bytes
-#         self.audio_data += frame.to_ndarray().tobytes()
-#         return frame
+    def recv(self, frame):
+        # Convert raw audio frame to bytes
+        self.audio_data += frame.to_ndarray().tobytes()
+        return frame
 
-#     def get_text(self):
-#         try:
-#             audio = sr.AudioData(self.audio_data, sample_rate=16000, sample_width=2)
-#             text = self.recognizer.recognize_google(audio)
-#             self.transcribed_text = text
-#             self.audio_data = b""  # Reset after processing
-#             return text
-#         except Exception as e:
-#             return f"Could not recognize speech: {str(e)}"
+    def get_text(self):
+        try:
+            audio = sr.AudioData(self.audio_data, sample_rate=16000, sample_width=2)
+            text = self.recognizer.recognize_google(audio)
+            self.transcribed_text = text
+            self.audio_data = b""  # Reset after processing
+            return text
+        except Exception as e:
+            return f"Could not recognize speech: {str(e)}"
 
 
 def speak(text):
