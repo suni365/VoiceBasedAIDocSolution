@@ -199,27 +199,22 @@ else:
     with col3:
         st.button("🎬 Download Lip-Synced Video", disabled=True)  # Placeholder
     with col4:
-        ctx = None
-        try:
-            ctx = webrtc_streamer(
-                key="example",
-                mode=WebRtcMode.SENDRECV,
-                audio_processor_factory=AudioProcessor,
-                media_stream_constraints={"audio": True, "video": False},
-                async_processing=True,
-                rtc_configuration={
-                   "iceServers": [
-                       {"urls": ["stun:stun.l.google.com:19302"]},  # Free STUN
-                       {
-                           "urls": ["turn:openrelay.metered.ca:80", "turn:openrelay.metered.ca:443"],
-                           "username": "openrelayproject",
-                           "credential": "openrelayproject"
-                       }
+    ctx = None
+    try:
+        ctx = webrtc_streamer(
+            key="live_audio",
+            mode=WebRtcMode.SENDRECV,
+            audio_processor_factory=AudioProcessor,
+            media_stream_constraints={"audio": True, "video": False},
+            async_processing=True,
+            rtc_configuration={
+                "iceServers": [
+                    {"urls": ["stun:stun.l.google.com:19302"]}  # Free STUN
                 ]
             }
         )
-        except Exception as e:
-            st.error(f"WebRTC initialization failed: {e}")
+    except Exception as e:
+        st.error(f"WebRTC initialization failed: {e}")
 
     # Correct attribute check
         if ctx and hasattr(ctx, "audio_processor") and ctx.audio_processor:
