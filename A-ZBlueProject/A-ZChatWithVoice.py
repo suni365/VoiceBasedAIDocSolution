@@ -198,40 +198,40 @@ else:
 
     with col3:
         st.button("🎬 Download Lip-Synced Video", disabled=True)  # Placeholder
-    # with col4:
-    #     ctx = None
-    #     try:
-    #         ctx = webrtc_streamer(
-    #             key="example",
-    #             mode=WebRtcMode.SENDRECV,
-    #             audio_processor_factory=AudioProcessor,
-    #             media_stream_constraints={"audio": True, "video": False},
-    #             async_processing=True,
-    #             rtc_configuration={
-    #                "iceServers": [
-    #                    {"urls": ["stun:stun.l.google.com:19302"]},  # Free STUN
-    #                    {
-    #                        "urls": ["turn:openrelay.metered.ca:80", "turn:openrelay.metered.ca:443"],
-    #                        "username": "openrelayproject",
-    #                        "credential": "openrelayproject"
-    #                    }
-    #             ]
-    #         }
-    #     )
-    #     except Exception as e:
-    #         st.error(f"WebRTC initialization failed: {e}")
+    with col4:
+        ctx = None
+        try:
+            ctx = webrtc_streamer(
+                key="example",
+                mode=WebRtcMode.SENDRECV,
+                audio_processor_factory=AudioProcessor,
+                media_stream_constraints={"audio": True, "video": False},
+                async_processing=True,
+                rtc_configuration={
+                   "iceServers": [
+                       {"urls": ["stun:stun.l.google.com:19302"]},  # Free STUN
+                       {
+                           "urls": ["turn:openrelay.metered.ca:80", "turn:openrelay.metered.ca:443"],
+                           "username": "openrelayproject",
+                           "credential": "openrelayproject"
+                       }
+                ]
+            }
+        )
+        except Exception as e:
+            st.error(f"WebRTC initialization failed: {e}")
 
-    # # Correct attribute check
-    #     if ctx and hasattr(ctx, "audio_processor") and ctx.audio_processor:
-    #         processor = ctx.audio_processor
-    #         if st.button("🗣️ Transcribe Live Voice"):
-    #             with st.spinner("Listening and transcribing..."):
-    #                 time.sleep(3)  # Let it collect some audio
-    #                 text = processor.get_text()
-    #                 if text:
-    #                     st.success(f"**You said:** {text}")
-    #                 # Trigger the chatbot pipeline with transcribed input
-    #                     response = handle_conversation(text)
+    # Correct attribute check
+        if ctx and hasattr(ctx, "audio_processor") and ctx.audio_processor:
+            processor = ctx.audio_processor
+            if st.button("🗣️ Transcribe Live Voice"):
+                with st.spinner("Listening and transcribing..."):
+                    time.sleep(3)  # Let it collect some audio
+                    text = processor.get_text()
+                    if text:
+                        st.success(f"**You said:** {text}")
+                    # Trigger the chatbot pipeline with transcribed input
+                        response = handle_conversation(text)
         if uploaded_file:
             doc_match = search_in_doc(doc_text, text)
             if doc_match:
