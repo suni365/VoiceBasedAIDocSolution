@@ -261,3 +261,50 @@ else:
                         st.audio(audio_file.read(), format="audio/mp3")
             
         
+dat_option = st.sidebar.checkbox("Search DAT File")
+    if dat_option:
+        dat_file = st.sidebar.file_uploader("Upload a DAT file", type=["dat"])
+        search_segment = st.sidebar.text_input("Enter the segment you know (e.g., 'NM1*87*2')")
+        target_segment_type = st.sidebar.text_input("Enter the target segment type to retrieve (e.g., 'N3')")
+
+        if st.sidebar.button("Search DAT"):
+            if dat_file and search_segment and target_segment_type:
+                try:
+                    dat_content = dat_file.read().decode("utf-8")
+                    # Split by transactions
+                    transactions = []
+                    current_txn = []
+                    inside_txn = False
+
+                    for line in dat_content.split("\n"):
+                        line = line.strip()
+                        if not line:
+                            continue
+                        if line.startswith("ST*"):
+                            inside_txn = True
+                            current_txn = [line]
+                        elif line.startswith("SE*"):
+                            current_txn.append(line)
+                            transactions.append(current_txn)
+                            inside_txn = False
+                            current_txn = []
+                        elif inside_txn:
+                            current_txn.append(line)
+
+                    # Retrieve target segments in the same transaction as search segment
+                    results = []
+                    for txn in transactions:
+                        if any(search_segment in seg for seg in txn):
+                            results.extend([seg for seg in txn if seg.startswith(target_segment_type + "*")])
+
+                    # Display results
+                    if results:
+                        st.sidebar.success(f"✅ Found {len(results)} '{target_segment_type}' segments in the same transaction(s):")
+                        for seg in results:
+                            st.sidebar.text(seg)
+                    else:
+                        st.sidebar.warning(f"No '{target_segment_type}' segments found for the given segment.")
+                except Exception as e:
+                    st.sidebar.error(f"Error processing DAT file: {str(e)}")
+            else:
+                st.sidebar.warning("Please upload a DAT file and enter both segments.")
