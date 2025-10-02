@@ -318,12 +318,17 @@ if dat_option:
         else:
             st.sidebar.warning("Please upload a DAT file and enter both segments.")
 
-import streamlit as st
-from lxml import etree
 
 def strip_namespace(tag):
     """Remove namespace from tag"""
     return tag.split('}', 1)[-1] if '}' in tag else tag
+
+def get_top_parent(elem):
+    """Climb up to the top-most parent (root child)"""
+    parent = elem
+    while parent.getparent() is not None and parent.getparent().tag != elem.getroottree().getroot().tag:
+        parent = parent.getparent()
+    return parent
 
 def search_large_xml(xml_file, source_tag, source_value, target_tag):
     results = []
@@ -333,18 +338,16 @@ def search_large_xml(xml_file, source_tag, source_value, target_tag):
         tag_name = strip_namespace(elem.tag)
 
         if tag_name == source_tag and (elem.text or "").strip() == source_value:
-            # Find the nearest ancestor 'claim' element
-            ancestor = elem
-            while ancestor is not None and strip_namespace(ancestor.tag) != "claim":
-                ancestor = ancestor.getparent()
+            # auto-detect top-level parent
+            ancestor = get_top_parent(elem)
 
             if ancestor is not None:
-                # Search recursively for target_tag under this ancestor
+                # search recursively for target_tag inside this parent
                 for t in ancestor.iter():
                     if strip_namespace(t.tag) == target_tag and t.text:
                         results.append(t.text)
 
-        # Free memory
+        # free memory
         elem.clear()
         while elem.getprevious() is not None:
             del elem.getparent()[0]
@@ -352,7 +355,7 @@ def search_large_xml(xml_file, source_tag, source_value, target_tag):
     return results
 
 # Streamlit UI
-st.title("🔍 Large XML Search with Namespace Handling")
+st.title("🔍 Large XML Search (Auto-Detect Parent)")
 
 uploaded_file = st.file_uploader("Upload a large XML file", type=["xml"])
 source_tag = st.text_input("Enter source tag")
@@ -370,3 +373,6 @@ if st.button("Search XML"):
             st.warning("No matching results found.")
     else:
         st.warning("Please upload XML and enter all fields.")
+
+
+
