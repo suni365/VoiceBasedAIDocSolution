@@ -318,6 +318,9 @@ if dat_option:
         else:
             st.sidebar.warning("Please upload a DAT file and enter both segments.")
 
+import streamlit as st
+from lxml import etree
+
 def strip_namespace(tag):
     """Remove namespace from tag"""
     if '}' in tag:
@@ -343,9 +346,8 @@ def search_large_xml(xml_file, source_tag, source_value, target_path):
                         if t.text:
                             results.append(t.text.strip())
                 except Exception as e:
-                    print("XPath error:", e)
+                    st.error(f"XPath error: {e}")
             else:
-                # Simple tag search
                 for t in parent.iter():
                     t_name = strip_namespace(t.tag)
                     if t_name == target_path and t.text:
@@ -358,6 +360,25 @@ def search_large_xml(xml_file, source_tag, source_value, target_path):
 
     return results
 
+# ----------------- Streamlit UI -----------------
+st.title("🔍 Large XML Search")
+
+uploaded_file = st.file_uploader("Upload a large XML file", type=["xml"])
+source_tag = st.text_input("Enter source tag (e.g., claimIdentifier)")
+source_value = st.text_input("Enter source value (e.g., 5645796)")
+target_path = st.text_input("Enter target tag or path (e.g., claim/hccId)")
+
+if st.button("Search XML"):
+    if uploaded_file and source_tag and source_value and target_path:
+        matches = search_large_xml(uploaded_file, source_tag, source_value, target_path)
+        if matches:
+            st.success(f"Found {len(matches)} matching values:")
+            for val in matches:
+                st.text(val)
+        else:
+            st.warning("No matching results found.")
+    else:
+        st.warning("Please upload XML and enter all fields.")
 
 
 
