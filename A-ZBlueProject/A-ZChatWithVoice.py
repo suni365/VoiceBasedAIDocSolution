@@ -318,7 +318,6 @@ if dat_option:
         else:
             st.sidebar.warning("Please upload a DAT file and enter both segments.")
 
-
 def strip_namespace(tag):
     """Remove namespace from tag"""
     if '}' in tag:
@@ -358,6 +357,7 @@ def search_large_xml(xml_file, source_tag, source_value, target_path):
             del elem.getparent()[0]
 
     return results
+
 
 
 
