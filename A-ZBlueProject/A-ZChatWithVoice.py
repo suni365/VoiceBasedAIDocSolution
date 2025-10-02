@@ -10,7 +10,6 @@ import fitz
 import base64
 import time
 import xml.etree.ElementTree as ET
-from tkinter import Tk, filedialog
 import io
 
 from utils import (
