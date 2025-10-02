@@ -87,15 +87,12 @@ else:
 
     # Search Options
     search_option = st.sidebar.radio("Select Search Type:", ["Search Excel File", "Search PDF File"], index=0)
-
-   if search_option == "Search Excel File":
-       excel_file = st.sidebar.file_uploader("Upload an Excel file", type=["xlsx", "xls"])
-       keyword = st.sidebar.text_input("Enter keyword to search")
-
+    if search_option == "Search Excel File":
+        excel_file = st.sidebar.file_uploader("Upload an Excel file", type=["xlsx", "xls"])
+        keyword = st.sidebar.text_input("Enter keyword to search")
     # Initialize session state for results
     if "excel_result" not in st.session_state:
         st.session_state["excel_result"] = None
-
     if st.sidebar.button("Search Excel"):
         if excel_file and keyword:
             result = search_excel(excel_file, keyword)
@@ -112,7 +109,6 @@ else:
     if st.session_state["excel_result"] is not None:
         st.sidebar.success("✅ Matches found:")
         st.dataframe(st.session_state["excel_result"])
-
     elif search_option == "Search PDF File":
         pdf_file = st.sidebar.file_uploader("Upload a PDF file", type=["pdf"])
         keyword = st.sidebar.text_input("Enter keyword to search")
