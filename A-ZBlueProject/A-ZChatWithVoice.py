@@ -318,13 +318,13 @@ if dat_option:
         else:
             st.sidebar.warning("Please upload a DAT file and enter both segments.")
 
+import streamlit as st
+from lxml import etree
+
 def strip_namespace(tag):
     """Remove namespace from tag"""
-    if '}' in tag:
-        return tag.split('}', 1)[1]
-    else:
-        return tag
-        
+    return tag.split('}', 1)[-1] if '}' in tag else tag
+
 def search_large_xml(xml_file, source_tag, source_value, target_tag):
     results = []
     context = etree.iterparse(xml_file, events=("end",), recover=True)
@@ -332,12 +332,17 @@ def search_large_xml(xml_file, source_tag, source_value, target_tag):
     for event, elem in context:
         tag_name = strip_namespace(elem.tag)
 
-        if tag_name == source_tag and elem.text == source_value:
-            # Search all children under the same parent
-            for t in elem.getparent().iter():
-                t_name = strip_namespace(t.tag)
-                if t_name == target_tag and t.text:
-                    results.append(t.text)
+        if tag_name == source_tag and (elem.text or "").strip() == source_value:
+            # Find the nearest ancestor 'claim' element
+            ancestor = elem
+            while ancestor is not None and strip_namespace(ancestor.tag) != "claim":
+                ancestor = ancestor.getparent()
+
+            if ancestor is not None:
+                # Search recursively for target_tag under this ancestor
+                for t in ancestor.iter():
+                    if strip_namespace(t.tag) == target_tag and t.text:
+                        results.append(t.text)
 
         # Free memory
         elem.clear()
