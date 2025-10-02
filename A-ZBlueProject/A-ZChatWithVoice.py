@@ -88,9 +88,9 @@ else:
     # Search Options
     search_option = st.sidebar.radio("Select Search Type:", ["Search Excel File", "Search PDF File"], index=0)
 
-    if search_option == "Search Excel File":
-    excel_file = st.sidebar.file_uploader("Upload an Excel file", type=["xlsx", "xls"])
-    keyword = st.sidebar.text_input("Enter keyword to search")
+   if search_option == "Search Excel File":
+       excel_file = st.sidebar.file_uploader("Upload an Excel file", type=["xlsx", "xls"])
+       keyword = st.sidebar.text_input("Enter keyword to search")
 
     # Initialize session state for results
     if "excel_result" not in st.session_state:
