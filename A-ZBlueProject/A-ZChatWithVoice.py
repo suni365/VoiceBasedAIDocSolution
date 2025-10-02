@@ -11,6 +11,7 @@ import base64
 import time
 import xml.etree.ElementTree as ET
 import io
+from lxml import etree
 
 from utils import (
     authenticate_user, clean_text, handle_conversation, search_in_doc,
@@ -316,27 +317,28 @@ if dat_option:
                 st.sidebar.error(f"Error processing DAT file: {str(e)}")
         else:
             st.sidebar.warning("Please upload a DAT file and enter both segments.")
-import streamlit as st
-from lxml import etree
 
+def strip_namespace(tag):
+    """Remove namespace from tag"""
+    if '}' in tag:
+        return tag.split('}', 1)[1]
+    else:
+        return tag
+        
 def search_large_xml(xml_file, source_tag, source_value, target_tag):
-    """
-    Search large XML file for target tag values where source_tag has source_value.
-    """
     results = []
     context = etree.iterparse(xml_file, events=("end",), recover=True)
 
     for event, elem in context:
-        # Remove namespace
-        tag_name = etree.QName(elem).localname
+        tag_name = strip_namespace(elem.tag)
 
         if tag_name == source_tag and elem.text == source_value:
-            # Search all child elements for target_tag
-            for t in elem.iter():
-                t_name = etree.QName(t).localname
+            # Search all children under the same parent
+            for t in elem.getparent().iter():
+                t_name = strip_namespace(t.tag)
                 if t_name == target_tag and t.text:
                     results.append(t.text)
-        
+
         # Free memory
         elem.clear()
         while elem.getprevious() is not None:
@@ -345,7 +347,8 @@ def search_large_xml(xml_file, source_tag, source_value, target_tag):
     return results
 
 # Streamlit UI
-st.title("🔍 Large XML Search")
+st.title("🔍 Large XML Search with Namespace Handling")
+
 uploaded_file = st.file_uploader("Upload a large XML file", type=["xml"])
 source_tag = st.text_input("Enter source tag")
 source_value = st.text_input("Enter source value")
