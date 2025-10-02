@@ -321,16 +321,12 @@ if dat_option:
 
 def strip_namespace(tag):
     """Remove namespace from tag"""
-    return tag.split('}', 1)[-1] if '}' in tag else tag
+    if '}' in tag:
+        return tag.split('}', 1)[1]
+    else:
+        return tag
 
-def get_top_parent(elem):
-    """Climb up to the top-most parent (root child)"""
-    parent = elem
-    while parent.getparent() is not None and parent.getparent().tag != elem.getroottree().getroot().tag:
-        parent = parent.getparent()
-    return parent
-
-def search_large_xml(xml_file, source_tag, source_value, target_tag):
+def search_large_xml(xml_file, source_tag, source_value, target_path):
     results = []
     context = etree.iterparse(xml_file, events=("end",), recover=True)
 
@@ -338,41 +334,30 @@ def search_large_xml(xml_file, source_tag, source_value, target_tag):
         tag_name = strip_namespace(elem.tag)
 
         if tag_name == source_tag and (elem.text or "").strip() == source_value:
-            # auto-detect top-level parent
-            ancestor = get_top_parent(elem)
+            parent = elem.getparent()
 
-            if ancestor is not None:
-                # search recursively for target_tag inside this parent
-                for t in ancestor.iter():
-                    if strip_namespace(t.tag) == target_tag and t.text:
-                        results.append(t.text)
+            # If target_path is hierarchical like claim/hccId
+            if "/" in target_path:
+                try:
+                    target_elements = parent.xpath(f".//{target_path}", namespaces=None)
+                    for t in target_elements:
+                        if t.text:
+                            results.append(t.text.strip())
+                except Exception as e:
+                    print("XPath error:", e)
+            else:
+                # Simple tag search
+                for t in parent.iter():
+                    t_name = strip_namespace(t.tag)
+                    if t_name == target_path and t.text:
+                        results.append(t.text.strip())
 
-        # free memory
+        # Free memory
         elem.clear()
         while elem.getprevious() is not None:
             del elem.getparent()[0]
 
     return results
-
-# Streamlit UI
-st.title("🔍 Large XML Search (Auto-Detect Parent)")
-
-uploaded_file = st.file_uploader("Upload a large XML file", type=["xml"])
-source_tag = st.text_input("Enter source tag")
-source_value = st.text_input("Enter source value")
-target_tag = st.text_input("Enter target tag")
-
-if st.button("Search XML"):
-    if uploaded_file and source_tag and source_value and target_tag:
-        matches = search_large_xml(uploaded_file, source_tag, source_value, target_tag)
-        if matches:
-            st.success(f"Found {len(matches)} matching values:")
-            for val in matches:
-                st.text(val)
-        else:
-            st.warning("No matching results found.")
-    else:
-        st.warning("Please upload XML and enter all fields.")
 
 
 
