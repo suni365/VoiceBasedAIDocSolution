@@ -316,55 +316,50 @@ if dat_option:
                 st.sidebar.error(f"Error processing DAT file: {str(e)}")
         else:
             st.sidebar.warning("Please upload a DAT file and enter both segments.")
-xml_option = st.sidebar.checkbox("Search XML Files")
-if xml_option:
-    uploaded_xml_files = st.sidebar.file_uploader(
-        "Upload XML files", type=["xml"], accept_multiple_files=True
-    )
-    source_tag = st.sidebar.text_input("Enter source tag name (e.g., claimLineId)")
-    source_value = st.sidebar.text_input("Enter source tag value to search (e.g., 1)")
-    target_tag = st.sidebar.text_input("Enter target tag name to retrieve (e.g., paidAmount)")
+uploaded_xml_files = st.sidebar.file_uploader("Upload XML files", type=["xml"], accept_multiple_files=True)
+source_tag = st.sidebar.text_input("Source tag (e.g., claimLineId)")
+source_value = st.sidebar.text_input("Source value (e.g., 1)")
+target_tag = st.sidebar.text_input("Target tag to retrieve (e.g., allowedAmount)")
 
-    if st.sidebar.button("Search XML"):
-        if uploaded_xml_files and source_tag and source_value and target_tag:
-            xml_results = {}
+def find_target_in_subtree(elem, target_tag):
+    """Recursively find all target_tag values under elem."""
+    results = []
+    if elem.tag.endswith(target_tag) and elem.text:
+        results.append(elem.text)
+    for child in elem:
+        results.extend(find_target_in_subtree(child, target_tag))
+    return results
 
-            for xml_file in uploaded_xml_files:
-                try:
-                    # Read XML content from uploaded file
-                    content = xml_file.read()
-                    tree = ET.ElementTree(ET.fromstring(content))
-                    root = tree.getroot()
-                    matches = []
+if st.sidebar.button("Search XML"):
+    if uploaded_xml_files and source_tag and source_value and target_tag:
+        xml_results = {}
 
-                    # Recursive search for source tag with matching value
-                    for elem in root.iter():
-                        if elem.tag.endswith(source_tag) and elem.text == source_value:
-                            parent = elem
-                            # Search for all target tags under this parent element
-                            target_elements = parent.findall(".//" + target_tag)
-                            for t in target_elements:
-                                matches.append(t.text)
-                            # Also check siblings if needed
-                            if not matches:
-                                for sibling in root.iter(target_tag):
-                                    matches.append(sibling.text)
-                    
-                    if matches:
-                        xml_results[xml_file.name] = matches
+        for xml_file in uploaded_xml_files:
+            try:
+                matches = []
+                # Use iterparse for large XMLs
+                context = ET.iterparse(xml_file, events=("start", "end"))
+                for event, elem in context:
+                    if event == "end" and elem.tag.endswith(source_tag) and elem.text == source_value:
+                        matches.extend(find_target_in_subtree(elem, target_tag))
+                    # clear element to save memory
+                    elem.clear()
 
-                except Exception as e:
-                    st.sidebar.error(f"Error processing {xml_file.name}: {str(e)}")
+                if matches:
+                    xml_results[xml_file.name] = matches
 
-            if xml_results:
-                st.sidebar.success("✅ XML Search Results:")
-                for fname, vals in xml_results.items():
-                    st.sidebar.markdown(f"**File:** {fname}")
-                    for val in vals:
-                        st.sidebar.text(f"{target_tag}: {val}")
-            else:
-                st.sidebar.warning("No matching results found.")
+            except Exception as e:
+                st.sidebar.error(f"Error processing {xml_file.name}: {str(e)}")
+
+        if xml_results:
+            st.sidebar.success("✅ XML Search Results:")
+            for fname, vals in xml_results.items():
+                st.sidebar.markdown(f"**File:** {fname}")
+                for val in vals:
+                    st.sidebar.text(f"{target_tag}: {val}")
         else:
-            st.sidebar.warning("Please upload XML files and enter source + target tags.")
+            st.sidebar.warning("No matching results found.")
+    else:
+        st.sidebar.warning("Please upload XML files and enter source + target tags.")
 
 
