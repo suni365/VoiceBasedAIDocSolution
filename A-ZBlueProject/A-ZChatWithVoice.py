@@ -271,7 +271,6 @@ if dat_option:
         if dat_file and search_segment and target_segment_type:
             try:
                 dat_content = dat_file.read().decode("utf-8")
-                # Split by transactions
                 transactions = []
                 current_txn = []
                 inside_txn = False
@@ -280,24 +279,26 @@ if dat_option:
                     line = line.strip()
                     if not line:
                         continue
-                    if line.startswith("ST*"):
-                        inside_txn = True
-                        current_txn = [line]
-                    elif line.startswith("SE*"):
-                        current_txn.append(line)
-                        transactions.append(current_txn)
-                        inside_txn = False
-                        current_txn = []
-                    elif inside_txn:
-                        current_txn.append(line)
+                    segments = line.split("~")  # split multiple segments in same line
+                    for seg in segments:
+                        if not seg:
+                            continue
+                        if seg.startswith("ST*"):
+                            inside_txn = True
+                            current_txn = [seg]
+                        elif seg.startswith("SE*"):
+                            current_txn.append(seg)
+                            transactions.append(current_txn)
+                            inside_txn = False
+                            current_txn = []
+                        elif inside_txn:
+                            current_txn.append(seg)
 
-                # Retrieve target segments in the same transaction as search segment
                 results = []
                 for txn in transactions:
-                    if any(search_segment in seg for seg in txn):
+                    if any(seg.startswith(search_segment) for seg in txn):
                         results.extend([seg for seg in txn if seg.startswith(target_segment_type + "*")])
 
-                # Display results
                 if results:
                     st.sidebar.success(f"✅ Found {len(results)} '{target_segment_type}' segments in the same transaction(s):")
                     for seg in results:
