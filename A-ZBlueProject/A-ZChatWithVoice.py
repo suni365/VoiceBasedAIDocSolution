@@ -167,7 +167,7 @@ else:
 
         st.markdown(f"""
         <div style="padding:15px; border-radius:10px; background-color:#f2f2f2; color:black; border-left: 5px solid #4CAF50;">
-        <b>🤖 A-Z Blue Bot Response:</b><br>{response}
+        <b>🤖 CHO-Bot Response:</b><br>{response}
         </div>""", unsafe_allow_html=True)
 
     # Default Video
