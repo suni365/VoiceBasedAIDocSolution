@@ -316,50 +316,49 @@ if dat_option:
                 st.sidebar.error(f"Error processing DAT file: {str(e)}")
         else:
             st.sidebar.warning("Please upload a DAT file and enter both segments.")
-uploaded_xml_files = st.sidebar.file_uploader("Upload XML files", type=["xml"], accept_multiple_files=True)
-source_tag = st.sidebar.text_input("Source tag (e.g., claimLineId)")
-source_value = st.sidebar.text_input("Source value (e.g., 1)")
-target_tag = st.sidebar.text_input("Target tag to retrieve (e.g., allowedAmount)")
+import streamlit as st
+from lxml import etree
 
-def find_target_in_subtree(elem, target_tag):
-    """Recursively find all target_tag values under elem."""
+def search_large_xml(xml_file, source_tag, source_value, target_tag):
+    """
+    Search large XML file for target tag values where source_tag has source_value.
+    """
     results = []
-    if elem.tag.endswith(target_tag) and elem.text:
-        results.append(elem.text)
-    for child in elem:
-        results.extend(find_target_in_subtree(child, target_tag))
+    context = etree.iterparse(xml_file, events=("end",), recover=True)
+
+    for event, elem in context:
+        # Remove namespace
+        tag_name = etree.QName(elem).localname
+
+        if tag_name == source_tag and elem.text == source_value:
+            # Search all child elements for target_tag
+            for t in elem.iter():
+                t_name = etree.QName(t).localname
+                if t_name == target_tag and t.text:
+                    results.append(t.text)
+        
+        # Free memory
+        elem.clear()
+        while elem.getprevious() is not None:
+            del elem.getparent()[0]
+
     return results
 
-if st.sidebar.button("Search XML"):
-    if uploaded_xml_files and source_tag and source_value and target_tag:
-        xml_results = {}
+# Streamlit UI
+st.title("🔍 Large XML Search")
+uploaded_file = st.file_uploader("Upload a large XML file", type=["xml"])
+source_tag = st.text_input("Enter source tag")
+source_value = st.text_input("Enter source value")
+target_tag = st.text_input("Enter target tag")
 
-        for xml_file in uploaded_xml_files:
-            try:
-                matches = []
-                # Use iterparse for large XMLs
-                context = ET.iterparse(xml_file, events=("start", "end"))
-                for event, elem in context:
-                    if event == "end" and elem.tag.endswith(source_tag) and elem.text == source_value:
-                        matches.extend(find_target_in_subtree(elem, target_tag))
-                    # clear element to save memory
-                    elem.clear()
-
-                if matches:
-                    xml_results[xml_file.name] = matches
-
-            except Exception as e:
-                st.sidebar.error(f"Error processing {xml_file.name}: {str(e)}")
-
-        if xml_results:
-            st.sidebar.success("✅ XML Search Results:")
-            for fname, vals in xml_results.items():
-                st.sidebar.markdown(f"**File:** {fname}")
-                for val in vals:
-                    st.sidebar.text(f"{target_tag}: {val}")
+if st.button("Search XML"):
+    if uploaded_file and source_tag and source_value and target_tag:
+        matches = search_large_xml(uploaded_file, source_tag, source_value, target_tag)
+        if matches:
+            st.success(f"Found {len(matches)} matching values:")
+            for val in matches:
+                st.text(val)
         else:
-            st.sidebar.warning("No matching results found.")
+            st.warning("No matching results found.")
     else:
-        st.sidebar.warning("Please upload XML files and enter source + target tags.")
-
-
+        st.warning("Please upload XML and enter all fields.")
