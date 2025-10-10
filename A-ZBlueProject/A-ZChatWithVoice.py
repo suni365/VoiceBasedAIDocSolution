@@ -154,62 +154,43 @@ def strip_namespace(tag):
 
 # --- Core: Large XML search with full parent traversal ---
 def search_large_xml(xml_file, source_tag, source_value, target_path):
+    """
+    Search for target_path values only inside the <PolicyInfo> block
+    where source_tag == source_value.
+    """
     results = []
     context = etree.iterparse(xml_file, events=("end",), recover=True)
 
     for event, elem in context:
         tag_name = strip_namespace(elem.tag)
 
-        # Match the desired source tag and value
+        # Only consider element nodes
         if tag_name == source_tag and (elem.text or "").strip() == source_value:
-            # Collect all ancestors (including the root)
-            ancestors = list(elem.iterancestors())
-            ancestors.reverse()  # start from root downwards
-            ancestors.insert(0, elem.getroottree().getroot())  # ensure topmost root is included
-            ancestors.append(elem)  # include the matched node itself
+            # Find the nearest <PolicyInfo> ancestor
+            policy_elem = elem
+            while policy_elem is not None and strip_namespace(policy_elem.tag) != "PolicyInfo":
+                policy_elem = policy_elem.getparent()
 
-            # Search for target tag/path across all ancestors
-            for ancestor in ancestors:
+            if policy_elem is not None:
+                # Now search only inside this PolicyInfo for target_path
                 if "/" in target_path:
-                    # XPath-style lookup (e.g. "claim/hccId")
                     try:
-                        targets = ancestor.xpath(f".//{target_path}", namespaces=None)
+                        targets = policy_elem.xpath(f".//{target_path}", namespaces=None)
                         for t in targets:
                             if t.text and t.text.strip():
                                 results.append(t.text.strip())
                     except Exception as e:
                         st.error(f"XPath error: {e}")
                 else:
-                    # Simple tag lookup
-                    for t in ancestor.iter():
+                    # Simple tag search
+                    for t in policy_elem.iter():
                         t_name = strip_namespace(t.tag)
                         if t_name == target_path and t.text and t.text.strip():
                             results.append(t.text.strip())
 
-        # Memory cleanup to handle large files efficiently
+        # Clean memory
         elem.clear()
         while elem.getprevious() is not None:
             del elem.getparent()[0]
 
-    return list(set(results))  # remove duplicates, if any
-
-
-# --- Streamlit UI for XML Search ---
-xml_file = st.file_uploader("Upload XML File", type=["xml"])
-source_tag = st.text_input("Enter source tag name (e.g. claimId):")
-source_value = st.text_input("Enter source tag value (e.g. 2025012700000171):")
-target_path = st.text_input("Enter target tag/path (e.g. claim/hccId):")
-
-if st.button("Search XML"):
-    if xml_file and source_tag and source_value and target_path:
-        with st.spinner("Searching... please wait for large XML files."):
-            results = search_large_xml(xml_file, source_tag, source_value, target_path)
-
-        if results:
-            st.success(f"✅ Found {len(results)} matches for '{target_path}':")
-            for res in results:
-                st.text(res)
-        else:
-            st.warning("No matching data found.")
-    else:
-        st.error("Please fill all fields before searching.")
+    return list(set(results))
