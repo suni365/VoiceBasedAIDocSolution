@@ -143,13 +143,68 @@ else:
                     st.warning("No matches found.")
 
    
-if st.button("Search XML"):
-    if xml_file and source_tag and source_value and target_path:
-        with st.spinner("Searching... please wait for large XML files."):
+import streamlit as st
+from lxml import etree
+from io import BytesIO
+
+st.subheader("🔍 Large XML Search")
+
+# --- Helper: Remove namespace ---
+def strip_namespace(tag):
+    """Remove XML namespace if present"""
+    return tag.split('}', 1)[1] if '}' in tag else tag
+
+# --- Core: Search only inside <PolicyInfo> containing source_tag == source_value ---
+def search_large_xml(xml_file, source_tag, source_value, target_path):
+    results = []
+
+    context = etree.iterparse(xml_file, events=("end",), recover=True)
+
+    for event, elem in context:
+        tag_name = strip_namespace(elem.tag)
+
+        if tag_name == source_tag and (elem.text or "").strip() == source_value:
+            # Find nearest <PolicyInfo> ancestor
+            policy_elem = elem
+            while policy_elem is not None and strip_namespace(policy_elem.tag) != "PolicyInfo":
+                policy_elem = policy_elem.getparent()
+
+            if policy_elem is not None:
+                # Search only inside this PolicyInfo
+                if "/" in target_path:
+                    try:
+                        targets = policy_elem.xpath(f".//{target_path}", namespaces=None)
+                        for t in targets:
+                            if t.text and t.text.strip():
+                                results.append(t.text.strip())
+                    except Exception as e:
+                        st.error(f"XPath error: {e}")
+                else:
+                    for t in policy_elem.iter():
+                        t_name = strip_namespace(t.tag)
+                        if t_name == target_path and t.text and t.text.strip():
+                            results.append(t.text.strip())
+
+        # Memory cleanup
+        elem.clear()
+        while elem.getprevious() is not None:
+            del elem.getparent()[0]
+
+    return list(set(results))
+
+# --- Streamlit uploader & input ---
+xml_file = st.file_uploader("Upload XML File", type=["xml"])
+
+if xml_file:
+    source_tag = st.text_input("Enter source tag name (e.g., PolicyNumber):")
+    source_value = st.text_input("Enter source tag value (e.g., INDH0012345):")
+    target_path = st.text_input("Enter target tag/path (e.g., StartDate or Claims/ClaimID):")
+
+    if st.button("Search XML"):
+        if source_tag and source_value and target_path:
             try:
-                # Ensure the uploaded file is read in binary mode for lxml
+                # Convert uploaded file to a BytesIO object for lxml
                 xml_bytes = xml_file.read()
-                from io import BytesIO
                 results = search_large_xml(BytesIO(xml_bytes), source_tag, source_value, target_path)
 
                 if results:
@@ -161,5 +216,5 @@ if st.button("Search XML"):
 
             except Exception as e:
                 st.error(f"Error during XML search: {e}")
-    else:
-        st.error("Please fill all fields before searching.")
+        else:
+            st.error("Please fill all fields before searching.")
