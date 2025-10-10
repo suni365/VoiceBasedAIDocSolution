@@ -143,25 +143,23 @@ else:
                     st.warning("No matches found.")
 
    
-
-  # ---------- XML Search ----------
-st.subheader("🔍 Large XML Search")
-
-xml_file = st.file_uploader("Upload XML File", type=["xml"])
-source_tag = st.text_input("Enter source tag name (e.g. PolicyNumber):")
-source_value = st.text_input("Enter source tag value (e.g. INDH0012345):")
-target_path = st.text_input("Enter target tag/path (e.g. StartDate or PolicyHolder/FullName):")
-
 if st.button("Search XML"):
     if xml_file and source_tag and source_value and target_path:
         with st.spinner("Searching... please wait for large XML files."):
-            results = search_large_xml(xml_file, source_tag, source_value, target_path)
+            try:
+                # Ensure the uploaded file is read in binary mode for lxml
+                xml_bytes = xml_file.read()
+                from io import BytesIO
+                results = search_large_xml(BytesIO(xml_bytes), source_tag, source_value, target_path)
 
-        if results:
-            st.success(f"✅ Found {len(results)} matches for '{target_path}':")
-            for res in results:
-                st.text(res)
-        else:
-            st.warning("No matching data found.")
+                if results:
+                    st.success(f"✅ Found {len(results)} matches for '{target_path}':")
+                    for res in results:
+                        st.text(res)
+                else:
+                    st.warning("No matching data found.")
+
+            except Exception as e:
+                st.error(f"Error during XML search: {e}")
     else:
         st.error("Please fill all fields before searching.")
