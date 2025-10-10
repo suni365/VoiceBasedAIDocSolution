@@ -146,38 +146,43 @@ else:
     st.subheader("🔍 Large XML Search")
 
     def strip_namespace(tag):
-        return tag.split('}', 1)[1] if '}' in tag else tag
+        return tag.split('}', 1)[1] if '}' in tag else tagdef search_large_xml(xml_file, source_tag, source_value, target_path):
+    results = []
+    context = etree.iterparse(xml_file, events=("end",), recover=True)
+    
+    for event, elem in context:
+        tag_name = strip_namespace(elem.tag)
 
-    def search_large_xml(xml_file, source_tag, source_value, target_path):
-        results = []
-        context = etree.iterparse(xml_file, events=("end",), recover=True)
-        for _, elem in context:
-            if strip_namespace(elem.tag) == source_tag and (elem.text or "").strip() == source_value:
-                parent = elem.getparent()
+        # Match the desired source tag and value
+        if tag_name == source_tag and (elem.text or "").strip() == source_value:
+            # Traverse all ancestors, including topmost parent
+            ancestors = list(elem.iterancestors())
+            ancestors.reverse()  # start from root downwards
+            ancestors.append(elem)  # include the matched node itself
+            
+            # Search for target tag/path in entire ancestor tree
+            for ancestor in ancestors:
                 if "/" in target_path:
-                    for t in parent.xpath(f".//{target_path}", namespaces=None):
-                        if t.text:
-                            results.append(t.text.strip())
+                    # XPath-style lookup (claim/hccId)
+                    try:
+                        targets = ancestor.xpath(f".//{target_path}", namespaces=None)
+                        for t in targets:
+                            if t.text:
+                                results.append(t.text.strip())
+                    except Exception as e:
+                        st.error(f"XPath error: {e}")
                 else:
-                    for t in parent.iter():
-                        if strip_namespace(t.tag) == target_path and t.text:
+                    # Simple tag lookup
+                    for t in ancestor.iter():
+                        t_name = strip_namespace(t.tag)
+                        if t_name == target_path and t.text:
                             results.append(t.text.strip())
-            elem.clear()
-        return results
 
-    xml_file = st.file_uploader("Upload XML File", type=["xml"])
-    source_tag = st.text_input("Source tag (e.g., claimIdentifier)")
-    source_value = st.text_input("Source value (e.g., 5645796)")
-    target_path = st.text_input("Target tag/path (e.g., claim/hccId)")
+        # Memory cleanup to prevent RAM overload
+        elem.clear()
+        while elem.getprevious() is not None:
+            del elem.getparent()[0]
 
-    if st.button("Search XML"):
-        if xml_file and source_tag and source_value and target_path:
-            matches = search_large_xml(xml_file, source_tag, source_value, target_path)
-            if matches:
-                st.success(f"Found {len(matches)} results:")
-                for val in matches:
-                    st.text(val)
-            else:
-                st.warning("No matching results found.")
-        else:
-            st.warning("Please upload XML and fill all fields.")
+    return list(set(results))  # remove duplicates, if any
+
+    
