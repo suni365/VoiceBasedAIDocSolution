@@ -153,6 +153,7 @@ def strip_namespace(tag):
     return tag.split('}', 1)[1] if '}' in tag else tag
 
 # --- Core: Large XML search with full parent traversal ---
+
 def search_large_xml(xml_file, source_tag, source_value, target_path):
     """
     Search for target_path values only inside the <PolicyInfo> block
