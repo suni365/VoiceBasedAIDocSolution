@@ -147,51 +147,21 @@ else:
   # ---------- XML Search ----------
 st.subheader("🔍 Large XML Search")
 
-# --- Helper: Remove namespace ---
-def strip_namespace(tag):
-    """Remove XML namespace if present"""
-    return tag.split('}', 1)[1] if '}' in tag else tag
+xml_file = st.file_uploader("Upload XML File", type=["xml"])
+source_tag = st.text_input("Enter source tag name (e.g. PolicyNumber):")
+source_value = st.text_input("Enter source tag value (e.g. INDH0012345):")
+target_path = st.text_input("Enter target tag/path (e.g. StartDate or PolicyHolder/FullName):")
 
-# --- Core: Large XML search with full parent traversal ---
+if st.button("Search XML"):
+    if xml_file and source_tag and source_value and target_path:
+        with st.spinner("Searching... please wait for large XML files."):
+            results = search_large_xml(xml_file, source_tag, source_value, target_path)
 
-def search_large_xml(xml_file, source_tag, source_value, target_path):
-    """
-    Search for target_path values only inside the <PolicyInfo> block
-    where source_tag == source_value.
-    """
-    results = []
-    context = etree.iterparse(xml_file, events=("end",), recover=True)
-
-    for event, elem in context:
-        tag_name = strip_namespace(elem.tag)
-
-        # Only consider element nodes
-        if tag_name == source_tag and (elem.text or "").strip() == source_value:
-            # Find the nearest <PolicyInfo> ancestor
-            policy_elem = elem
-            while policy_elem is not None and strip_namespace(policy_elem.tag) != "PolicyInfo":
-                policy_elem = policy_elem.getparent()
-
-            if policy_elem is not None:
-                # Now search only inside this PolicyInfo for target_path
-                if "/" in target_path:
-                    try:
-                        targets = policy_elem.xpath(f".//{target_path}", namespaces=None)
-                        for t in targets:
-                            if t.text and t.text.strip():
-                                results.append(t.text.strip())
-                    except Exception as e:
-                        st.error(f"XPath error: {e}")
-                else:
-                    # Simple tag search
-                    for t in policy_elem.iter():
-                        t_name = strip_namespace(t.tag)
-                        if t_name == target_path and t.text and t.text.strip():
-                            results.append(t.text.strip())
-
-        # Clean memory
-        elem.clear()
-        while elem.getprevious() is not None:
-            del elem.getparent()[0]
-
-    return list(set(results))
+        if results:
+            st.success(f"✅ Found {len(results)} matches for '{target_path}':")
+            for res in results:
+                st.text(res)
+        else:
+            st.warning("No matching data found.")
+    else:
+        st.error("Please fill all fields before searching.")
