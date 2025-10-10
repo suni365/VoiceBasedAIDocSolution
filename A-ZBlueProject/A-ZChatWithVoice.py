@@ -142,35 +142,40 @@ else:
                 else:
                     st.warning("No matches found.")
 
-    # ---------- XML Search ----------
-    st.subheader("🔍 Large XML Search")
+   
 
-  def strip_namespace(tag):
+  # ---------- XML Search ----------
+st.subheader("🔍 Large XML Search")
+
+# --- Helper: Remove namespace ---
+def strip_namespace(tag):
+    """Remove XML namespace if present"""
     return tag.split('}', 1)[1] if '}' in tag else tag
 
-
+# --- Core: Large XML search with full parent traversal ---
 def search_large_xml(xml_file, source_tag, source_value, target_path):
     results = []
     context = etree.iterparse(xml_file, events=("end",), recover=True)
-    
+
     for event, elem in context:
         tag_name = strip_namespace(elem.tag)
 
         # Match the desired source tag and value
         if tag_name == source_tag and (elem.text or "").strip() == source_value:
-            # Traverse all ancestors, including topmost parent
+            # Collect all ancestors (including the root)
             ancestors = list(elem.iterancestors())
             ancestors.reverse()  # start from root downwards
+            ancestors.insert(0, elem.getroottree().getroot())  # ensure topmost root is included
             ancestors.append(elem)  # include the matched node itself
-            
-            # Search for target tag/path in entire ancestor tree
+
+            # Search for target tag/path across all ancestors
             for ancestor in ancestors:
                 if "/" in target_path:
-                    # XPath-style lookup (claim/hccId)
+                    # XPath-style lookup (e.g. "claim/hccId")
                     try:
                         targets = ancestor.xpath(f".//{target_path}", namespaces=None)
                         for t in targets:
-                            if t.text:
+                            if t.text and t.text.strip():
                                 results.append(t.text.strip())
                     except Exception as e:
                         st.error(f"XPath error: {e}")
@@ -178,12 +183,33 @@ def search_large_xml(xml_file, source_tag, source_value, target_path):
                     # Simple tag lookup
                     for t in ancestor.iter():
                         t_name = strip_namespace(t.tag)
-                        if t_name == target_path and t.text:
+                        if t_name == target_path and t.text and t.text.strip():
                             results.append(t.text.strip())
 
-        # Memory cleanup to prevent RAM overload
+        # Memory cleanup to handle large files efficiently
         elem.clear()
         while elem.getprevious() is not None:
             del elem.getparent()[0]
 
     return list(set(results))  # remove duplicates, if any
+
+
+# --- Streamlit UI for XML Search ---
+xml_file = st.file_uploader("Upload XML File", type=["xml"])
+source_tag = st.text_input("Enter source tag name (e.g. claimId):")
+source_value = st.text_input("Enter source tag value (e.g. 2025012700000171):")
+target_path = st.text_input("Enter target tag/path (e.g. claim/hccId):")
+
+if st.button("Search XML"):
+    if xml_file and source_tag and source_value and target_path:
+        with st.spinner("Searching... please wait for large XML files."):
+            results = search_large_xml(xml_file, source_tag, source_value, target_path)
+
+        if results:
+            st.success(f"✅ Found {len(results)} matches for '{target_path}':")
+            for res in results:
+                st.text(res)
+        else:
+            st.warning("No matching data found.")
+    else:
+        st.error("Please fill all fields before searching.")
