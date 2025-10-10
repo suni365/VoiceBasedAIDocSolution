@@ -145,8 +145,11 @@ else:
     # ---------- XML Search ----------
     st.subheader("🔍 Large XML Search")
 
-    def strip_namespace(tag):
-        return tag.split('}', 1)[1] if '}' in tag else tagdef search_large_xml(xml_file, source_tag, source_value, target_path):
+  def strip_namespace(tag):
+    return tag.split('}', 1)[1] if '}' in tag else tag
+
+
+def search_large_xml(xml_file, source_tag, source_value, target_path):
     results = []
     context = etree.iterparse(xml_file, events=("end",), recover=True)
     
@@ -184,5 +187,3 @@ else:
             del elem.getparent()[0]
 
     return list(set(results))  # remove duplicates, if any
-
-    
