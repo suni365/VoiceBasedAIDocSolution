@@ -2,28 +2,110 @@ import streamlit as st
 import docx
 import os
 import time
-from streamlit_webrtc import webrtc_streamer, WebRtcMode
 from lxml import etree
+from io import BytesIO
+from pydub import AudioSegment
+import speech_recognition as sr
+from streamlit_webrtc import webrtc_streamer, WebRtcMode
 from utils import (
     authenticate_user, clean_text, handle_conversation, search_in_doc,
     search_web, save_text_response, speak, search_excel, search_pdf,
-    process_uploaded_voice, get_base64_image, AudioProcessor
+    get_base64_image, AudioProcessor
 )
 
-# Set Streamlit layout
+# --------------------------
+# 🔉 Voice File Processor
+# --------------------------
+def process_uploaded_voice(voice_file):
+    """Convert uploaded voice (.m4a/.wav) to text using SpeechRecognition."""
+    import tempfile
+
+    try:
+        suffix = os.path.splitext(voice_file.name)[1].lower()
+        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp_file:
+            tmp_file.write(voice_file.read())
+            tmp_path = tmp_file.name
+
+        if suffix == ".m4a":
+            wav_path = tmp_path.replace(".m4a", ".wav")
+            AudioSegment.from_file(tmp_path, format="m4a").export(wav_path, format="wav")
+        else:
+            wav_path = tmp_path
+
+        recognizer = sr.Recognizer()
+        with sr.AudioFile(wav_path) as source:
+            audio = recognizer.record(source)
+            text = recognizer.recognize_google(audio)
+
+        return text
+
+    except Exception as e:
+        return f"Error processing voice: {e}"
+
+    finally:
+        if os.path.exists(tmp_path):
+            os.remove(tmp_path)
+        if wav_path != tmp_path and os.path.exists(wav_path):
+            os.remove(wav_path)
+
+# --------------------------
+# 🔧 Utility: Strip Namespace (for XML)
+# --------------------------
+def strip_namespace(tag):
+    return tag.split('}', 1)[1] if '}' in tag else tag
+
+# --------------------------
+# 🔍 Large XML Search
+# --------------------------
+def search_large_xml(xml_file, source_tag, source_value, target_path):
+    results = []
+    context = etree.iterparse(xml_file, events=("end",), recover=True)
+
+    for event, elem in context:
+        tag_name = strip_namespace(elem.tag)
+
+        if tag_name == source_tag and (elem.text or "").strip() == source_value:
+            policy_elem = elem
+            while policy_elem is not None and strip_namespace(policy_elem.tag) != "PolicyInfo":
+                policy_elem = policy_elem.getparent()
+
+            if policy_elem is not None:
+                if "/" in target_path:
+                    try:
+                        targets = policy_elem.xpath(f".//{target_path}", namespaces=None)
+                        for t in targets:
+                            if t.text and t.text.strip():
+                                results.append(t.text.strip())
+                    except Exception as e:
+                        st.error(f"XPath error: {e}")
+                else:
+                    for t in policy_elem.iter():
+                        t_name = strip_namespace(t.tag)
+                        if t_name == target_path and t.text and t.text.strip():
+                            results.append(t.text.strip())
+
+        elem.clear()
+        while elem.getprevious() is not None:
+            del elem.getparent()[0]
+
+    return list(set(results))
+
+# --------------------------
+# 🎛️ Streamlit Layout
+# --------------------------
 st.set_page_config(layout="wide")
 
-# Sidebar setup
 st.sidebar.title("Voice-Driven Intelligent Document Assistant")
 st.sidebar.image("A-ZBlueProject/AIChatbot.png", use_container_width=True)
 st.sidebar.title("🔑 User Authentication")
 
-# Initialize session
 if "authenticated" not in st.session_state:
     st.session_state.authenticated = False
     st.session_state["logged_in_user"] = ""
 
-# Authentication section
+# --------------------------
+# 🔐 Authentication
+# --------------------------
 if not st.session_state.authenticated:
     username_input = st.sidebar.text_input("Username:")
     password_input = st.sidebar.text_input("Password:", type="password")
@@ -36,8 +118,11 @@ if not st.session_state.authenticated:
         else:
             st.sidebar.error("❌ Invalid username or password.")
 
+# --------------------------
+# ✅ Main App
+# --------------------------
 else:
-    # Welcome header
+    # Welcome
     img_base64 = get_base64_image("A-ZBlueProject/sunita.png")
     st.markdown(f"""
         <div style="position:fixed;top:50px;right:10px;background:#333;padding:10px;border-radius:10px;color:white;">
@@ -46,10 +131,11 @@ else:
         <p style='font-size:12px;color:#ff9800;'>Created by Sunita Panicker</p></div>
     """, unsafe_allow_html=True)
 
-    # Main Title
     st.title("🤖 AI Doc Chatbot")
 
-    # ---------- Excel & PDF search ----------
+    # --------------------------
+    # 🔍 Excel & PDF Search
+    # --------------------------
     search_option = st.sidebar.radio("Select Search Type:", ["Search Excel File", "Search PDF File"])
     if search_option == "Search Excel File":
         excel_file = st.sidebar.file_uploader("Upload Excel file", type=["xlsx", "xls"])
@@ -75,7 +161,9 @@ else:
                 else:
                     st.sidebar.warning("No matching data found.")
 
-    # ---------- Document & Voice Upload ----------
+    # --------------------------
+    # 📄 Document & Voice Upload
+    # --------------------------
     uploaded_file = st.file_uploader("Upload a Word Document (.docx)")
     voice_file = st.file_uploader("Upload a voice file (.m4a/.wav)")
     user_input = st.text_input("Ask something:")
@@ -106,47 +194,9 @@ else:
 
     st.video("A-ZBlueProject/fixed_talking_lady.mp4")
 
-
-    def process_uploaded_voice(voice_file):
-    """Convert uploaded voice (.m4a/.wav) to text using SpeechRecognition."""
-    import tempfile
-    import os
-    from pydub import AudioSegment
-    import speech_recognition as sr
-
-    try:
-        # Save uploaded file temporarily
-        suffix = os.path.splitext(voice_file.name)[1].lower()
-        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp_file:
-            tmp_file.write(voice_file.read())
-            tmp_path = tmp_file.name
-
-        # Convert to WAV if it's m4a
-        if suffix == ".m4a":
-            wav_path = tmp_path.replace(".m4a", ".wav")
-            AudioSegment.from_file(tmp_path, format="m4a").export(wav_path, format="wav")
-        else:
-            wav_path = tmp_path  # already wav
-
-        # Recognize speech
-        recognizer = sr.Recognizer()
-        with sr.AudioFile(wav_path) as source:
-            audio = recognizer.record(source)
-            text = recognizer.recognize_google(audio)
-
-        return text
-
-    except Exception as e:
-        return f"Error processing voice: {e}"
-
-    finally:
-        # Clean up
-        if os.path.exists(tmp_path):
-            os.remove(tmp_path)
-        if wav_path != tmp_path and os.path.exists(wav_path):
-            os.remove(wav_path)
-
-    # ---------- DAT Search ----------
+    # --------------------------
+    # 📂 DAT File Search
+    # --------------------------
     st.subheader("📂 Search DAT File")
     dat_option = st.checkbox("Enable DAT Search")
     if dat_option:
@@ -182,79 +232,30 @@ else:
                 else:
                     st.warning("No matches found.")
 
-   
-import streamlit as st
-from lxml import etree
-from io import BytesIO
+    # --------------------------
+    # 🧾 XML File Search
+    # --------------------------
+    st.subheader("🔍 Large XML Search")
+    xml_file = st.file_uploader("Upload XML File", type=["xml"])
 
-st.subheader("🔍 Large XML Search")
+    if xml_file:
+        source_tag = st.text_input("Enter source tag name (e.g., PolicyNumber):")
+        source_value = st.text_input("Enter source tag value (e.g., INDH0012345):")
+        target_path = st.text_input("Enter target tag/path (e.g., StartDate or Claims/ClaimID):")
 
-# --- Helper: Remove namespace ---
-def strip_namespace(tag):
-    """Remove XML namespace if present"""
-    return tag.split('}', 1)[1] if '}' in tag else tag
+        if st.button("Search XML"):
+            if source_tag and source_value and target_path:
+                try:
+                    xml_bytes = xml_file.read()
+                    results = search_large_xml(BytesIO(xml_bytes), source_tag, source_value, target_path)
 
-# --- Core: Search only inside <PolicyInfo> containing source_tag == source_value ---
-def search_large_xml(xml_file, source_tag, source_value, target_path):
-    results = []
-
-    context = etree.iterparse(xml_file, events=("end",), recover=True)
-
-    for event, elem in context:
-        tag_name = strip_namespace(elem.tag)
-
-        if tag_name == source_tag and (elem.text or "").strip() == source_value:
-            # Find nearest <PolicyInfo> ancestor
-            policy_elem = elem
-            while policy_elem is not None and strip_namespace(policy_elem.tag) != "PolicyInfo":
-                policy_elem = policy_elem.getparent()
-
-            if policy_elem is not None:
-                # Search only inside this PolicyInfo
-                if "/" in target_path:
-                    try:
-                        targets = policy_elem.xpath(f".//{target_path}", namespaces=None)
-                        for t in targets:
-                            if t.text and t.text.strip():
-                                results.append(t.text.strip())
-                    except Exception as e:
-                        st.error(f"XPath error: {e}")
-                else:
-                    for t in policy_elem.iter():
-                        t_name = strip_namespace(t.tag)
-                        if t_name == target_path and t.text and t.text.strip():
-                            results.append(t.text.strip())
-
-        # Memory cleanup
-        elem.clear()
-        while elem.getprevious() is not None:
-            del elem.getparent()[0]
-
-    return list(set(results))
-
-# --- Streamlit uploader & input ---
-xml_file = st.file_uploader("Upload XML File", type=["xml"])
-
-if xml_file:
-    source_tag = st.text_input("Enter source tag name (e.g., PolicyNumber):")
-    source_value = st.text_input("Enter source tag value (e.g., INDH0012345):")
-    target_path = st.text_input("Enter target tag/path (e.g., StartDate or Claims/ClaimID):")
-
-    if st.button("Search XML"):
-        if source_tag and source_value and target_path:
-            try:
-                # Convert uploaded file to a BytesIO object for lxml
-                xml_bytes = xml_file.read()
-                results = search_large_xml(BytesIO(xml_bytes), source_tag, source_value, target_path)
-
-                if results:
-                    st.success(f"✅ Found {len(results)} matches for '{target_path}':")
-                    for res in results:
-                        st.text(res)
-                else:
-                    st.warning("No matching data found.")
-
-            except Exception as e:
-                st.error(f"Error during XML search: {e}")
-        else:
-            st.error("Please fill all fields before searching.")
+                    if results:
+                        st.success(f"✅ Found {len(results)} matches for '{target_path}':")
+                        for res in results:
+                            st.text(res)
+                    else:
+                        st.warning("No matching data found.")
+                except Exception as e:
+                    st.error(f"Error during XML search: {e}")
+            else:
+                st.error("Please fill all fields before searching.")
