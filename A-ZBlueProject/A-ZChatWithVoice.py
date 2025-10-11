@@ -106,6 +106,46 @@ else:
 
     st.video("A-ZBlueProject/fixed_talking_lady.mp4")
 
+
+    def process_uploaded_voice(voice_file):
+    """Convert uploaded voice (.m4a/.wav) to text using SpeechRecognition."""
+    import tempfile
+    import os
+    from pydub import AudioSegment
+    import speech_recognition as sr
+
+    try:
+        # Save uploaded file temporarily
+        suffix = os.path.splitext(voice_file.name)[1].lower()
+        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp_file:
+            tmp_file.write(voice_file.read())
+            tmp_path = tmp_file.name
+
+        # Convert to WAV if it's m4a
+        if suffix == ".m4a":
+            wav_path = tmp_path.replace(".m4a", ".wav")
+            AudioSegment.from_file(tmp_path, format="m4a").export(wav_path, format="wav")
+        else:
+            wav_path = tmp_path  # already wav
+
+        # Recognize speech
+        recognizer = sr.Recognizer()
+        with sr.AudioFile(wav_path) as source:
+            audio = recognizer.record(source)
+            text = recognizer.recognize_google(audio)
+
+        return text
+
+    except Exception as e:
+        return f"Error processing voice: {e}"
+
+    finally:
+        # Clean up
+        if os.path.exists(tmp_path):
+            os.remove(tmp_path)
+        if wav_path != tmp_path and os.path.exists(wav_path):
+            os.remove(wav_path)
+
     # ---------- DAT Search ----------
     st.subheader("📂 Search DAT File")
     dat_option = st.checkbox("Enable DAT Search")
