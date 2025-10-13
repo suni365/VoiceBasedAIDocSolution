@@ -17,4 +17,6 @@ moviepy==2.1.2
 streamlit-webrtc
 av
 nltk
+ffmpeg-python
+pydub
 
