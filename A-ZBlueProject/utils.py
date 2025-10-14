@@ -7,7 +7,7 @@ from PIL import Image
 import openai
 
 # 1. 🔐 User Authentication
-def authenticate_user(username, password, excel_path="users.xlsx"):
+def authenticate_user(Username, Password, excel_path="users.xlsx"):
     try:
         if not os.path.exists(excel_path):
             return False
@@ -15,8 +15,8 @@ def authenticate_user(username, password, excel_path="users.xlsx"):
         df = pd.read_excel(excel_path)
         
         # Normalize case and whitespace
-        username = username.strip().lower()
-        password = password.strip()
+        username = Username.strip().lower()
+        password = Password.strip()
         
         df['username'] = df['username'].astype(str).str.strip().str.lower()
         df['password'] = df['password'].astype(str).str.strip()
@@ -116,4 +116,5 @@ class AudioProcessor:
     def process(self, audio_chunk):
         # Placeholder for audio processing if needed with webrtc
         return audio_chunk
+
 
