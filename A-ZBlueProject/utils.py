@@ -7,13 +7,27 @@ from PIL import Image
 import openai
 
 # 1. 🔐 User Authentication
-def authenticate_user(username, password):
-    # Simple hardcoded user authentication (replace with DB or secure method in real use)
-    valid_users = {
-        "admin": "admin123",
-        "user": "user123"
-    }
-    return valid_users.get(username.strip().lower()) == password.strip()
+def authenticate_user(username, password, excel_path="users.xlsx"):
+    try:
+        if not os.path.exists(excel_path):
+            return False
+        
+        df = pd.read_excel(excel_path)
+        
+        # Normalize case and whitespace
+        username = username.strip().lower()
+        password = password.strip()
+        
+        df['username'] = df['username'].astype(str).str.strip().str.lower()
+        df['password'] = df['password'].astype(str).str.strip()
+        
+        user_row = df[(df['username'] == username) & (df['password'] == password)]
+        
+        return not user_row.empty
+
+    except Exception as e:
+        print(f"Authentication error: {e}")
+        return False
 
 # 2. 🧽 Clean Text
 def clean_text(text):
@@ -102,3 +116,4 @@ class AudioProcessor:
     def process(self, audio_chunk):
         # Placeholder for audio processing if needed with webrtc
         return audio_chunk
+
