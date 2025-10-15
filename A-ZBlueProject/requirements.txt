@@ -21,4 +21,5 @@ nltk
 ffmpeg-python
 pydub
 lxml
+openai
 
