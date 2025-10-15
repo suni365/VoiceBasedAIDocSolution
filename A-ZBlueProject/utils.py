@@ -1,4 +1,5 @@
 import base64
+import os
 import pandas as pd
 import fitz  # PyMuPDF
 import re
@@ -7,25 +8,33 @@ from PIL import Image
 import openai
 
 # 1. 🔐 User Authentication
+
 def authenticate_user(Username, Password, excel_path="users.xlsx"):
     try:
         if not os.path.exists(excel_path):
+            print("Excel file not found")
             return False
         
         df = pd.read_excel(excel_path)
-
-        # 🔧 Normalize column names
         df.columns = df.columns.str.strip().str.lower()
 
-        # Normalize case and whitespace in data
+        print("🧾 Columns:", df.columns.tolist())
+        print("📊 Data:\n", df)
+
         username = Username.strip().lower()
         password = Password.strip()
-        
+
+        print(f"👉 Input username: '{username}', password: '{password}'")
+
         df['username'] = df['username'].astype(str).str.strip().str.lower()
         df['password'] = df['password'].astype(str).str.strip()
-        
+
+        print("✅ Cleaned usernames:", df['username'].tolist())
+        print("✅ Cleaned passwords:", df['password'].tolist())
+
         user_row = df[(df['username'] == username) & (df['password'] == password)]
-        
+        print("🔍 Match found:", not user_row.empty)
+
         return not user_row.empty
 
     except Exception as e:
@@ -119,6 +128,7 @@ class AudioProcessor:
     def process(self, audio_chunk):
         # Placeholder for audio processing if needed with webrtc
         return audio_chunk
+
 
 
 
