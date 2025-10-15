@@ -13,8 +13,11 @@ def authenticate_user(Username, Password, excel_path="users.xlsx"):
             return False
         
         df = pd.read_excel(excel_path)
-        
-        # Normalize case and whitespace
+
+        # 🔧 Normalize column names
+        df.columns = df.columns.str.strip().str.lower()
+
+        # Normalize case and whitespace in data
         username = Username.strip().lower()
         password = Password.strip()
         
@@ -116,5 +119,6 @@ class AudioProcessor:
     def process(self, audio_chunk):
         # Placeholder for audio processing if needed with webrtc
         return audio_chunk
+
 
 
