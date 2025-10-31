@@ -242,16 +242,20 @@ def search_large_xml(xml_file, source_tag, source_value, target_path=None):
     root = tree.getroot()
     results = []
 
+    # Search for matching source tag and value
     for elem in root.iter(source_tag):
         if elem.text and elem.text.strip() == source_value.strip():
-            parent = elem.getparent()
+            # Find the top-level context (up to root)
+            parent = elem
+            while parent.getparent() is not None:
+                parent = parent.getparent()
 
-            # If a target path is provided, search inside parent
+            # If target_path is specified, search for it under the same root context
             if target_path:
                 for target_elem in parent.iter(target_path):
                     results.append(etree.tostring(target_elem, pretty_print=True, encoding='unicode'))
             else:
-                # Return the full parent block (with all children)
+                # Return the full XML section (entire tree for that match)
                 results.append(etree.tostring(parent, pretty_print=True, encoding='unicode'))
 
     return results
@@ -259,7 +263,7 @@ def search_large_xml(xml_file, source_tag, source_value, target_path=None):
 # --------------------------
 # 🧾 Streamlit UI Section
 # --------------------------
-st.subheader("🔍 Large XML Search")
+st.subheader("🔍 XML Search with Full Context")
 
 # Upload XML file
 xml_file = st.file_uploader("📂 Upload XML File", type=["xml"])
@@ -270,18 +274,18 @@ if xml_file:
     # Input fields
     source_tag = st.text_input("Enter source tag name (e.g., PolicyNumber):")
     source_value = st.text_input("Enter source tag value (e.g., H123456789):")
-    target_path = st.text_input("Enter target tag/path (optional, e.g., StartDate or Claims/ClaimID):")
+    target_path = st.text_input("Enter target tag/path (optional, e.g., ClaimID, StartDate):")
 
     if st.button("Search XML"):
         if source_tag and source_value:
             try:
-                # Read XML bytes and pass to search function
                 xml_bytes = xml_file.read()
                 results = search_large_xml(BytesIO(xml_bytes), source_tag, source_value, target_path)
 
                 if results:
                     st.success(f"✅ Found {len(results)} match(es):")
                     for idx, res in enumerate(results, start=1):
+                        st.markdown(f"**Result {idx}:**")
                         st.code(res, language="xml")
                 else:
                     st.warning("⚠️ No matching data found.")
