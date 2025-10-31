@@ -6,6 +6,7 @@ from lxml import etree
 from io import BytesIO
 from pydub import AudioSegment
 import speech_recognition as sr
+import xml.etree.ElementTree as ET
 from streamlit_webrtc import webrtc_streamer, WebRtcMode
 from utils import (
     authenticate_user, clean_text, handle_conversation, search_in_doc,
@@ -233,29 +234,33 @@ else:
                     st.warning("No matches found.")
 
     # --------------------------
-    # 🧾 XML File Search
-    # --------------------------
-    st.subheader("🔍 Large XML Search")
-    xml_file = st.file_uploader("Upload XML File", type=["xml"])
+  def search_large_xml(xml_file, source_tag, source_value, target_path=None):
+    tree = ET.parse(xml_file)
+    root = tree.getroot()
+    results = []
 
-    if xml_file:
-        source_tag = st.text_input("Enter source tag name (e.g., PolicyNumber):")
-        source_value = st.text_input("Enter source tag value (e.g., INDH0012345):")
-        target_path = st.text_input("Enter target tag/path (e.g., StartDate or Claims/ClaimID):")
+    for elem in root.iter(source_tag):
+        if elem.text and elem.text.strip() == source_value.strip():
+            # Get the parent element
+            parent = elem
+            while parent is not None and parent.tag != root.tag:
+                parent = parent.getparent() if hasattr(parent, 'getparent') else None
+                break  # ET doesn't support parent lookup directly
 
-        if st.button("Search XML"):
-            if source_tag and source_value and target_path:
-                try:
-                    xml_bytes = xml_file.read()
-                    results = search_large_xml(BytesIO(xml_bytes), source_tag, source_value, target_path)
+            # Fallback: manually find the parent by scanning
+            if parent is None:
+                for potential_parent in root.iter():
+                    for child in potential_parent:
+                        if child == elem:
+                            parent = potential_parent
+                            break
 
-                    if results:
-                        st.success(f"✅ Found {len(results)} matches for '{target_path}':")
-                        for res in results:
-                            st.text(res)
-                    else:
-                        st.warning("No matching data found.")
-                except Exception as e:
-                    st.error(f"Error during XML search: {e}")
+            # Now get the target info
+            if target_path:
+                for target_elem in parent.iter(target_path):
+                    results.append(ET.tostring(target_elem, encoding='unicode'))
             else:
-                st.error("Please fill all fields before searching.")
+                # Return entire parent section
+                results.append(ET.tostring(parent, encoding='unicode'))
+
+    return results
