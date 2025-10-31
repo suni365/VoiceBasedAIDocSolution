@@ -6,8 +6,15 @@ import re
 from io import BytesIO
 from PIL import Image
 import openai
-print("Working directory:", os.getcwd())
-print("File exists:", os.path.exists("users.xlsx"))
+import streamlit as st
+
+st.sidebar.subheader("🧩 Debug Info (Temporary)")
+
+working_dir = os.getcwd()
+file_exists = os.path.exists("users.xlsx")
+
+st.sidebar.text(f"Working directory:\n{working_dir}")
+st.sidebar.text(f"users.xlsx found: {file_exists}")
 # 1. 🔐 User Authentication
 def authenticate_user(username, password, excel_path="users.xlsx"):
     try:
@@ -138,6 +145,7 @@ class AudioProcessor:
     def process(self, audio_chunk):
         # Placeholder for audio processing if needed with webrtc
         return audio_chunk
+
 
 
 
