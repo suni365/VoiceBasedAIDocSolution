@@ -8,37 +8,46 @@ from PIL import Image
 import openai
 
 # 1. 🔐 User Authentication
-
-def authenticate_user(Username, Password, excel_path="users.xlsx"):
+def authenticate_user(username, password, excel_path="users.xlsx"):
     try:
+        # Check Excel file existence
         if not os.path.exists(excel_path):
-            print("Excel file not found")
+            print("❌ Excel file not found:", excel_path)
             return False
-        
-        df = pd.read_excel(excel_path)
-        df.columns = df.columns.str.strip().str.lower()
+
+        # Load Excel and clean headers
+        df = pd.read_excel(excel_path, dtype=str)
+        df.columns = df.columns.str.strip().str.lower()  # normalize headers
 
         print("🧾 Columns:", df.columns.tolist())
         print("📊 Data:\n", df)
 
-        username = Username.strip().lower()
-        password = Password.strip()
+        # Validate required columns
+        if "username" not in df.columns or "password" not in df.columns:
+            print("❌ Missing required columns: 'Username' and 'Password'")
+            return False
+
+        # Clean and normalize all data
+        df["username"] = df["username"].astype(str).str.strip().str.lower()
+        df["password"] = df["password"].astype(str).str.strip()
+
+        # Clean user input
+        username = str(username).strip().lower()
+        password = str(password).strip()
 
         print(f"👉 Input username: '{username}', password: '{password}'")
 
-        df['username'] = df['username'].astype(str).str.strip().str.lower()
-        df['password'] = df['password'].astype(str).str.strip()
+        # Match credentials
+        match = df[
+            (df["username"] == username) & (df["password"] == password)
+        ]
 
-        print("✅ Cleaned usernames:", df['username'].tolist())
-        print("✅ Cleaned passwords:", df['password'].tolist())
+        print("🔍 Match found:", not match.empty)
 
-        user_row = df[(df['username'] == username) & (df['password'] == password)]
-        print("🔍 Match found:", not user_row.empty)
-
-        return not user_row.empty
+        return not match.empty
 
     except Exception as e:
-        print(f"Authentication error: {e}")
+        print(f"⚠️ Authentication error: {e}")
         return False
 
 # 2. 🧽 Clean Text
@@ -128,6 +137,7 @@ class AudioProcessor:
     def process(self, audio_chunk):
         # Placeholder for audio processing if needed with webrtc
         return audio_chunk
+
 
 
 
