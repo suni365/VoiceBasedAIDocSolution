@@ -233,8 +233,7 @@ else:
                 else:
                     st.warning("No matches found.")
 
-    # --------------------------
-  def search_large_xml(xml_file, source_tag, source_value, target_path=None):
+def search_large_xml(xml_file, source_tag, source_value, target_path=None):
     tree = ET.parse(xml_file)
     root = tree.getroot()
     results = []
