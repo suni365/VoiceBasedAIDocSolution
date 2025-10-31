@@ -1,11 +1,12 @@
 import streamlit as st
+from lxml import etree
+from io import BytesIO
 import docx
 import os
 import time
-from lxml import etree
-from io import BytesIO
 from pydub import AudioSegment
 import speech_recognition as sr
+from io import BytesIO
 import xml.etree.ElementTree as ET
 from streamlit_webrtc import webrtc_streamer, WebRtcMode
 from utils import (
@@ -233,33 +234,60 @@ else:
                 else:
                     st.warning("No matches found.")
 
+# --------------------------
+# 🧾 Function to Search XML
+# --------------------------
 def search_large_xml(xml_file, source_tag, source_value, target_path=None):
-    tree = ET.parse(xml_file)
+    tree = etree.parse(xml_file)
     root = tree.getroot()
     results = []
 
     for elem in root.iter(source_tag):
         if elem.text and elem.text.strip() == source_value.strip():
-            # Get the parent element
-            parent = elem
-            while parent is not None and parent.tag != root.tag:
-                parent = parent.getparent() if hasattr(parent, 'getparent') else None
-                break  # ET doesn't support parent lookup directly
+            parent = elem.getparent()
 
-            # Fallback: manually find the parent by scanning
-            if parent is None:
-                for potential_parent in root.iter():
-                    for child in potential_parent:
-                        if child == elem:
-                            parent = potential_parent
-                            break
-
-            # Now get the target info
+            # If a target path is provided, search inside parent
             if target_path:
                 for target_elem in parent.iter(target_path):
-                    results.append(ET.tostring(target_elem, encoding='unicode'))
+                    results.append(etree.tostring(target_elem, pretty_print=True, encoding='unicode'))
             else:
-                # Return entire parent section
-                results.append(ET.tostring(parent, encoding='unicode'))
+                # Return the full parent block (with all children)
+                results.append(etree.tostring(parent, pretty_print=True, encoding='unicode'))
 
     return results
+
+# --------------------------
+# 🧾 Streamlit UI Section
+# --------------------------
+st.subheader("🔍 Large XML Search")
+
+# Upload XML file
+xml_file = st.file_uploader("📂 Upload XML File", type=["xml"])
+
+if xml_file:
+    st.success("✅ XML file uploaded successfully!")
+
+    # Input fields
+    source_tag = st.text_input("Enter source tag name (e.g., PolicyNumber):")
+    source_value = st.text_input("Enter source tag value (e.g., H123456789):")
+    target_path = st.text_input("Enter target tag/path (optional, e.g., StartDate or Claims/ClaimID):")
+
+    if st.button("Search XML"):
+        if source_tag and source_value:
+            try:
+                # Read XML bytes and pass to search function
+                xml_bytes = xml_file.read()
+                results = search_large_xml(BytesIO(xml_bytes), source_tag, source_value, target_path)
+
+                if results:
+                    st.success(f"✅ Found {len(results)} match(es):")
+                    for idx, res in enumerate(results, start=1):
+                        st.code(res, language="xml")
+                else:
+                    st.warning("⚠️ No matching data found.")
+            except Exception as e:
+                st.error(f"❌ Error during XML search: {e}")
+        else:
+            st.error("Please fill both Source Tag and Source Value before searching.")
+else:
+    st.info("📄 Please upload an XML file to start searching.")
