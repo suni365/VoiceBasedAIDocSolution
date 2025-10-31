@@ -295,3 +295,70 @@ if xml_file:
             st.error("Please fill both Source Tag and Source Value before searching.")
 else:
     st.info("📄 Please upload an XML file to start searching.")
+
+# --------------------------
+# 🧾 Function to Search XML
+# --------------------------
+def search_large_xml(xml_content, source_tag, source_value, target_path=None):
+    # Parse XML safely from bytes
+    parser = etree.XMLParser(remove_blank_text=True)
+    tree = etree.parse(BytesIO(xml_content), parser)
+    root = tree.getroot()
+    results = []
+
+    # Search for the element with the matching tag and value
+    for elem in root.iter(source_tag):
+        if elem.text and elem.text.strip() == source_value.strip():
+            # Get the top-level context (full document)
+            parent = elem
+            while parent.getparent() is not None:
+                parent = parent.getparent()
+
+            # If target_path provided, show only those children
+            if target_path:
+                for target_elem in parent.iter(target_path):
+                    results.append(etree.tostring(target_elem, pretty_print=True, encoding='unicode'))
+            else:
+                # Return the full XML section (entire document)
+                results.append(etree.tostring(parent, pretty_print=True, encoding='unicode'))
+
+    return results
+# --------------------------
+# 🧾 Streamlit UI Section
+# --------------------------
+st.subheader("🔍 XML Search with Full Context")
+
+# Upload XML file
+xml_file = st.file_uploader("📂 Upload XML File", type=["xml"])
+
+if xml_file:
+    st.success("✅ XML file uploaded successfully!")
+
+    # Read file only once here
+    xml_content = xml_file.getvalue()
+
+    # Input fields
+    source_tag = st.text_input("Enter source tag name (e.g., PolicyNumber):")
+    source_value = st.text_input("Enter source tag value (e.g., H123456789):")
+    target_path = st.text_input("Enter target tag/path (optional, e.g., ClaimID, StartDate):")
+
+    if st.button("Search XML"):
+        if source_tag and source_value:
+            try:
+                results = search_large_xml(xml_content, source_tag, source_value, target_path)
+
+                if results:
+                    st.success(f"✅ Found {len(results)} match(es):")
+                    for idx, res in enumerate(results, start=1):
+                        st.markdown(f"**Result {idx}:**")
+                        st.code(res, language="xml")
+                else:
+                    st.warning("⚠️ No matching data found.")
+            except etree.XMLSyntaxError as xe:
+                st.error(f"❌ XML Syntax Error: {xe}")
+            except Exception as e:
+                st.error(f"❌ Error during XML search: {e}")
+        else:
+            st.error("Please fill both Source Tag and Source Value before searching.")
+else:
+    st.info("📄 Please upload an XML file to start searching.")
