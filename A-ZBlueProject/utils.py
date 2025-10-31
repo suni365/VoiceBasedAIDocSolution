@@ -6,7 +6,8 @@ import re
 from io import BytesIO
 from PIL import Image
 import openai
-
+print("Working directory:", os.getcwd())
+print("File exists:", os.path.exists("users.xlsx"))
 # 1. 🔐 User Authentication
 def authenticate_user(username, password, excel_path="users.xlsx"):
     try:
@@ -137,6 +138,7 @@ class AudioProcessor:
     def process(self, audio_chunk):
         # Placeholder for audio processing if needed with webrtc
         return audio_chunk
+
 
 
 
