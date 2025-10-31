@@ -263,42 +263,6 @@ def search_large_xml(xml_file, source_tag, source_value, target_path=None):
 # --------------------------
 # 🧾 Streamlit UI Section
 # --------------------------
-st.subheader("🔍 XML Search with Full Context")
-
-# Upload XML file
-xml_file = st.file_uploader("📂 Upload XML File", type=["xml"])
-
-if xml_file:
-    st.success("✅ XML file uploaded successfully!")
-
-    # Input fields
-    source_tag = st.text_input("Enter source tag name (e.g., PolicyNumber):")
-    source_value = st.text_input("Enter source tag value (e.g., H123456789):")
-    target_path = st.text_input("Enter target tag/path (optional, e.g., ClaimID, StartDate):")
-
-    if st.button("Search XML"):
-        if source_tag and source_value:
-            try:
-                xml_bytes = xml_file.read()
-                results = search_large_xml(BytesIO(xml_bytes), source_tag, source_value, target_path)
-
-                if results:
-                    st.success(f"✅ Found {len(results)} match(es):")
-                    for idx, res in enumerate(results, start=1):
-                        st.markdown(f"**Result {idx}:**")
-                        st.code(res, language="xml")
-                else:
-                    st.warning("⚠️ No matching data found.")
-            except Exception as e:
-                st.error(f"❌ Error during XML search: {e}")
-        else:
-            st.error("Please fill both Source Tag and Source Value before searching.")
-else:
-    st.info("📄 Please upload an XML file to start searching.")
-
-# --------------------------
-# 🧾 Function to Search XML
-# --------------------------
 def search_large_xml(xml_content, source_tag, source_value, target_path=None):
     # Parse XML safely from bytes
     parser = etree.XMLParser(remove_blank_text=True)
@@ -323,6 +287,8 @@ def search_large_xml(xml_content, source_tag, source_value, target_path=None):
                 results.append(etree.tostring(parent, pretty_print=True, encoding='unicode'))
 
     return results
+
+
 # --------------------------
 # 🧾 Streamlit UI Section
 # --------------------------
@@ -362,3 +328,4 @@ if xml_file:
             st.error("Please fill both Source Tag and Source Value before searching.")
 else:
     st.info("📄 Please upload an XML file to start searching.")
+
