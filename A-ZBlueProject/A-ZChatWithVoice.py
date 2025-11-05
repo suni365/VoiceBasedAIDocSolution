@@ -189,12 +189,21 @@ else:
             doc_match = search_in_doc(doc_text, user_input)
             if doc_match:
                 response = doc_match
-        if not response:
-            search_results = search_web(user_input)
-            response = "\n\n".join(search_results) if search_results else "No relevant info found."
+        # if not response:
+        #     search_results = search_web(user_input)
+        #     response = "\n\n".join(search_results) if search_results else "No relevant info found."
 
-        st.markdown(f"<div style='background:#f2f2f2;padding:10px;border-left:5px solid green;'><b>🤖 Response:</b><br>{response}</div>", unsafe_allow_html=True)
+        # st.markdown(f"<div style='background:#f2f2f2;padding:10px;border-left:5px solid green;'><b>🤖 Response:</b><br>{response}</div>", unsafe_allow_html=True)
+    if not response or response.strip() == "":or response.strip() == "":
+        search_results = search_web(user_input)
+        response = "\n\n".join(search_results) if search_results else "No relevant info found."
 
+    # Display text response
+    st.markdown(f"""
+        <div style='background:#f2f2f2;padding:10px;border-left:5px solid green;'>
+        <b>🤖 Response:</b><br>{response}</div>
+    """, unsafe_allow_html=True)
+    
     st.video("A-ZBlueProject/fixed_talking_lady.mp4")
 
     # --------------------------
