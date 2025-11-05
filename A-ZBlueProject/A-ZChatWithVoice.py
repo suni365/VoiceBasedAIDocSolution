@@ -5,6 +5,8 @@ from io import BytesIO
 import docx
 import os
 import time
+import os
+os.system("apt-get install -y ffmpeg > /dev/null 2>&1")
 from pydub import AudioSegment
 import speech_recognition as sr
 from io import BytesIO
