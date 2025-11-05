@@ -8,6 +8,8 @@ import time
 from pydub import AudioSegment
 import speech_recognition as sr
 from io import BytesIO
+import os
+os.system("apt-get install -y ffmpeg > /dev/null 2>&1")
 import xml.etree.ElementTree as ET
 from streamlit_webrtc import webrtc_streamer, WebRtcMode
 from utils import (
