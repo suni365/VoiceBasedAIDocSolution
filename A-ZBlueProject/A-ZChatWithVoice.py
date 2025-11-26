@@ -54,7 +54,7 @@ elif ext.endswith(".xml"):
     text = read_xml(file)
 else:
     st.warning(f"Unsupported file type: {file.name}")
-continue
+    continue
 
 
 # Chunking
