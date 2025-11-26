@@ -1,208 +1,218 @@
-import base64
+# utils.py
 import os
-import pandas as pd
-import fitz  # PyMuPDF
 import re
-from io import BytesIO
-from PIL import Image
-import openai
-import streamlit as st
-from sentence_transformers import SentenceTransformer
+import base64
 import numpy as np
+from io import BytesIO
 
-# Load CPU model once
-embedding_model = SentenceTransformer("all-MiniLM-L6-v2", device="cpu")
+# --------------------------
+# Authentication
+# --------------------------
+def authenticate_user(username, password):
+    """Simple authentication (replace with your real logic)."""
+    # Example: hardcoded user
+    valid_users = {"sunita": "password123"}
+    return valid_users.get(username) == password
 
-# 12.1 Convert uploaded documents into embeddings
-def embed_documents(documents):
-    """
-    documents: List of text chunks
-    returns: NumPy array of embeddings
-    """
-    clean_docs = [clean_text(d) for d in documents]
-    embeddings = embedding_model.encode(clean_docs, convert_to_numpy=True)
-    return embeddings
-
-
-# 12.2 Semantic search using cosine similarity (no FAISS)
-def semantic_search(query, documents, embeddings, top_k=5):
-    """
-    query: user question
-    documents: original list of text chunks
-    embeddings: NumPy array of document embeddings
-    """
-    query_emb = embedding_model.encode([query], convert_to_numpy=True)[0]
-
-    # Compute cosine similarity
-    dot_products = np.dot(embeddings, query_emb)
-    norms = (np.linalg.norm(embeddings, axis=1) * np.linalg.norm(query_emb))
-    cosine_scores = dot_products / norms
-
-    # Get top-k documents
-    top_indices = np.argsort(cosine_scores)[::-1][:top_k]
-
-    results = []
-    for idx in top_indices:
-        results.append({
-            "text": documents[idx],
-            "score": float(cosine_scores[idx])
-        })
-    return results
-
-
-# 12.3 RAG answer generator (without LLM, rule-based fallback)
-def generate_rag_answer(question, documents, embeddings):
-    """
-    Returns best matching text from documents based on semantic similarity.
-    """
-    hits = semantic_search(question, documents, embeddings, top_k=3)
-
-    if len(hits) == 0:
-        return "No relevant content found."
-
-    answer = "Here is what I found:\n\n"
-    for hit in hits:
-        answer += f"- {hit['text']} (score: {hit['score']:.3f})\n\n"
-
-    return answer
-
-# 1. 🔐 User Authentication
-def authenticate_user(username, password, excel_path="A-ZBlueProject/users.xlsx"):
-    try:
-        # Check Excel file existence
-        if not os.path.exists(excel_path):
-            print("❌ Excel file not found:", excel_path)
-            return False
-
-        # Load Excel and clean headers
-        df = pd.read_excel(excel_path, dtype=str)
-        df.columns = df.columns.str.strip().str.lower()  # normalize headers
-
-        print("🧾 Columns:", df.columns.tolist())
-        print("📊 Data:\n", df)
-
-        # Validate required columns
-        if "username" not in df.columns or "password" not in df.columns:
-            print("❌ Missing required columns: 'Username' and 'Password'")
-            return False
-
-        # Clean and normalize all data
-        df["username"] = df["username"].astype(str).str.strip().str.lower()
-        df["password"] = df["password"].astype(str).str.strip()
-
-        # Clean user input
-        username = str(username).strip().lower()
-        password = str(password).strip()
-
-        print(f"👉 Input username: '{username}', password: '{password}'")
-
-        # Match credentials
-        match = df[
-            (df["username"] == username) & (df["password"] == password)
-        ]
-
-        print("🔍 Match found:", not match.empty)
-
-        return not match.empty
-
-    except Exception as e:
-        print(f"⚠️ Authentication error: {e}")
-        return False
-
-# 2. 🧽 Clean Text
+# --------------------------
+# Text cleaning
+# --------------------------
 def clean_text(text):
-    return re.sub(r'\s+', ' ', text.strip())
+    """Lowercase, strip, remove unwanted chars."""
+    text = text.lower().strip()
+    text = re.sub(r'\s+', ' ', text)
+    return text
 
-# 3. 💬 Handle Conversation
-def handle_conversation(prompt):
-    # Basic rule-based response
-    if "hello" in prompt.lower():
-        return "Hi there! How can I help you today?"
-    elif "help" in prompt.lower():
-        return "Sure, tell me what you need help with."
-    else:
-        return "I'm here to assist with document search and analysis."
-
-# 4. 📄 Search in Word Document
+# --------------------------
+# Keyword-based document search
+# --------------------------
 def search_in_doc(doc_text, keyword):
-    keyword = keyword.lower()
-    matches = [line for line in doc_text.split("\n") if keyword in line.lower()]
-    return "\n".join(matches) if matches else None
+    """Return sentences containing keyword."""
+    keyword_lower = keyword.lower()
+    sentences = re.split(r'(?<=[.!?]) +', doc_text)
+    results = [s for s in sentences if keyword_lower in s.lower()]
+    if results:
+        return "\n".join(results)
+    return None
 
-# 5. 🌐 Simulated Web Search (Placeholder)
+# --------------------------
+# Web search fallback
+# --------------------------
 def search_web(query):
-    return [
-        f"Result 1 for '{query}'",
-        f"Result 2 for '{query}'",
-        f"Result 3 for '{query}'"
-    ]
+    """Fallback web search (mock or simple)"""
+    # In production, use DuckDuckGo API / Bing / Google Custom Search
+    # For now, return example results
+    return [f"Result 1 for '{query}'", f"Result 2 for '{query}'", f"Result 3 for '{query}'"]
 
-# 6. 💾 Save Text Response (if needed)
-def save_text_response(text, filename="response.txt"):
-    with open(filename, "w", encoding="utf-8") as f:
+# --------------------------
+# Save text responses (optional)
+# --------------------------
+def save_text_response(filename, text):
+    with open(filename, 'w', encoding='utf-8') as f:
         f.write(text)
 
-# 7. 🔊 Speak Function (not implemented)
-def speak(text):
-    # Placeholder: could integrate TTS here
-    print("Speaking:", text)
-
-# 8. 📊 Search Excel File
-def search_excel(file, keyword):
+# --------------------------
+# Speak / Audio (GTTS optional)
+# --------------------------
+def speak(text, filename="response.mp3"):
     try:
-        xl = pd.ExcelFile(file)
-        results = []
-        for sheet in xl.sheet_names:
-            df = xl.parse(sheet)
-            mask = df.apply(lambda row: row.astype(str).str.contains(keyword, case=False, na=False).any(), axis=1)
-            filtered_df = df[mask]
-            if not filtered_df.empty:
-                filtered_df["Sheet"] = sheet
-                results.append(filtered_df)
-        if results:
-            return pd.concat(results, ignore_index=True)
-        else:
-            return pd.DataFrame()
-    except Exception as e:
-        return f"Error reading Excel: {e}"
+        from gtts import gTTS
+        tts = gTTS(text)
+        tts.save(filename)
+        return filename
+    except Exception:
+        return None
 
-# 9. 📄 Search PDF File
+# --------------------------
+# Excel search
+# --------------------------
+def search_excel(excel_file, keyword):
+    try:
+        import pandas as pd
+        xls = pd.ExcelFile(excel_file)
+        all_matches = []
+        for sheet in xls.sheet_names:
+            df = xls.parse(sheet)
+            df_str = df.astype(str)
+            mask = df_str.apply(lambda row: row.str.contains(keyword, case=False, na=False)).any(axis=1)
+            matches = df[mask]
+            if not matches.empty:
+                all_matches.append(matches)
+        if all_matches:
+            return pd.concat(all_matches)
+        return pd.DataFrame()
+    except Exception as e:
+        return str(e)
+
+# --------------------------
+# PDF search
+# --------------------------
 def search_pdf(pdf_file, keyword):
-    results = []
     try:
-        doc = fitz.open(stream=pdf_file.read(), filetype="pdf")
-        for page_num, page in enumerate(doc, start=1):
-            text = page.get_text()
-            matches = [line.strip() for line in text.split("\n") if keyword.lower() in line.lower()]
-            for match in matches:
-                results.append((page_num, match))
+        import PyPDF2
+        reader = PyPDF2.PdfReader(pdf_file)
+        results = []
+        for i, page in enumerate(reader.pages):
+            text = page.extract_text()
+            if text and keyword.lower() in text.lower():
+                # get first matching line
+                lines = text.splitlines()
+                for line in lines:
+                    if keyword.lower() in line.lower():
+                        results.append((i+1, line.strip()))
+        return results
     except Exception as e:
-        return [f"Error reading PDF: {e}"]
-    return results
+        return []
 
-# 10. 🖼️ Get Base64 Encoded Image (for embedding)
-def get_base64_image(image_path):
-    try:
-        with open(image_path, "rb") as img_file:
-            return base64.b64encode(img_file.read()).decode("utf-8")
-    except Exception as e:
+# --------------------------
+# Base64 image helper
+# --------------------------
+def get_base64_image(img_path):
+    if not os.path.exists(img_path):
         return ""
+    with open(img_path, "rb") as f:
+        encoded = base64.b64encode(f.read()).decode()
+    return encoded
 
-# 11. 🎙️ AudioProcessor Class (Optional)
+# --------------------------
+# AudioProcessor placeholder
+# --------------------------
 class AudioProcessor:
-    def __init__(self):
-        pass
+    """Placeholder for voice processing if needed."""
+    @staticmethod
+    def process(file):
+        return "Processed text from audio"
 
-    def process(self, audio_chunk):
-        # Placeholder for audio processing if needed with webrtc
-        return audio_chunk
+# --------------------------
+# RAG helpers (OpenAI)
+# --------------------------
+def embed_texts_openai(texts, model="text-embedding-3-small"):
+    """Return numpy embeddings using OpenAI."""
+    try:
+        import openai
+        OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+        if not OPENAI_API_KEY:
+            raise RuntimeError("OPENAI_API_KEY not set")
+        openai.api_key = OPENAI_API_KEY
+        embs = []
+        batch_size = 100
+        for i in range(0, len(texts), batch_size):
+            batch = texts[i:i+batch_size]
+            resp = openai.Embeddings.create(model=model, input=batch)
+            for d in resp["data"]:
+                embs.append(np.array(d["embedding"], dtype=np.float32))
+        return np.vstack(embs)
+    except Exception as e:
+        raise RuntimeError(f"OpenAI embedding failed: {e}")
 
+def normalize(v):
+    norms = np.linalg.norm(v, axis=1, keepdims=True) + 1e-12
+    return v / norms
 
+def cosine_search(query_emb, corpus_emb, top_k=4):
+    sims = np.dot(corpus_emb, query_emb.T).squeeze()
+    top_idx = np.argsort(-sims)[:top_k]
+    top_scores = sims[top_idx]
+    return top_idx, top_scores
 
+# --------------------------
+# Audio / Voice file processor
+# --------------------------
+def process_uploaded_voice(voice_file):
+    try:
+        from pydub import AudioSegment
+        import speech_recognition as sr
+        import tempfile
 
+        suffix = os.path.splitext(voice_file.name)[1].lower()
+        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp_file:
+            tmp_file.write(voice_file.read())
+            tmp_path = tmp_file.name
 
+        if suffix == ".m4a":
+            wav_path = tmp_path.replace(".m4a", ".wav")
+            AudioSegment.from_file(tmp_path, format="m4a").export(wav_path, format="wav")
+        else:
+            wav_path = tmp_path
 
+        recognizer = sr.Recognizer()
+        with sr.AudioFile(wav_path) as source:
+            audio = recognizer.record(source)
+            text = recognizer.recognize_google(audio)
 
+        return text
+    except Exception as e:
+        return f"Error processing voice: {e}"
+    finally:
+        if os.path.exists(tmp_path):
+            os.remove(tmp_path)
+        if wav_path != tmp_path and os.path.exists(wav_path):
+            os.remove(wav_path)
 
+# --------------------------
+# XML helpers
+# --------------------------
+def strip_namespace(tag):
+    return tag.split('}', 1)[1] if '}' in tag else tag
 
+def search_large_xml_bytes(xml_content, source_tag, source_value, target_path=None):
+    try:
+        from lxml import etree
+        parser = etree.XMLParser(remove_blank_text=True)
+        tree = etree.parse(BytesIO(xml_content), parser)
+        root = tree.getroot()
+        results = []
 
+        for elem in root.iter(source_tag):
+            if elem.text and elem.text.strip() == source_value.strip():
+                parent = elem
+                while parent.getparent() is not None:
+                    parent = parent.getparent()
+                if target_path:
+                    for t in parent.iter(target_path):
+                        results.append(etree.tostring(t, pretty_print=True, encoding='unicode'))
+                else:
+                    results.append(etree.tostring(parent, pretty_print=True, encoding='unicode'))
+        return results
+    except Exception:
+        return []
