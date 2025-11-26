@@ -1,11 +1,7 @@
-streamlit
-PyPDF2
-python-docx
 speechrecognition
 gtts
 ffmpeg-python
 PyMuPDF
-pandas
 openpyxl
 xlrd
 requests
@@ -22,11 +18,22 @@ ffmpeg-python
 pydub
 lxml
 openai
-sentence-transformers
-faiss-cpu
 
-torch==2.2.0+cpu -f https://download.pytorch.org/whl/cpu/torch_stable.html
+torch==2.2.0+cpu
+torchvision==0.17.0+cpu
+torchaudio==2.2.0+cpu
+
+# Sentence transformers
 sentence-transformers==2.2.2
+
+# Document handling
+PyPDF2==3.0.1
+python-docx==0.8.12
+pandas==2.1.1
+faiss-cpu==1.7.4
+streamlit==1.26.0
+sentence-transformers==2.2.2
+
 
 
 
