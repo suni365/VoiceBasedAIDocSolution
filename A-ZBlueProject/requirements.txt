@@ -22,4 +22,11 @@ ffmpeg-python
 pydub
 lxml
 openai
+sentence-transformers
+faiss-cpu
+
+
+
+
+
 
