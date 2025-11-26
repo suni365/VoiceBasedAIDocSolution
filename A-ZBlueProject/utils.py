@@ -7,6 +7,65 @@ from io import BytesIO
 from PIL import Image
 import openai
 import streamlit as st
+from sentence_transformers import SentenceTransformer
+import numpy as np
+
+# Load CPU model once
+embedding_model = SentenceTransformer("all-MiniLM-L6-v2", device="cpu")
+
+# 12.1 Convert uploaded documents into embeddings
+def embed_documents(documents):
+    """
+    documents: List of text chunks
+    returns: NumPy array of embeddings
+    """
+    clean_docs = [clean_text(d) for d in documents]
+    embeddings = embedding_model.encode(clean_docs, convert_to_numpy=True)
+    return embeddings
+
+
+# 12.2 Semantic search using cosine similarity (no FAISS)
+def semantic_search(query, documents, embeddings, top_k=5):
+    """
+    query: user question
+    documents: original list of text chunks
+    embeddings: NumPy array of document embeddings
+    """
+    query_emb = embedding_model.encode([query], convert_to_numpy=True)[0]
+
+    # Compute cosine similarity
+    dot_products = np.dot(embeddings, query_emb)
+    norms = (np.linalg.norm(embeddings, axis=1) * np.linalg.norm(query_emb))
+    cosine_scores = dot_products / norms
+
+    # Get top-k documents
+    top_indices = np.argsort(cosine_scores)[::-1][:top_k]
+
+    results = []
+    for idx in top_indices:
+        results.append({
+            "text": documents[idx],
+            "score": float(cosine_scores[idx])
+        })
+    return results
+
+
+# 12.3 RAG answer generator (without LLM, rule-based fallback)
+def generate_rag_answer(question, documents, embeddings):
+    """
+    Returns best matching text from documents based on semantic similarity.
+    """
+    hits = semantic_search(question, documents, embeddings, top_k=3)
+
+    if len(hits) == 0:
+        return "No relevant content found."
+
+    answer = "Here is what I found:\n\n"
+    for hit in hits:
+        answer += f"- {hit['text']} (score: {hit['score']:.3f})\n\n"
+
+    return answer
+
 # 1. 🔐 User Authentication
 def authenticate_user(username, password, excel_path="A-ZBlueProject/users.xlsx"):
     try:
@@ -137,6 +196,7 @@ class AudioProcessor:
     def process(self, audio_chunk):
         # Placeholder for audio processing if needed with webrtc
         return audio_chunk
+
 
 
 
