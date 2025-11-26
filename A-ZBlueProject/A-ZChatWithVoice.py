@@ -8,8 +8,11 @@ import xml.etree.ElementTree as ET
 # import speech_recognition as sr
 
 from sentence_transformers import SentenceTransformer
+model = SentenceTransformer('all-MiniLM-L6-v2', device='cpu')
 import faiss
 import numpy as np
+
+
 
 # ==========================
 # UTILITY FUNCTIONS
