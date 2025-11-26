@@ -1,12 +1,14 @@
 # A-ZChatWithVoice.py
-# RAG-enabled, audio/video commented out, using OpenAI embeddings + Chat for generation
+# RAG-enabled (OpenAI embeddings + Chat), audio/video commented out
 import os
-import time
 from io import BytesIO
 import streamlit as st
 from lxml import etree
 import docx
 import xml.etree.ElementTree as ET
+import numpy as np
+import openai
+import time
 
 # keep utils imports (they provide auth, helpers, legacy search)
 from utils import (
@@ -24,12 +26,9 @@ from utils import (
 # from streamlit_webrtc import webrtc_streamer, WebRtcMode
 
 # --------------------------
-# OpenAI client (embeddings + chat)
+# OpenAI key (robust)
 # --------------------------
-import openai
-import numpy as np
-
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY") or st.secrets.get("OPENAI_API_KEY", None) if "OPENAI_API_KEY" in st.secrets else None
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY") or (st.secrets["OPENAI_API_KEY"] if "OPENAI_API_KEY" in st.secrets else None)
 if OPENAI_API_KEY:
     openai.api_key = OPENAI_API_KEY
 
@@ -38,17 +37,20 @@ if OPENAI_API_KEY:
 # --------------------------
 def chunk_text(text, chunk_size=400, overlap=50):
     """Chunk by words with overlap. Returns list of strings."""
+    if not text:
+        return []
     words = text.split()
+    if len(words) == 0:
+        return []
     chunks = []
     i = 0
     while i < len(words):
         chunk = words[i:i + chunk_size]
         chunks.append(" ".join(chunk))
-        i += chunk_size - overlap
+        i += max(1, chunk_size - overlap)
     return chunks
 
 def extract_text_from_docx_bytes(b):
-    tmp_path = None
     try:
         from tempfile import NamedTemporaryFile
         tmp = NamedTemporaryFile(delete=False, suffix=".docx")
@@ -75,7 +77,6 @@ def extract_text_from_pdf_bytes(b):
                 pages.append(text)
         return "\n".join(pages)
     except Exception:
-        # fallback empty
         return ""
 
 def extract_text_from_excel_bytes(b):
@@ -122,9 +123,10 @@ def embed_texts_openai(texts, model="text-embedding-3-small"):
     """
     if not OPENAI_API_KEY:
         raise RuntimeError("OPENAI_API_KEY not set")
-    # OpenAI supports up to some batch size; we'll batch in 100
+    if not texts:
+        return np.zeros((0, 1536), dtype=np.float32)  # placeholder shape if needed
     embs = []
-    batch_size = 100
+    batch_size = 50  # smaller batches to be safe
     for i in range(0, len(texts), batch_size):
         batch = texts[i:i+batch_size]
         resp = openai.Embeddings.create(model=model, input=batch)
@@ -133,16 +135,25 @@ def embed_texts_openai(texts, model="text-embedding-3-small"):
     return np.vstack(embs)
 
 def normalize(v):
+    if v is None or len(v) == 0:
+        return v
     norms = np.linalg.norm(v, axis=1, keepdims=True) + 1e-12
     return v / norms
 
 def cosine_search(query_emb, corpus_emb, top_k=4):
-    """Return indices of top_k closest (cosine)"""
-    # assume normalized
-    sims = np.dot(corpus_emb, query_emb.T).squeeze()
-    top_idx = np.argsort(-sims)[:top_k]
-    top_scores = sims[top_idx]
-    return top_idx, top_scores
+    """Return indices of top_k closest (cosine) and scores"""
+    if corpus_emb is None or corpus_emb.size == 0:
+        return np.array([], dtype=int), np.array([], dtype=float)
+    # If query_emb is shape (dim,) convert to (1,dim)
+    q = np.asarray(query_emb)
+    if q.ndim == 1:
+        q = q.reshape(1, -1)
+    # assume both are normalized
+    sims = np.dot(corpus_emb, q.T).squeeze()
+    if sims.ndim == 0:
+        sims = np.array([sims])
+    order = np.argsort(-sims)[:top_k]
+    return order, sims[order]
 
 # --------------------------
 # Streamlit UI config
@@ -283,11 +294,9 @@ else:
                     st.success(f"Indexed {len(new_chunks)} new chunks.")
                 except Exception as e:
                     st.error(f"Embedding creation failed: {e}\nFalling back to keyword-only indexing.")
-                    # fallback: store chunks only for keyword fallback
                     st.session_state["rag_chunks"].extend(new_chunks)
                     st.session_state["rag_sources"].extend(new_sources)
             else:
-                # No OpenAI key: store chunks only and use keyword fallback later
                 st.session_state["rag_chunks"].extend(new_chunks)
                 st.session_state["rag_sources"].extend(new_sources)
                 st.success(f"Stored {len(new_chunks)} chunks (keyword fallback mode).")
@@ -299,55 +308,58 @@ else:
     #     st.write("Processing voice...")
     #     user_input = process_uploaded_voice(voice_file)
     #     st.write(f"**You said:** {user_input}")
-    #
-    # Note: process_uploaded_voice uses SpeechRecognition/pydub which are intentionally disabled
 
     # --------------------------
     # Handle user query
     # --------------------------
     response = None
     if user_input and user_input.strip():
-        if OPENAI_API_KEY and st.session_state["rag_embeddings"] is not None and len(st.session_state["rag_chunks"])>0:
+        # RAG path using OpenAI embeddings + chat
+        if OPENAI_API_KEY and st.session_state.get("rag_embeddings") is not None and len(st.session_state.get("rag_chunks", [])) > 0:
             try:
-                # embed query
                 q_emb = embed_texts_openai([user_input], model=embed_model_name)
-                q_emb = normalize(q_emb)  # shape (1, dim)
-                # similarity search
+                q_emb = normalize(q_emb)
                 idxs, scores = cosine_search(q_emb.squeeze(), st.session_state["rag_embeddings"], top_k=top_k)
-                # check top score threshold to avoid answering when no good match
-                if scores.size>0 and scores[0] < 0.15:
-                    response = "I could not find relevant information in the uploaded documents for that question."
+                if idxs.size == 0:
+                    response = "No indexed passages to search."
                 else:
-                    # prepare context (top passages)
-                    context_passages = []
-                    for i, idx in enumerate(idxs):
-                        # idx might be numpy int
-                        idx = int(idx)
-                        context_passages.append(f"Source: {st.session_state['rag_sources'][idx]}\n{st.session_state['rag_chunks'][idx]}")
-                    # call OpenAI ChatCompletion to synthesize answer constrained to context
-                    sys_prompt = ("You are a helpful assistant. Answer the user's question using ONLY the provided context passages. "
-                                  "Do not use any outside knowledge or hallucinate. If the answer is not in the context, say you couldn't find it.")
-                    user_prompt = f"Context:\n\n{'\n\n'.join(context_passages)}\n\nQuestion: {user_input}\n\nProvide a concise answer and mention which source(s) you used."
-                    # Use ChatCompletion
-                    chat_resp = openai.ChatCompletion.create(
-                        model="gpt-4o-mini",
-                        messages=[
-                            {"role":"system","content":sys_prompt},
-                            {"role":"user","content":user_prompt}
-                        ],
-                        temperature=0.0,
-                        max_tokens=400
-                    )
-                    response = chat_resp['choices'][0]['message']['content'].strip()
+                    # if best score below threshold => not relevant
+                    best_score = float(scores[0]) if scores.size>0 else 0.0
+                    if best_score < 0.12:
+                        # threshold can be tuned
+                        response = "I could not find relevant information in the uploaded documents for that question."
+                    else:
+                        context_passages = []
+                        for idx in idxs:
+                            idx = int(idx)
+                            context_passages.append(f"Source: {st.session_state['rag_sources'][idx]}\n{st.session_state['rag_chunks'][idx]}")
+
+                        sys_prompt = ("You are a helpful assistant. Answer the user's question using ONLY the provided context passages. "
+                                      "Do not use any outside knowledge or hallucinate. If the answer is not in the context, say you couldn't find it.")
+                        user_prompt = f"Context:\n\n{'\n\n'.join(context_passages)}\n\nQuestion: {user_input}\n\nProvide a concise answer and mention which source(s) you used."
+
+                        try:
+                            chat_resp = openai.ChatCompletion.create(
+                                model="gpt-4o-mini",
+                                messages=[
+                                    {"role":"system","content":sys_prompt},
+                                    {"role":"user","content":user_prompt}
+                                ],
+                                temperature=0.0,
+                                max_tokens=400
+                            )
+                            response = chat_resp['choices'][0]['message']['content'].strip()
+                        except Exception as e:
+                            st.error(f"OpenAI ChatCompletion failed: {e}. Falling back to returning top passages.")
+                            # fallback: return top passages
+                            response = "\n\n".join(context_passages)
             except Exception as e:
                 st.error(f"RAG generation error: {e}\nFalling back to keyword search.")
                 response = None
 
-        if (not response or response.strip()==""):
-            # fallback: use existing search_in_doc (keyword-based) if doc_text available
-            # we will attempt to search across stored chunks
-            if st.session_state["rag_chunks"]:
-                # simple keyword match in stored chunks
+        # fallback keyword search (simple substring) or web search
+        if (not response or response.strip() == ""):
+            if st.session_state.get("rag_chunks"):
                 q_lower = user_input.lower()
                 matches = []
                 for i, chunk in enumerate(st.session_state["rag_chunks"]):
@@ -356,11 +368,9 @@ else:
                 if matches:
                     response = "\n\n".join(matches[:10])
                 else:
-                    # if utils.search_web exists, call it (you had it earlier)
                     web = search_web(user_input)
                     response = "\n\n".join(web) if web else "No relevant info found in documents."
             else:
-                # no indexed chunks at all
                 response = "No documents indexed. Upload documents first or ask a keyword that may match."
 
     # --------------------------
