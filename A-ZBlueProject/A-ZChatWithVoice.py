@@ -67,10 +67,7 @@ for chunk in text.split(". "):
 if all_text_chunks:
     build_rag_index(all_text_chunks)
     st.success("RAG index built successfully! You can now ask natural-language questions.")
-
-
-   question = st.text_input("Ask anything based on uploaded documents:")
-
+    question = st.text_input("Ask anything based on uploaded documents:")
 
 if question:
     response = rag_query(question)
