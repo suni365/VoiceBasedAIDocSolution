@@ -25,7 +25,8 @@ openai
 sentence-transformers
 faiss-cpu
 
-
+torch==2.2.0+cpu -f https://download.pytorch.org/whl/cpu/torch_stable.html
+sentence-transformers==2.2.2
 
 
 
