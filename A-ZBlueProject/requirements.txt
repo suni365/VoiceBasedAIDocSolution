@@ -2,6 +2,7 @@ streamlit
 streamlit-webrtc
 opencv-python
 pydub
+SpeechRecognition
 google-cloud-speech
 gtts
 python-docx
@@ -11,3 +12,4 @@ openpyxl
 lxml
 requests
 numpy
+
