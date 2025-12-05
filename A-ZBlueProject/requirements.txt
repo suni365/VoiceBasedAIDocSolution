@@ -12,4 +12,8 @@ openpyxl
 lxml
 requests
 numpy
+sentence-transformers
+torch
+transformers
+
 
