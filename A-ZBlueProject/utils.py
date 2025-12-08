@@ -208,7 +208,7 @@ def process_uploaded_voice(voice_file):
         return f"Error processing voice: {e}"
 
     finally:
-        if os.path.exists(tmp_path):
+        if 'tmp_path' in locals() and os.path.exists(tmp_path):
             os.remove(tmp_path)
         if 'wav_path' in locals() and wav_path != tmp_path and os.path.exists(wav_path):
             os.remove(wav_path)
@@ -245,4 +245,3 @@ def search_large_xml_bytes(xml_content, source_tag, source_value, target_path=No
 
     except Exception:
         return []
-
