@@ -15,5 +15,7 @@ numpy
 sentence-transformers
 torch
 transformers
+google-genai
+
 
 
