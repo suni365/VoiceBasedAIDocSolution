@@ -4,40 +4,43 @@ import base64
 import numpy as np
 from io import BytesIO
 
-
 # --------------------------
 # 🧠 LLM/Chatbot Interaction
 # --------------------------
-def handle_conversation(prompt):
+def handle_conversation(prompt, context=None): # <--- CHANGE 1: Add a context parameter
     """
     Interacts with the Gemini model to generate a conversational or synthetic response.
-    
-    The API key must be set as an environment variable (GEMINI_API_KEY).
-    
-    Args:
-        prompt (str): The user's query.
-
-    Returns:
-        str: The generated response from the LLM.
+    If context is provided (from RAG), it uses the context to answer the prompt naturally.
     """
     try:
         from google import genai
         
-        # 1. Initialize the client (API Key read automatically from environment)
         client = genai.Client()
         
         # 2. Define the system instruction/context for the LLM
+        # <--- CHANGE 2: Tweak the instruction for RAG-specific behavior
         system_instruction = (
             "You are an expert document analysis assistant and chatbot. "
-            "If the user's prompt is a statement or conversational, respond naturally. "
-            "If the prompt looks like a query seeking information from a document, "
-            "politely state that you need external document context to provide a complete answer."
+            "Your task is to answer the user's question using ONLY the provided document CONTEXT. "
+            "If the context is provided, you must synthesize and rephrase the information "
+            "into a smooth, natural, and direct answer. Do not just copy the source text. "
+            "If the context does not contain the answer, state politely that the information is not found in the documents. "
+            "If no context is provided, respond conversationally as a general chatbot."
         )
+
+        # <--- CHANGE 3: Combine prompt and context for the LLM input
+        full_prompt = prompt
+        if context:
+            full_prompt = (
+                f"CONTEXT:\n---\n{context}\n---\n\n"
+                f"USER QUESTION: {prompt}\n\n"
+                f"Please generate a natural language response based on the CONTEXT that directly answers the USER QUESTION."
+            )
 
         # 3. Generate the response
         response = client.models.generate_content(
             model='gemini-2.5-flash',
-            contents=prompt,
+            contents=full_prompt, # <--- Sending the combined prompt now
             config={
                 'system_instruction': system_instruction
             }
@@ -46,16 +49,9 @@ def handle_conversation(prompt):
         return response.text
 
     except ImportError:
-        # Fallback if the library is not installed
         return f"Error: The 'google-genai' library is required for the LLM function. Please install it."
     except Exception as e:
-        # Catch network errors, API key issues, etc.
-        return f"LLM Connection Error: Could not generate response. Please check the GEMINI_API_KEY environment variable. Details: {e}"
-
-# Add a placeholder for your utility to use the LLM if search_web is unavailable
-# You may need to import os at the top of utils.py if you haven't already
-# The handle_conversation function above is designed to be self-contained for utility purposes.
-
+        return f"LLM Connection Error: Could not generate response. Details: {e}"
 
 # --------------------------
 # 🔐 Authentication
@@ -298,4 +294,5 @@ def search_large_xml_bytes(xml_content, source_tag, source_value, target_path=No
 
     except Exception:
         return []
+
 
