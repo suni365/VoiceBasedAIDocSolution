@@ -328,8 +328,14 @@ if st.session_state.get("authenticated", False):
                 st.write(hit["chunk"])
                 st.markdown("---")
             # Optionally call your handle_conversation or just return the top chunk as answer
-            top_chunks_text = "\n\n".join(h["chunk"] for h in rag_results_combined[:3])
-            final_answer = top_chunks_text
+            # top_chunks_text = "\n\n".join(h["chunk"] for h in rag_results_combined[:3])
+            # final_answer = top_chunks_text
+              top_chunks_context = "\n\n".join(h["chunk"] for h in rag_results_combined[:3])
+            
+            # --- CALL THE LLM FOR SYNTHESIS ---
+            with st.spinner("Synthesizing answer from documents..."):
+                # Call handle_conversation with the question and the retrieved context
+                final_answer = handle_conversation(question, context=top_chunks_context)
         else:
             # 3) Fallback to your existing keyword-based doc search across combined document text
             st.info("No strong RAG match — falling back to keyword search + LLM response.")
