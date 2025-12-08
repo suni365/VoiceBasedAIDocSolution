@@ -4,6 +4,59 @@ import base64
 import numpy as np
 from io import BytesIO
 
+
+# --------------------------
+# 🧠 LLM/Chatbot Interaction
+# --------------------------
+def handle_conversation(prompt):
+    """
+    Interacts with the Gemini model to generate a conversational or synthetic response.
+    
+    The API key must be set as an environment variable (GEMINI_API_KEY).
+    
+    Args:
+        prompt (str): The user's query.
+
+    Returns:
+        str: The generated response from the LLM.
+    """
+    try:
+        from google import genai
+        
+        # 1. Initialize the client (API Key read automatically from environment)
+        client = genai.Client()
+        
+        # 2. Define the system instruction/context for the LLM
+        system_instruction = (
+            "You are an expert document analysis assistant and chatbot. "
+            "If the user's prompt is a statement or conversational, respond naturally. "
+            "If the prompt looks like a query seeking information from a document, "
+            "politely state that you need external document context to provide a complete answer."
+        )
+
+        # 3. Generate the response
+        response = client.models.generate_content(
+            model='gemini-2.5-flash',
+            contents=prompt,
+            config={
+                'system_instruction': system_instruction
+            }
+        )
+        
+        return response.text
+
+    except ImportError:
+        # Fallback if the library is not installed
+        return f"Error: The 'google-genai' library is required for the LLM function. Please install it."
+    except Exception as e:
+        # Catch network errors, API key issues, etc.
+        return f"LLM Connection Error: Could not generate response. Please check the GEMINI_API_KEY environment variable. Details: {e}"
+
+# Add a placeholder for your utility to use the LLM if search_web is unavailable
+# You may need to import os at the top of utils.py if you haven't already
+# The handle_conversation function above is designed to be self-contained for utility purposes.
+
+
 # --------------------------
 # 🔐 Authentication
 # --------------------------
@@ -245,3 +298,4 @@ def search_large_xml_bytes(xml_content, source_tag, source_value, target_path=No
 
     except Exception:
         return []
+
