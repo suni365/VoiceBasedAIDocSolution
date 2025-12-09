@@ -15,9 +15,8 @@ numpy
 sentence-transformers
 torch
 transformers
-google-genai
-
-
-
-
-
+# The following are highly recommended for performance/efficiency with large models
+accelerate
+bitsandbytes
+# Remove google-genai as we are replacing it
+# google-genai
