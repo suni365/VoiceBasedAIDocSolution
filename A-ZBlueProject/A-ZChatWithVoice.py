@@ -25,6 +25,7 @@ MODEL_NAME = "all-MiniLM-L6-v2"  # lightweight Sentence-Transformers model
 # --------------------------
 # Helper: Text extraction
 # --------------------------
+# Trigger rebuild
 def extract_text_from_docx(file_bytes):
     try:
         doc = docx.Document(BytesIO(file_bytes))
