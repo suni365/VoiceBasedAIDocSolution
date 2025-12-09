@@ -4,11 +4,13 @@ import base64
 import numpy as np
 from io import BytesIO
 import streamlit as st # Added st for cache_resource
+# from transformers import pipeline, AutoTokenizer, AutoModelForCausalLM, BitsAndBytesConfig
 
 # --- NEW IMPORTS for Open Source LLM ---
 try:
     import torch
-    from transformers import pipeline, AutoTokenizer, AutoModelForCausalLM
+    # ADD BitsAndBytesConfig to your imports
+    from transformers import pipeline, AutoTokenizer, AutoModelForCausalLM, BitsAndBytesConfig 
     # Define a default model. Mistral 7B is popular and capable for RAG.
     # NOTE: You will need sufficient RAM/VRAM to run this model.
     LLM_MODEL_NAME = "mistralai/Mistral-7B-Instruct-v0.2"
@@ -30,13 +32,26 @@ def load_llm_model():
         # Load the tokenizer
         tokenizer = AutoTokenizer.from_pretrained(LLM_MODEL_NAME)
 
+        # -----------------------------------------------------------------
+        # ✨ NEW CODE BLOCK: Define the BitsAndBytesConfig
+        # This replaces the deprecated torch_dtype and load_in_4bit arguments
+        bnb_config = BitsAndBytesConfig(
+            load_in_4bit=True,
+            # Set the compute dtype to match your desired torch_dtype
+            # This is the correct way to set the compute type for 4-bit models
+            bnb_4bit_compute_dtype=torch.bfloat16,
+            # You can also add bnb_4bit_quant_type='nf4' and bnb_4bit_use_double_quant=True
+        )
+        # -----------------------------------------------------------------
+
         # Load the model with 4-bit quantization for lower VRAM usage
         # You may need to adjust the device mapping based on your environment
         model = AutoModelForCausalLM.from_pretrained(
             LLM_MODEL_NAME,
             device_map="auto",
-            torch_dtype=torch.bfloat16, # Use bfloat16 if your GPU supports it, otherwise float16 or float32
-            load_in_4bit=True # Use bitsandbytes 4-bit quantization
+            # REMOVED: torch_dtype=torch.bfloat16, 
+            # REMOVED: load_in_4bit=True 
+            quantization_config=bnb_config, # <-- NEW ARGUMENT
         )
 
         # Create the pipeline for easy generation
@@ -44,7 +59,8 @@ def load_llm_model():
             "text-generation",
             model=model,
             tokenizer=tokenizer,
-            torch_dtype=torch.bfloat16,
+            # You can keep torch_dtype here for the pipeline's internal operations
+            torch_dtype=torch.bfloat16, 
             device_map="auto",
         )
         return llm_pipeline, tokenizer
@@ -313,3 +329,4 @@ def strip_namespace(tag):
 def search_large_xml_bytes(xml_content, source_tag, source_value, target_path=None):
 # ... (function remains unchanged)
     pass
+
