@@ -206,14 +206,14 @@ def save_text_response(filename, text):
 # 🔉 Text → Speech (GTTS)
 # ... (rest of the function is unchanged)
 # --------------------------
-def speak(text, filename="response.mp3"):
-    try:
-        from gtts import gTTS
-        tts = gTTS(text)
-        tts.save(filename)
-        return filename
-    except Exception:
-        return None
+# def speak(text, filename="response.mp3"):
+#     try:
+#         from gtts import gTTS
+#         tts = gTTS(text)
+#         tts.save(filename)
+#         return filename
+#     except Exception:
+#         return None
 
 
 # --------------------------
@@ -281,10 +281,10 @@ def get_base64_image(img_path):
 # 🔉 AudioProcessor Placeholder
 # ... (rest of the class is unchanged)
 # --------------------------
-class AudioProcessor:
-    @staticmethod
-    def process(file):
-        return "Processed text from audio"
+# class AudioProcessor:
+#     @staticmethod
+#     def process(file):
+#         return "Processed text from audio"
 
 
 # --------------------------
@@ -312,9 +312,9 @@ def cosine_search(query_emb, corpus_emb, top_k=4):
 # 🎤 Voice File Processor
 # ... (rest of the function is unchanged)
 # --------------------------
-def process_uploaded_voice(voice_file):
-    # ... (function remains unchanged)
-    pass
+# def process_uploaded_voice(voice_file):
+#     # ... (function remains unchanged)
+#     pass
 
 
 # --------------------------
@@ -329,4 +329,5 @@ def strip_namespace(tag):
 def search_large_xml_bytes(xml_content, source_tag, source_value, target_path=None):
 # ... (function remains unchanged)
     pass
+
 
