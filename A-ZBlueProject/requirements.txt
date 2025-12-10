@@ -10,6 +10,7 @@ pandas
 openpyxl
 lxml
 requests
+watchdog==2.1.9
 numpy
 sentence-transformers
 torch
@@ -19,4 +20,5 @@ accelerate
 bitsandbytes
 # Remove google-genai as we are replacing it
 # google-genai
+
 
