@@ -1,7 +1,6 @@
 streamlit
 streamlit-webrtc
 opencv-python
-pydub
 SpeechRecognition
 google-cloud-speech
 gtts
@@ -20,3 +19,4 @@ accelerate
 bitsandbytes
 # Remove google-genai as we are replacing it
 # google-genai
+
