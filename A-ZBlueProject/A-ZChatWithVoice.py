@@ -295,6 +295,13 @@ if st.session_state.get("authenticated", False):
     #         else:
     #             st.warning("Please upload a voice file first.")
 
+
+    # --------------------------
+    # Text Query Input
+    # --------------------------
+    st.subheader("💬 Ask Your Documents") # Simplified subheader for text chat
+    # This line is critical and MUST be uncommented to define 'user_input'
+    user_input = st.text_input("Ask something:", key="user_question")
     # --------------------------
     # When user asks something
     # --------------------------
