@@ -5,8 +5,8 @@ import docx
 import os
 import time
 import xml.etree.ElementTree as ET
-from pydub import AudioSegment
-import speech_recognition as sr
+# from pydub import AudioSegment
+# import speech_recognition as sr
 import pandas as pd
 import numpy as np
 from sentence_transformers import SentenceTransformer
@@ -106,41 +106,41 @@ def semantic_search(query, chunks, chunk_embeddings, model, top_k=3):
 # --------------------------
 # Audio processing
 # --------------------------
-def process_uploaded_voice(voice_file):
-    """Convert uploaded voice (.m4a/.wav) to text using SpeechRecognition."""
-    import tempfile
-    tmp_path = None
-    wav_path = None
-    try:
-        suffix = os.path.splitext(voice_file.name)[1].lower()
-        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp_file:
-            tmp_file.write(voice_file.read())
-            tmp_path = tmp_file.name
+# def process_uploaded_voice(voice_file):
+#     """Convert uploaded voice (.m4a/.wav) to text using SpeechRecognition."""
+#     import tempfile
+#     tmp_path = None
+#     wav_path = None
+#     try:
+#         suffix = os.path.splitext(voice_file.name)[1].lower()
+#         with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp_file:
+#             tmp_file.write(voice_file.read())
+#             tmp_path = tmp_file.name
 
-        if suffix == ".m4a":
-            wav_path = tmp_path.replace(".m4a", ".wav")
-            AudioSegment.from_file(tmp_path, format="m4a").export(wav_path, format="wav")
-        else:
-            wav_path = tmp_path
+#         if suffix == ".m4a":
+#             wav_path = tmp_path.replace(".m4a", ".wav")
+#             AudioSegment.from_file(tmp_path, format="m4a").export(wav_path, format="wav")
+#         else:
+#             wav_path = tmp_path
 
-        recognizer = sr.Recognizer()
-        with sr.AudioFile(wav_path) as source:
-            audio = recognizer.record(source)
-            text = recognizer.recognize_google(audio)
+#         recognizer = sr.Recognizer()
+#         with sr.AudioFile(wav_path) as source:
+#             audio = recognizer.record(source)
+#             text = recognizer.recognize_google(audio)
 
-        return text
+#         return text
 
-    except Exception as e:
-        return f"Error processing voice: {e}"
+#     except Exception as e:
+#         return f"Error processing voice: {e}"
 
-    finally:
-        try:
-            if tmp_path and os.path.exists(tmp_path):
-                os.remove(tmp_path)
-            if wav_path and wav_path != tmp_path and os.path.exists(wav_path):
-                os.remove(wav_path)
-        except Exception:
-            pass
+#     finally:
+#         try:
+#             if tmp_path and os.path.exists(tmp_path):
+#                 os.remove(tmp_path)
+#             if wav_path and wav_path != tmp_path and os.path.exists(wav_path):
+#                 os.remove(wav_path)
+#         except Exception:
+#             pass
 
 # --------------------------
 # XML helpers (single definition)
@@ -278,22 +278,22 @@ if st.session_state.get("authenticated", False):
 
     # --------------------------
     # Voice / Text Query Input
-    # --------------------------
-    st.subheader("🔊 Ask (type or upload voice)")
-    col1, col2 = st.columns([3,1])
-    with col1:
-        user_input = st.text_input("Ask something:", key="user_question")
-    with col2:
-        voice_file = st.file_uploader("Upload voice (.m4a/.wav) for question", type=["m4a", "wav"], key="voice_question")
-        if st.button("Use voice to ask"):
-            if voice_file:
-                with st.spinner("Processing voice..."):
-                    q_text = process_uploaded_voice(voice_file)
-                    st.session_state.user_question = q_text
-                    user_input = q_text
-                    st.success(f"You said: {q_text}")
-            else:
-                st.warning("Please upload a voice file first.")
+    # # --------------------------
+    # st.subheader("🔊 Ask (type or upload voice)")
+    # col1, col2 = st.columns([3,1])
+    # with col1:
+    #     user_input = st.text_input("Ask something:", key="user_question")
+    # with col2:
+    #     voice_file = st.file_uploader("Upload voice (.m4a/.wav) for question", type=["m4a", "wav"], key="voice_question")
+    #     if st.button("Use voice to ask"):
+    #         if voice_file:
+    #             with st.spinner("Processing voice..."):
+    #                 q_text = process_uploaded_voice(voice_file)
+    #                 st.session_state.user_question = q_text
+    #                 user_input = q_text
+    #                 st.success(f"You said: {q_text}")
+    #         else:
+    #             st.warning("Please upload a voice file first.")
 
     # --------------------------
     # When user asks something
