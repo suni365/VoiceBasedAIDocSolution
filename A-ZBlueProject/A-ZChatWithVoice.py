@@ -15,7 +15,7 @@ from streamlit_webrtc import webrtc_streamer, WebRtcMode
 from utils import (
     authenticate_user, clean_text, handle_conversation, search_in_doc,
     search_web, save_text_response, search_excel, search_pdf,
-    get_base64_image, AudioProcessor )
+    get_base64_image)
 # --------------------------
 # App config
 # --------------------------
