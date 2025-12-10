@@ -14,7 +14,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 from streamlit_webrtc import webrtc_streamer, WebRtcMode
 from utils import (
     authenticate_user, clean_text, handle_conversation, search_in_doc,
-    search_web, save_text_response, speak, search_excel, search_pdf,
+    search_web, save_text_response, search_excel, search_pdf,
     get_base64_image, AudioProcessor )
 # --------------------------
 # App config
