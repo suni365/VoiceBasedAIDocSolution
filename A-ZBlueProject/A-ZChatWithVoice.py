@@ -1,184 +1,118 @@
+
 import streamlit as st
 from lxml import etree
 from io import BytesIO
 import docx
 import os
 import time
+import os
+os.system("apt-get install -y ffmpeg > /dev/null 2>&1")
+from pydub import AudioSegment
+import speech_recognition as sr
+from io import BytesIO
+import os
+os.system("apt-get install -y ffmpeg > /dev/null 2>&1")
 import xml.etree.ElementTree as ET
-# from pydub import AudioSegment
-# import speech_recognition as sr
-import pandas as pd
-import numpy as np
-from sentence_transformers import SentenceTransformer
-from sklearn.metrics.pairwise import cosine_similarity
 from streamlit_webrtc import webrtc_streamer, WebRtcMode
 from utils import (
     authenticate_user, clean_text, handle_conversation, search_in_doc,
-    search_web, save_text_response, search_excel, search_pdf,
-    get_base64_image)
-# --------------------------
-# App config
-# --------------------------
-st.set_page_config(layout="wide")
-MODEL_NAME = "all-MiniLM-L6-v2"  # lightweight Sentence-Transformers model
+    search_web, save_text_response, speak, search_excel, search_pdf,
+    get_base64_image, AudioProcessor
+)
 
 # --------------------------
-# Helper: Text extraction
+# 🔉 Voice File Processor
 # --------------------------
-# Trigger rebuild
-def extract_text_from_docx(file_bytes):
+def process_uploaded_voice(voice_file):
+    """Convert uploaded voice (.m4a/.wav) to text using SpeechRecognition."""
+    import tempfile
+
     try:
-        doc = docx.Document(BytesIO(file_bytes))
-        paragraphs = [p.text for p in doc.paragraphs if p.text and p.text.strip()]
-        return "\n".join(paragraphs)
+        suffix = os.path.splitext(voice_file.name)[1].lower()
+        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp_file:
+            tmp_file.write(voice_file.read())
+            tmp_path = tmp_file.name
+
+        if suffix == ".m4a":
+            wav_path = tmp_path.replace(".m4a", ".wav")
+            AudioSegment.from_file(tmp_path, format="m4a").export(wav_path, format="wav")
+        else:
+            wav_path = tmp_path
+
+        recognizer = sr.Recognizer()
+        with sr.AudioFile(wav_path) as source:
+            audio = recognizer.record(source)
+            text = recognizer.recognize_google(audio)
+
+        return text
+
     except Exception as e:
-        st.error(f"Error reading DOCX: {e}")
-        return ""
+        return f"Error processing voice: {e}"
 
-def extract_text_from_pdf(file_bytes):
-    try:
-        # try PyPDF2
-        from PyPDF2 import PdfReader
-        reader = PdfReader(BytesIO(file_bytes))
-        texts = []
-        for page in reader.pages:
-            txt = page.extract_text()
-            if txt:
-                texts.append(txt)
-        return "\n".join(t for t in texts if t)
-    except Exception as e:
-        st.error(f"Error reading PDF: {e}")
-        return ""
-
-def extract_text_from_excel(file_bytes):
-    try:
-        xls = pd.read_excel(BytesIO(file_bytes), sheet_name=None, dtype=str)
-        texts = []
-        for sheet_name, df in xls.items():
-            df = df.fillna("")
-            # join rows into lines
-            for _, row in df.iterrows():
-                row_text = " | ".join(str(v) for v in row.values if v != "")
-                if row_text.strip():
-                    texts.append(row_text)
-        return "\n".join(texts)
-    except Exception as e:
-        st.error(f"Error reading Excel: {e}")
-        return ""
+    finally:
+        if os.path.exists(tmp_path):
+            os.remove(tmp_path)
+        if wav_path != tmp_path and os.path.exists(wav_path):
+            os.remove(wav_path)
 
 # --------------------------
-# Helper: Chunking + Embeddings
-# --------------------------
-def chunk_text(text, chunk_size=400, overlap=50):
-    """Simple whitespace chunking, returns list of chunks."""
-    tokens = text.split()
-    chunks = []
-    i = 0
-    while i < len(tokens):
-        chunk = tokens[i:i+chunk_size]
-        chunks.append(" ".join(chunk))
-        i += (chunk_size - overlap)
-    return chunks
-
-@st.cache_resource(show_spinner=False)
-def load_embedding_model():
-    return SentenceTransformer(MODEL_NAME)
-
-def embed_texts(model, texts):
-    """Return numpy array of embeddings for a list of texts."""
-    if not texts:
-        return np.zeros((0, model.get_sentence_embedding_dimension()))
-    embs = model.encode(texts, convert_to_numpy=True, show_progress_bar=False)
-    return embs
-
-def semantic_search(query, chunks, chunk_embeddings, model, top_k=3):
-    """Return top_k chunks by cosine similarity to query embedding."""
-    if not chunks or chunk_embeddings.size == 0:
-        return []
-    q_emb = model.encode([query], convert_to_numpy=True, show_progress_bar=False)
-    sims = cosine_similarity(q_emb, chunk_embeddings)[0]
-    top_idx = np.argsort(sims)[::-1][:top_k]
-    results = []
-    for idx in top_idx:
-        results.append({"chunk": chunks[idx], "score": float(sims[idx]), "index": int(idx)})
-    return results
-
-# --------------------------
-# Audio processing
-# --------------------------
-# def process_uploaded_voice(voice_file):
-#     """Convert uploaded voice (.m4a/.wav) to text using SpeechRecognition."""
-#     import tempfile
-#     tmp_path = None
-#     wav_path = None
-#     try:
-#         suffix = os.path.splitext(voice_file.name)[1].lower()
-#         with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp_file:
-#             tmp_file.write(voice_file.read())
-#             tmp_path = tmp_file.name
-
-#         if suffix == ".m4a":
-#             wav_path = tmp_path.replace(".m4a", ".wav")
-#             AudioSegment.from_file(tmp_path, format="m4a").export(wav_path, format="wav")
-#         else:
-#             wav_path = tmp_path
-
-#         recognizer = sr.Recognizer()
-#         with sr.AudioFile(wav_path) as source:
-#             audio = recognizer.record(source)
-#             text = recognizer.recognize_google(audio)
-
-#         return text
-
-#     except Exception as e:
-#         return f"Error processing voice: {e}"
-
-#     finally:
-#         try:
-#             if tmp_path and os.path.exists(tmp_path):
-#                 os.remove(tmp_path)
-#             if wav_path and wav_path != tmp_path and os.path.exists(wav_path):
-#                 os.remove(wav_path)
-#         except Exception:
-#             pass
-
-# --------------------------
-# XML helpers (single definition)
+# 🔧 Utility: Strip Namespace (for XML)
 # --------------------------
 def strip_namespace(tag):
     return tag.split('}', 1)[1] if '}' in tag else tag
 
-def search_large_xml_bytes(xml_bytes, source_tag, source_value, target_path=None):
-    """Search XML bytes for source tag/value; return matching target path(s) or full context."""
-    parser = etree.XMLParser(remove_blank_text=True, recover=True)
-    try:
-        tree = etree.parse(BytesIO(xml_bytes), parser)
-    except Exception as e:
-        raise
-    root = tree.getroot()
+# --------------------------
+# 🔍 Large XML Search
+# --------------------------
+def search_large_xml(xml_file, source_tag, source_value, target_path):
     results = []
-    for elem in root.iter():
-        if strip_namespace(elem.tag) == source_tag and elem.text and elem.text.strip() == source_value.strip():
-            parent = elem
-            # climb to document root of that section
-            while parent.getparent() is not None:
-                parent = parent.getparent()
-            if target_path:
-                for t in parent.iter(target_path):
-                    results.append(etree.tostring(t, pretty_print=True, encoding='unicode'))
-            else:
-                results.append(etree.tostring(parent, pretty_print=True, encoding='unicode'))
-    return results
+    context = etree.iterparse(xml_file, events=("end",), recover=True)
+
+    for event, elem in context:
+        tag_name = strip_namespace(elem.tag)
+
+        if tag_name == source_tag and (elem.text or "").strip() == source_value:
+            policy_elem = elem
+            while policy_elem is not None and strip_namespace(policy_elem.tag) != "PolicyInfo":
+                policy_elem = policy_elem.getparent()
+
+            if policy_elem is not None:
+                if "/" in target_path:
+                    try:
+                        targets = policy_elem.xpath(f".//{target_path}", namespaces=None)
+                        for t in targets:
+                            if t.text and t.text.strip():
+                                results.append(t.text.strip())
+                    except Exception as e:
+                        st.error(f"XPath error: {e}")
+                else:
+                    for t in policy_elem.iter():
+                        t_name = strip_namespace(t.tag)
+                        if t_name == target_path and t.text and t.text.strip():
+                            results.append(t.text.strip())
+
+        elem.clear()
+        while elem.getprevious() is not None:
+            del elem.getparent()[0]
+
+    return list(set(results))
 
 # --------------------------
-# UI: Sidebar - Auth + Search toggles
+# 🎛️ Streamlit Layout
 # --------------------------
+st.set_page_config(layout="wide")
+
 st.sidebar.title("Voice-Driven Intelligent Document Assistant")
+st.sidebar.image("A-ZBlueProject/AIChatbot.png", use_container_width=True)
+st.sidebar.title("🔑 User Authentication")
+
 if "authenticated" not in st.session_state:
     st.session_state.authenticated = False
     st.session_state["logged_in_user"] = ""
 
-st.sidebar.title("🔑 User Authentication")
+# --------------------------
+# 🔐 Authentication
+# --------------------------
 if not st.session_state.authenticated:
     username_input = st.sidebar.text_input("Username:")
     password_input = st.sidebar.text_input("Password:", type="password")
@@ -187,32 +121,32 @@ if not st.session_state.authenticated:
             st.session_state.authenticated = True
             st.session_state["logged_in_user"] = username_input
             st.sidebar.success("✅ Login successful!")
-            # st.experimental_rerun()
+            st.rerun()
         else:
             st.sidebar.error("❌ Invalid username or password.")
+
+# --------------------------
+# ✅ Main App
+# --------------------------
 else:
-    st.sidebar.success(f"Logged in as {st.session_state['logged_in_user']}")
+    # Welcome
+    img_base64 = get_base64_image("A-ZBlueProject/sunita.png")
+    st.markdown(f"""
+        <div style="position:fixed;top:50px;right:10px;background:#333;padding:10px;border-radius:10px;color:white;">
+        <img src="data:image/png;base64,{img_base64}" width="100">
+        <p><b>Welcome, {st.session_state['logged_in_user']}!</b></p>
+        <p style='font-size:12px;color:#ff9800;'>Created by Sunita Panicker</p></div>
+    """, unsafe_allow_html=True)
 
-# --------------------------
-# Main app layout
-# --------------------------
-if st.session_state.get("authenticated", False):
-    img_base64 = get_base64_image("A-ZBlueProject/sunita.png") if os.path.exists("A-ZBlueProject/sunita.png") else None
-    if img_base64:
-        st.markdown(f"""
-            <div style="position:fixed;top:50px;right:10px;background:#333;padding:10px;border-radius:10px;color:white;">
-            <img src="data:image/png;base64,{img_base64}" width="100">
-            <p><b>Welcome, {st.session_state['logged_in_user']}!</b></p>
-            <p style='font-size:12px;color:#ff9800;'>Created by Sunita Panicker</p></div>
-        """, unsafe_allow_html=True)
+    st.title("🤖 AI Doc Chatbot")
 
-    st.title("🤖 AI Doc Chatbot (RAG-enabled)")
-
-    # Sidebar: Excel / PDF quick search (kept)
-    search_option = st.sidebar.radio("Select Search Type:", ["Search Excel File", "Search PDF File", "No Quick Search"])
+    # --------------------------
+    # 🔍 Excel & PDF Search
+    # --------------------------
+    search_option = st.sidebar.radio("Select Search Type:", ["Search Excel File", "Search PDF File"])
     if search_option == "Search Excel File":
         excel_file = st.sidebar.file_uploader("Upload Excel file", type=["xlsx", "xls"])
-        keyword = st.sidebar.text_input("Enter keyword", key="excel_kw")
+        keyword = st.sidebar.text_input("Enter keyword")
         if st.sidebar.button("Search Excel"):
             if excel_file and keyword:
                 result = search_excel(excel_file, keyword)
@@ -222,9 +156,9 @@ if st.session_state.get("authenticated", False):
                     st.dataframe(result)
                 else:
                     st.sidebar.warning("No matching data found.")
-    elif search_option == "Search PDF File":
+    else:
         pdf_file = st.sidebar.file_uploader("Upload PDF file", type=["pdf"])
-        keyword = st.sidebar.text_input("Enter keyword for PDF", key="pdf_kw")
+        keyword = st.sidebar.text_input("Enter keyword")
         if st.sidebar.button("Search PDF"):
             if pdf_file and keyword:
                 results = search_pdf(pdf_file, keyword)
@@ -235,235 +169,176 @@ if st.session_state.get("authenticated", False):
                     st.sidebar.warning("No matching data found.")
 
     # --------------------------
-    # Document upload area (multiple files allowed)
+    # 📄 Document & Voice Upload
     # --------------------------
-    st.subheader("📄 Upload Documents for AI Search (DOCX / PDF / XLSX)")
-    uploaded_files = st.file_uploader("Upload Documents (you can upload multiple)", type=["docx", "pdf", "xlsx", "xls"], accept_multiple_files=True)
+    uploaded_file = st.file_uploader("Upload a Word Document (.docx)")
+    voice_file = st.file_uploader("Upload a voice file (.m4a/.wav)")
+    user_input = st.text_input("Ask something:")
 
-    # RAG engine state: store per-file chunks and embeddings
-    if "rag_store" not in st.session_state:
-        st.session_state.rag_store = {}  # key: filename, value: dict with 'chunks' and 'embeddings' and 'text'
+    response = None
+    doc_text = ""
 
-    model = load_embedding_model()
+    if uploaded_file:
+        doc = docx.Document(uploaded_file)
+        doc_text = "\n".join(p.text for p in doc.paragraphs)
 
-    # Process newly uploaded files and build embeddings if not already present
-    if uploaded_files:
-        for f in uploaded_files:
-            fname = f.name
-            if fname in st.session_state.rag_store:
-                continue  # already processed
-            content = f.read()
-            # Extract depending on type
-            if fname.lower().endswith(".docx"):
-                text = extract_text_from_docx(content)
-            elif fname.lower().endswith(".pdf"):
-                text = extract_text_from_pdf(content)
-            elif fname.lower().endswith((".xlsx", ".xls")):
-                text = extract_text_from_excel(content)
-            else:
-                text = ""
+    if voice_file:
+        st.write("Processing voice...")
+        user_input = process_uploaded_voice(voice_file)
+        st.write(f"**You said:** {user_input}")
 
-            text = clean_text(text) if text else ""
-            if not text:
-                st.warning(f"No extractable text from {fname}. Skipping RAG for this file.")
-                st.session_state.rag_store[fname] = {"text": "", "chunks": [], "embeddings": np.zeros((0, model.get_sentence_embedding_dimension()))}
-                continue
-
-            chunks = chunk_text(text, chunk_size=300, overlap=60)
-            embeddings = embed_texts(model, chunks)
-
-            st.session_state.rag_store[fname] = {"text": text, "chunks": chunks, "embeddings": embeddings}
-
-        st.success("✅ Documents processed for RAG search.")
-
-    # --------------------------
-    # Voice / Text Query Input
-    # # --------------------------
-    # st.subheader("🔊 Ask (type or upload voice)")
-    # col1, col2 = st.columns([3,1])
-    # with col1:
-    #     user_input = st.text_input("Ask something:", key="user_question")
-    # with col2:
-    #     voice_file = st.file_uploader("Upload voice (.m4a/.wav) for question", type=["m4a", "wav"], key="voice_question")
-    #     if st.button("Use voice to ask"):
-    #         if voice_file:
-    #             with st.spinner("Processing voice..."):
-    #                 q_text = process_uploaded_voice(voice_file)
-    #                 st.session_state.user_question = q_text
-    #                 user_input = q_text
-    #                 st.success(f"You said: {q_text}")
-    #         else:
-    #             st.warning("Please upload a voice file first.")
-
-
-    # --------------------------
-    # Text Query Input
-    # --------------------------
-    st.subheader("💬 Ask Your Documents") # Simplified subheader for text chat
-    # This line is critical and MUST be uncommented to define 'user_input'
-    user_input = st.text_input("Ask something:", key="user_question")
-    # --------------------------
-    # When user asks something
-    # --------------------------
-    if user_input and user_input.strip():
-        question = user_input.strip()
-        st.markdown(f"**Your question:** {question}")
-
-        # 1) Query RAG across all uploaded files (if any)
-        rag_results_combined = []
-        for fname, entry in st.session_state.rag_store.items():
-            if not entry.get("chunks"):
-                continue
-            results = semantic_search(question, entry["chunks"], entry["embeddings"], model, top_k=3)
-            for r in results:
-                r_copy = r.copy()
-                r_copy["source_file"] = fname
-                rag_results_combined.append(r_copy)
-
-        # Sort combined results by score desc
-        rag_results_combined = sorted(rag_results_combined, key=lambda x: x["score"], reverse=True)
-
-        # 2) If RAG found something above threshold, present best matches and return concatenated answer
-        ANSWER_SCORE_THRESHOLD = 0.35  # tuneable; lower if you want looser matches
-        final_answer = None
-        if rag_results_combined and rag_results_combined[0]["score"] >= ANSWER_SCORE_THRESHOLD:
-            # Present top 3 uniquely
-            shown = 0
-            st.success("🔎 Found relevant excerpts from uploaded documents (RAG):")
-            for hit in rag_results_combined[:5]:
-                shown += 1
-                st.markdown(f"**Source:** {hit['source_file']}  —  **Score:** {hit['score']:.3f}")
-                st.write(hit["chunk"])
-                st.markdown("---")
-            # Optionally call your handle_conversation or just return the top chunk as answer
-            # top_chunks_text = "\n\n".join(h["chunk"] for h in rag_results_combined[:3])
-            # final_answer = top_chunks_text
-            top_chunks_context = "\n\n".join(h["chunk"] for h in rag_results_combined[:3])
-            with st.spinner("Synthesizing answer from documents..."):
-                final_answer = handle_conversation(question, context=top_chunks_context)
-        else:
-            # 3) Fallback to your existing keyword-based doc search across combined document text
-            st.info("No strong RAG match — falling back to keyword search + LLM response.")
-            # Combine all doc text to search_in_doc (if available)
-            combined_doc_text = "\n\n".join(entry["text"] for entry in st.session_state.rag_store.values() if entry.get("text"))
-            doc_match = ""
-            if combined_doc_text:
-                try:
-                    doc_match = search_in_doc(combined_doc_text, question)  # your original function
-                except Exception as e:
-                    st.error(f"Error in search_in_doc: {e}")
+    if user_input:
+        response = handle_conversation(user_input)
+        if uploaded_file:
+            doc_match = search_in_doc(doc_text, user_input)
             if doc_match:
-                final_answer = doc_match
-            else:
-                # 4) Fallback to handle_conversation (LLM/chatbot) and web search
-                bot_resp = ""
-                try:
-                    bot_resp = handle_conversation(question) or ""
-                except Exception as e:
-                    st.error(f"Error in handle_conversation: {e}")
-                    bot_resp = ""
+                response = doc_match
+        # if not response:
+        #     search_results = search_web(user_input)
+        #     response = "\n\n".join(search_results) if search_results else "No relevant info found."
 
-                if bot_resp.strip():
-                    final_answer = bot_resp
-                else:
-                    web_results = search_web(question)
-                    final_answer = "\n\n".join(web_results) if web_results else "No relevant info found."
+        # st.markdown(f"<div style='background:#f2f2f2;padding:10px;border-left:5px solid green;'><b>🤖 Response:</b><br>{response}</div>", unsafe_allow_html=True)
+    if not response or response.strip() == "":
+        search_results = search_web(user_input)
+        response = "\n\n".join(search_results) if search_results else "No relevant info found."
 
-        # Display final answer
-        st.markdown(f"""
-            <div style='background:#f2f2f2;padding:10px;border-left:5px solid green;'>
-            <b>🤖 Response:</b><br>{final_answer}</div>
-        """, unsafe_allow_html=True)
-
-        # Optionally save response and speak (if utils.speak is available)
-        try:
-            save_text_response(final_answer, st.session_state.get("logged_in_user", "unknown"))
-            # speak(final_answer)  # enable if you want TTS on server (beware of blocking)
-        except Exception:
-            pass
+    # Display text response
+    st.markdown(f"""
+        <div style='background:#f2f2f2;padding:10px;border-left:5px solid green;'>
+        <b>🤖 Response:</b><br>{response}</div>
+    """, unsafe_allow_html=True)
+    
+    st.video("A-ZBlueProject/fixed_talking_lady.mp4")
 
     # --------------------------
-    # DAT file search (fixed block)
+    # 📂 DAT File Search
     # --------------------------
-    st.subheader("📂 DAT File Search")
+    st.subheader("📂 Search DAT File")
     dat_option = st.checkbox("Enable DAT Search")
     if dat_option:
         dat_file = st.file_uploader("Upload a DAT file", type=["dat"])
-        search_segment = st.text_input("Enter known segment (e.g. NM1*87*2)", key="dat_search_segment")
-        target_segment_type = st.text_input("Enter target segment (e.g. N3)", key="dat_target_segment")
+        search_segment = st.text_input("Enter known segment (e.g. NM1*87*2)")
+        target_segment_type = st.text_input("Enter target segment (e.g. N3)")
 
         if st.button("Search DAT"):
             if dat_file and search_segment and target_segment_type:
-                try:
-                    dat_content = dat_file.read().decode("utf-8")
-                    transactions, current_txn, inside_txn = [], [], False
-                    for line in dat_content.splitlines():
-                        for seg in line.split("~"):
-                            seg = seg.strip()
-                            if not seg:
-                                continue
-                            if seg.startswith("ST*"):
-                                inside_txn = True
-                                current_txn = [seg]
-                            elif seg.startswith("SE*"):
-                                current_txn.append(seg)
-                                transactions.append(current_txn)
-                                inside_txn = False
-                            elif inside_txn:
-                                current_txn.append(seg)
+                dat_content = dat_file.read().decode("utf-8")
+                transactions, current_txn, inside_txn = [], [], False
+                for line in dat_content.split("\n"):
+                    for seg in line.split("~"):
+                        if seg.startswith("ST*"):
+                            inside_txn = True
+                            current_txn = [seg]
+                        elif seg.startswith("SE*"):
+                            current_txn.append(seg)
+                            transactions.append(current_txn)
+                            inside_txn = False
+                        elif inside_txn:
+                            current_txn.append(seg)
 
-                    results = []
-                    for txn in transactions:
-                        if any(seg.startswith(search_segment) for seg in txn):
-                            results.extend([seg for seg in txn if seg.startswith(target_segment_type + "*")])
+                results = []
+                for txn in transactions:
+                    if any(seg.startswith(search_segment) for seg in txn):
+                        results.extend([seg for seg in txn if seg.startswith(target_segment_type + "*")])
 
-                    if results:
-                        st.success(f"✅ Found {len(results)} '{target_segment_type}' segments:")
-                        for seg in results:
-                            st.text(seg)
-                    else:
-                        st.warning("No matches found.")
-                except Exception as e:
-                    st.error(f"Error processing DAT file: {e}")
+                if results:
+                    st.success(f"✅ Found {len(results)} '{target_segment_type}' segments:")
+                    for seg in results:
+                        st.text(seg)
+                else:
+                    st.warning("No matches found.")
+
+# --------------------------
+# 🧾 Function to Search XML
+# --------------------------
+def search_large_xml(xml_file, source_tag, source_value, target_path=None):
+    tree = etree.parse(xml_file)
+    root = tree.getroot()
+    results = []
+
+    # Search for matching source tag and value
+    for elem in root.iter(source_tag):
+        if elem.text and elem.text.strip() == source_value.strip():
+            # Find the top-level context (up to root)
+            parent = elem
+            while parent.getparent() is not None:
+                parent = parent.getparent()
+
+            # If target_path is specified, search for it under the same root context
+            if target_path:
+                for target_elem in parent.iter(target_path):
+                    results.append(etree.tostring(target_elem, pretty_print=True, encoding='unicode'))
             else:
-                st.warning("Please upload DAT file and fill both segment fields first.")
+                # Return the full XML section (entire tree for that match)
+                results.append(etree.tostring(parent, pretty_print=True, encoding='unicode'))
 
-    # --------------------------
-    # XML search UI (single helper)
-    # --------------------------
-    st.subheader("🔍 XML Search with Full Context")
-    xml_file = st.file_uploader("📂 Upload XML File", type=["xml"], key="xml_search_uploader")
+    return results
 
-    if xml_file:
-        st.success("✅ XML file uploaded successfully!")
-        xml_content = xml_file.getvalue()
-        source_tag = st.text_input("Enter source tag name (e.g., PolicyNumber):", key="xml_source_tag")
-        source_value = st.text_input("Enter source tag value (e.g., H123456789):", key="xml_source_value")
-        target_path = st.text_input("Enter target tag/path (optional, e.g., ClaimID, StartDate):", key="xml_target_path")
+# --------------------------
+# 🧾 Streamlit UI Section
+# --------------------------
+def search_large_xml(xml_content, source_tag, source_value, target_path=None):
+    # Parse XML safely from bytes
+    parser = etree.XMLParser(remove_blank_text=True)
+    tree = etree.parse(BytesIO(xml_content), parser)
+    root = tree.getroot()
+    results = []
 
-        if st.button("Search XML"):
-            if source_tag and source_value:
-                try:
-                    results = search_large_xml_bytes(xml_content, source_tag, source_value, target_path)
-                    if results:
-                        st.success(f"✅ Found {len(results)} match(es):")
-                        for idx, res in enumerate(results, start=1):
-                            st.markdown(f"**Result {idx}:**")
-                            st.code(res, language="xml")
-                    else:
-                        st.warning("⚠️ No matching data found.")
-                except etree.XMLSyntaxError as xe:
-                    st.error(f"❌ XML Syntax Error: {xe}")
-                except Exception as e:
-                    st.error(f"❌ Error during XML search: {e}")
+    # Search for the element with the matching tag and value
+    for elem in root.iter(source_tag):
+        if elem.text and elem.text.strip() == source_value.strip():
+            # Get the top-level context (full document)
+            parent = elem
+            while parent.getparent() is not None:
+                parent = parent.getparent()
+
+            # If target_path provided, show only those children
+            if target_path:
+                for target_elem in parent.iter(target_path):
+                    results.append(etree.tostring(target_elem, pretty_print=True, encoding='unicode'))
             else:
-                st.error("Please fill both Source Tag and Source Value before searching.")
-    else:
-        st.info("📄 Please upload an XML file to start searching.")
+                # Return the full XML section (entire document)
+                results.append(etree.tostring(parent, pretty_print=True, encoding='unicode'))
 
-    # Footer: avatar video if exists
-    if os.path.exists("A-ZBlueProject/fixed_talking_lady.mp4"):
-        st.video("A-ZBlueProject/fixed_talking_lady.mp4")
+    return results
 
+
+# --------------------------
+# 🧾 Streamlit UI Section
+# --------------------------
+st.subheader("🔍 XML Search with Full Context")
+
+# Upload XML file
+xml_file = st.file_uploader("📂 Upload XML File", type=["xml"])
+
+if xml_file:
+    st.success("✅ XML file uploaded successfully!")
+
+    # Read file only once here
+    xml_content = xml_file.getvalue()
+
+    # Input fields
+    source_tag = st.text_input("Enter source tag name (e.g., PolicyNumber):")
+    source_value = st.text_input("Enter source tag value (e.g., H123456789):")
+    target_path = st.text_input("Enter target tag/path (optional, e.g., ClaimID, StartDate):")
+
+    if st.button("Search XML"):
+        if source_tag and source_value:
+            try:
+                results = search_large_xml(xml_content, source_tag, source_value, target_path)
+
+                if results:
+                    st.success(f"✅ Found {len(results)} match(es):")
+                    for idx, res in enumerate(results, start=1):
+                        st.markdown(f"**Result {idx}:**")
+                        st.code(res, language="xml")
+                else:
+                    st.warning("⚠️ No matching data found.")
+            except etree.XMLSyntaxError as xe:
+                st.error(f"❌ XML Syntax Error: {xe}")
+            except Exception as e:
+                st.error(f"❌ Error during XML search: {e}")
+        else:
+            st.error("Please fill both Source Tag and Source Value before searching.")
 else:
-    st.info("Please log in to use the application.")
+    st.info("📄 Please upload an XML file to start searching.")
