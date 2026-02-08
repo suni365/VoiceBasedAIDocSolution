@@ -5,19 +5,19 @@ import docx
 import os
 import time
 import os
+import os
 os.system("apt-get install -y ffmpeg > /dev/null 2>&1")
 from pydub import AudioSegment
 import speech_recognition as sr
 from io import BytesIO
-import os
-os.system("apt-get install -y ffmpeg > /dev/null 2>&1")
 import xml.etree.ElementTree as ET
 from streamlit_webrtc import webrtc_streamer, WebRtcMode
 from utils import (
     authenticate_user, clean_text, handle_conversation, search_in_doc,
-    search_web, save_text_response, search_excel, search_pdf,AudioSegment,
+    search_web, save_text_response, search_excel, search_pdf,
     get_base64_image, AudioProcessor
 )
+from pydub import AudioSegment
 
 # --------------------------
 # 🔉 Voice File Processor
@@ -250,56 +250,56 @@ else:
 # --------------------------
 # 🧾 Function to Search XML
 # --------------------------
-def search_large_xml(xml_file, source_tag, source_value, target_path=None):
-    tree = etree.parse(xml_file)
-    root = tree.getroot()
-    results = []
+# def search_large_xml(xml_file, source_tag, source_value, target_path=None):
+#     tree = etree.parse(xml_file)
+#     root = tree.getroot()
+#     results = []
 
-    # Search for matching source tag and value
-    for elem in root.iter(source_tag):
-        if elem.text and elem.text.strip() == source_value.strip():
-            # Find the top-level context (up to root)
-            parent = elem
-            while parent.getparent() is not None:
-                parent = parent.getparent()
+#     # Search for matching source tag and value
+#     for elem in root.iter(source_tag):
+#         if elem.text and elem.text.strip() == source_value.strip():
+#             # Find the top-level context (up to root)
+#             parent = elem
+#             while parent.getparent() is not None:
+#                 parent = parent.getparent()
 
-            # If target_path is specified, search for it under the same root context
-            if target_path:
-                for target_elem in parent.iter(target_path):
-                    results.append(etree.tostring(target_elem, pretty_print=True, encoding='unicode'))
-            else:
-                # Return the full XML section (entire tree for that match)
-                results.append(etree.tostring(parent, pretty_print=True, encoding='unicode'))
+#             # If target_path is specified, search for it under the same root context
+#             if target_path:
+#                 for target_elem in parent.iter(target_path):
+#                     results.append(etree.tostring(target_elem, pretty_print=True, encoding='unicode'))
+#             else:
+#                 # Return the full XML section (entire tree for that match)
+#                 results.append(etree.tostring(parent, pretty_print=True, encoding='unicode'))
 
-    return results
+#     return results
 
-# --------------------------
-# 🧾 Streamlit UI Section
-# --------------------------
-def search_large_xml(xml_content, source_tag, source_value, target_path=None):
-    # Parse XML safely from bytes
-    parser = etree.XMLParser(remove_blank_text=True)
-    tree = etree.parse(BytesIO(xml_content), parser)
-    root = tree.getroot()
-    results = []
+# # --------------------------
+# # 🧾 Streamlit UI Section
+# # --------------------------
+# def search_large_xml(xml_content, source_tag, source_value, target_path=None):
+#     # Parse XML safely from bytes
+#     parser = etree.XMLParser(remove_blank_text=True)
+#     tree = etree.parse(BytesIO(xml_content), parser)
+#     root = tree.getroot()
+#     results = []
 
-    # Search for the element with the matching tag and value
-    for elem in root.iter(source_tag):
-        if elem.text and elem.text.strip() == source_value.strip():
-            # Get the top-level context (full document)
-            parent = elem
-            while parent.getparent() is not None:
-                parent = parent.getparent()
+#     # Search for the element with the matching tag and value
+#     for elem in root.iter(source_tag):
+#         if elem.text and elem.text.strip() == source_value.strip():
+#             # Get the top-level context (full document)
+#             parent = elem
+#             while parent.getparent() is not None:
+#                 parent = parent.getparent()
 
-            # If target_path provided, show only those children
-            if target_path:
-                for target_elem in parent.iter(target_path):
-                    results.append(etree.tostring(target_elem, pretty_print=True, encoding='unicode'))
-            else:
-                # Return the full XML section (entire document)
-                results.append(etree.tostring(parent, pretty_print=True, encoding='unicode'))
+#             # If target_path provided, show only those children
+#             if target_path:
+#                 for target_elem in parent.iter(target_path):
+#                     results.append(etree.tostring(target_elem, pretty_print=True, encoding='unicode'))
+#             else:
+#                 # Return the full XML section (entire document)
+#                 results.append(etree.tostring(parent, pretty_print=True, encoding='unicode'))
 
-    return results
+#     return results
 
 
 # --------------------------
