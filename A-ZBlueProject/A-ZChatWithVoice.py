@@ -103,8 +103,8 @@ def search_large_xml(xml_file, source_tag, source_value, target_path):
 # --------------------------
 st.set_page_config(layout="wide")
 
-st.sidebar.title("Voice-Driven Intelligent Document Assistant")
-st.sidebar.image("A-ZBlueProject/AIChatbot.png", use_container_width=True)
+st.sidebar.title("A-ZBlueProject/PSD.png")
+# st.sidebar.image("A-ZBlueProject/AIChatbot.png", use_container_width=True)
 st.sidebar.title("🔑 User Authentication")
 
 if "authenticated" not in st.session_state:
@@ -136,7 +136,7 @@ else:
         <div style="position:fixed;top:50px;right:10px;background:#333;padding:10px;border-radius:10px;color:white;">
         <img src="data:image/png;base64,{img_base64}" width="100">
         <p><b>Welcome, {st.session_state['logged_in_user']}!</b></p>
-        <p style='font-size:12px;color:#ff9800;'>Created by Sunita Panicker</p></div>
+        <p style='font-size:12px;color:#ff9800;'>Created by Swapna Panicker</p></div>
     """, unsafe_allow_html=True)
 
     st.title("🤖 AI Doc Chatbot")
@@ -172,6 +172,7 @@ else:
     # --------------------------
     # 📄 Document & Voice Upload
     # --------------------------
+    st.sidebar.image("A-ZBlueProject/AIChatbot.png", use_container_width=True)
     uploaded_file = st.file_uploader("Upload a Word Document (.docx)")
     voice_file = st.file_uploader("Upload a voice file (.m4a/.wav)")
     user_input = st.text_input("Ask something:")
