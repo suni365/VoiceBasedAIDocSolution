@@ -25,7 +25,9 @@ from pydub import AudioSegment
 def process_uploaded_voice(voice_file):
     """Convert uploaded voice (.m4a/.wav) to text using SpeechRecognition."""
     import tempfile
-
+    recognizer = sr.Recognizer()
+    recognizer.energy_threshold = 300
+    recognizer.dynamic_energy_threshold = True
     try:
         suffix = os.path.splitext(voice_file.name)[1].lower()
         with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp_file:
