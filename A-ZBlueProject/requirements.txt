@@ -4,6 +4,7 @@ opencv-python
 SpeechRecognition
 google-cloud-speech
 gtts
+pydub
 python-docx
 PyPDF2
 pandas
@@ -20,5 +21,6 @@ accelerate
 bitsandbytes
 # Remove google-genai as we are replacing it
 # google-genai
+
 
 
