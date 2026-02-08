@@ -140,8 +140,8 @@ else:
         <p style='font-size:12px;color:#ff9800;'>Created by Swapna Panicker</p></div>
     """, unsafe_allow_html=True)
 
-    st.title("🤖 PSD- Artificial-Intelligent-Chatbot")
-    st.sidebar.image("A-ZBlueProject/AIChatbot.png", use_container_width=True)
+    st.title("🤖 PSD - AI-Chatbot")
+    # st.sidebar.image("A-ZBlueProject/AIChatbot.png", use_container_width=True)
 
     # --------------------------
     # 🔍 Excel & PDF Search
@@ -174,7 +174,7 @@ else:
     # --------------------------
     # 📄 Document & Voice Upload
     # --------------------------
-    st.sidebar.image("A-ZBlueProject/AIChatbot.png", use_container_width=True)
+    # st.sidebar.image("A-ZBlueProject/AIChatbot.png", use_container_width=True)
     uploaded_file = st.file_uploader("Upload a Word Document (.docx)")
     voice_file = st.file_uploader("Upload a voice file (.m4a/.wav)")
     user_input = st.text_input("Ask something:")
