@@ -176,7 +176,9 @@ else:
     # 📄 Document & Voice Upload
     # --------------------------
     # st.sidebar.image("A-ZBlueProject/AIChatbot.png", use_container_width=True)
+
     uploaded_file = st.file_uploader("Upload a Word Document (.docx)")
+    st.sidebar.image("A-ZBlueProject/PSD.png")
     voice_file = st.file_uploader("Upload a voice file (.m4a/.wav)")
     user_input = st.text_input("Ask something:")
 
