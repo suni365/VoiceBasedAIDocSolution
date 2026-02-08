@@ -1,8 +1,7 @@
 streamlit
 streamlit-webrtc
-opencv-python
+opencv-python-headless
 SpeechRecognition
-google-cloud-speech
 gtts
 pydub
 python-docx
@@ -13,14 +12,3 @@ lxml
 requests
 watchdog==2.1.9
 numpy
-sentence-transformers
-torch
-transformers
-# The following are highly recommended for performance/efficiency with large models
-accelerate
-bitsandbytes
-# Remove google-genai as we are replacing it
-# google-genai
-
-
-
