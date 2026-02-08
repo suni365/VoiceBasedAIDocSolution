@@ -103,7 +103,8 @@ def search_large_xml(xml_file, source_tag, source_value, target_path):
 # --------------------------
 st.set_page_config(layout="wide")
 
-st.sidebar.title("A-ZBlueProject/PSD.png")
+st.sidebar.tittle("PSD Property Developers Provate Limited")
+st.sidebar.image("A-ZBlueProject/PSD.png")
 # st.sidebar.image("A-ZBlueProject/AIChatbot.png", use_container_width=True)
 st.sidebar.title("🔑 User Authentication")
 
