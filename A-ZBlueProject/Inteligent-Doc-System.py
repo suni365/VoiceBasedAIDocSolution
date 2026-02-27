@@ -157,7 +157,9 @@ except:
 # 🔍 Word Document Search
 # --------------------------
 
-st.header("📄🔍 Document & Voice Search")
+
+st.divider()
+st.header("📘 WORD DocSearch / 🎤Voice Processing")
 
 uploaded_file = st.file_uploader("Upload Word Document (.docx)", type="docx", key="doc_search_uploader")
 user_input = st.text_input("Enter keyword or phrase to search:")
@@ -320,6 +322,7 @@ with col2:
                     st.warning("No matching XML context found.")
             else:
                 st.error("Source Tag and Source Value required.")
+
 
 
 
