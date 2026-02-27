@@ -79,7 +79,7 @@ if not st.session_state.authenticated:
 # ✅ Main Application (Post-Login)
 # --------------------------
 st.sidebar.image("A-ZBlueProject/AIChatbot.png")
-st.title("🤖 Intelligent AI-Chatbot")
+st.title("🤖 Intelligent AI-Chatbot for document search 🔍 ")
 
 # Sidebar User Greeting
 try:
@@ -92,7 +92,10 @@ except:
 # --------------------------
 # 🔍 Main Document & Voice Search
 # --------------------------
-st.header("🔍 Intelligent Document Search")
+
+st.divider()
+st.header("📘 WORD DocSearch / 🎤Voice Processing")
+
 
 
 # Added unique keys here to prevent duplicate ID errors
@@ -103,8 +106,6 @@ voice_file = st.file_uploader("OR Upload Voice (.m4a/.wav)", key="voice_search_u
 response = ""
 
 # 1. Handle Voice Transcription
-st.divider()
-st.header("📘 WORD DocSearch / 🎤Voice Processing")
 
 if voice_file:
     with st.spinner("Transcribing..."):
@@ -200,8 +201,8 @@ col1, col2 = st.columns(2)
 # 🧾 DAT & XML Search
 # --------------------------
 
-st.divider()
-st.header("🧾 Structured File Search")
+# st.divider()
+# st.header("🧾 Structured File Search")
 
 col1, col2 = st.columns(2)
 
@@ -256,6 +257,7 @@ with col2:
                     st.warning("No matching XML context found.")
             else:
                 st.error("Source Tag and Source Value required.")
+
 
 
 
