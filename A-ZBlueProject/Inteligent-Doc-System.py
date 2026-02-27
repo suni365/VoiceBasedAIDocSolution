@@ -144,15 +144,36 @@ if response:
     except: 
         pass
 
-st.divider()
+
 
 # --- Optional Sidebar Search (Excel/PDF) ---
-st.sidebar.subheader("Additional Search")
-search_option = st.sidebar.radio("File Search:", ["Excel", "PDF"])
-side_key = st.sidebar.text_input("Sidebar Keyword")
-if st.sidebar.button("Search Sidebar File"):
-    if search_option == "Excel":
-        res = search_excel(side_key)
+
+st.divider()
+st.header("📊 Excel / 📄 PDF Search")
+
+file_type = st.radio("Select File Type:", ["Excel", "PDF"], key="filetype_radio")
+
+uploaded_data_file = st.file_uploader(
+    "Upload Excel (.xlsx) or PDF (.pdf)",
+    type=["xlsx", "pdf"],
+    key="data_file_uploader"
+)
+
+data_keyword = st.text_input(
+    "Enter keyword to search in file:",
+    key="data_keyword"
+)
+
+if uploaded_data_file and data_keyword:
+
+    if file_type == "Excel":
+        results = search_excel(uploaded_data_file, data_keyword)
     else:
-        res = search_pdf(side_key)
-    st.sidebar.write(res)
+        results = search_pdf(uploaded_data_file, data_keyword)
+
+    if results:
+        st.subheader("Results")
+        for r in results:
+            st.success(r)
+    else:
+        st.warning("No matching data found.")
