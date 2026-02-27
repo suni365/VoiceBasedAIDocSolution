@@ -57,41 +57,145 @@ except Exception as e:
 # 🔧 XML Helpers
 # --------------------------
 
+# def process_uploaded_voice(voice_file):
+#     import tempfile
+#     recognizer = sr.Recognizer()
+#     tmp_path, wav_path = "", ""
+#     try:
+#         suffix = os.path.splitext(voice_file.name)[1].lower()
+        
+#         # Save uploaded file to a temporary location
+#         with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp_file:
+#             tmp_file.write(voice_file.read())
+#             tmp_path = tmp_file.name
+
+#         if suffix == ".m4a":
+#             # This is where ffprobe is needed
+#             wav_path = tmp_path.replace(".m4a", ".wav")
+#             audio = AudioSegment.from_file(tmp_path, format="m4a")
+#             audio.export(wav_path, format="wav")
+#         else:
+#             wav_path = tmp_path
+
+#         # Recognize the speech
+#         with sr.AudioFile(wav_path) as source:
+#             audio_data = recognizer.record(source)
+#             text = recognizer.recognize_google(audio_data)
+#         return text
+
+#     except Exception as e:
+#         # If ffprobe is missing, we give a clear instruction
+#         if "ffprobe" in str(e) or "ffmpeg" in str(e):
+#             return "System Error: ffmpeg is not installed. Please add 'ffmpeg' to a packages.txt file in your repository."
+#         return f"Error: {e}"
+#     finally:
+#         # Cleanup files
+#         if tmp_path and os.path.exists(tmp_path): os.remove(tmp_path)
+#         if wav_path and wav_path != tmp_path and os.path.exists(wav_path): os.remove(wav_path)
+
+import streamlit as st
+import docx
+import os
+import time
+import speech_recognition as sr
+from lxml import etree
+from io import BytesIO
+from pydub import AudioSegment
+
+# Install ffmpeg
+os.system("apt-get install -y ffmpeg > /dev/null 2>&1")
+
+# --- SAFE IMPORT BLOCK ---
+try:
+    from utils import (
+        authenticate_user, clean_text, handle_conversation, search_in_doc,
+        search_web, save_text_response, search_excel, search_pdf,
+        get_base64_image, AudioProcessor
+    )
+except SyntaxError as e:
+    st.error(f"❌ Syntax Error in utils.py: {e.msg} at line {e.lineno}")
+    st.stop() # Stop the app until utils.py is fixed
+except Exception as e:
+    st.error(f"❌ Error importing from utils.py: {e}")
+    st.stop()
+
+# --------------------------
+# 🔉 Voice File Processor
+# --------------------------
 def process_uploaded_voice(voice_file):
     import tempfile
     recognizer = sr.Recognizer()
-    tmp_path, wav_path = "", ""
     try:
         suffix = os.path.splitext(voice_file.name)[1].lower()
-        
-        # Save uploaded file to a temporary location
         with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp_file:
             tmp_file.write(voice_file.read())
             tmp_path = tmp_file.name
 
         if suffix == ".m4a":
-            # This is where ffprobe is needed
             wav_path = tmp_path.replace(".m4a", ".wav")
-            audio = AudioSegment.from_file(tmp_path, format="m4a")
-            audio.export(wav_path, format="wav")
+            AudioSegment.from_file(tmp_path, format="m4a").export(wav_path, format="wav")
         else:
             wav_path = tmp_path
 
-        # Recognize the speech
         with sr.AudioFile(wav_path) as source:
-            audio_data = recognizer.record(source)
-            text = recognizer.recognize_google(audio_data)
-        return text
-
+            audio = recognizer.record(source)
+            return recognizer.recognize_google(audio)
     except Exception as e:
-        # If ffprobe is missing, we give a clear instruction
-        if "ffprobe" in str(e) or "ffmpeg" in str(e):
-            return "System Error: ffmpeg is not installed. Please add 'ffmpeg' to a packages.txt file in your repository."
         return f"Error: {e}"
-    finally:
-        # Cleanup files
-        if tmp_path and os.path.exists(tmp_path): os.remove(tmp_path)
-        if wav_path and wav_path != tmp_path and os.path.exists(wav_path): os.remove(wav_path)
+
+# --------------------------
+# 🔐 Authentication Logic
+# --------------------------
+if "authenticated" not in st.session_state:
+    st.session_state.authenticated = False
+
+if not st.session_state.authenticated:
+    st.sidebar.title("🔑 Login")
+    username_input = st.sidebar.text_input("Username:")
+    password_input = st.sidebar.text_input("Password:", type="password")
+    
+    if st.sidebar.button("Login"):
+        if username_input and password_input:
+            if authenticate_user(username_input, password_input):
+                st.session_state.authenticated = True
+                st.session_state["logged_in_user"] = username_input
+                st.rerun()
+            else:
+                st.sidebar.error("❌ Invalid credentials")
+        else:
+            st.sidebar.warning("Please enter credentials")
+    st.stop()
+
+# --------------------------
+# ✅ Main App (Runs only after login)
+# --------------------------
+st.title("🤖 Intelligent AI-Chatbot")
+
+# 1. Word Document Search (Paragraph Focus)
+st.header("📄 Document Search")
+uploaded_file = st.file_uploader("Upload Word Document (.docx)", type="docx")
+user_input = st.text_input("Enter keywords (e.g. 3 specific words):")
+
+if uploaded_file and user_input:
+    doc = docx.Document(uploaded_file)
+    target = user_input.strip().lower()
+    found = False
+    
+    for para in doc.paragraphs:
+        if target in para.text.lower():
+            if para.text.strip():
+                st.info(para.text)
+                found = True
+    
+    if not found:
+        st.warning("No matching paragraphs found.")
+
+# 2. Voice Search
+voice_file = st.file_uploader("Upload Voice (.m4a/.wav)")
+if voice_file:
+    with st.spinner("Processing Voice..."):
+        transcript = process_uploaded_voice(voice_file)
+        st.write(f"**You said:** {transcript}")
 
 def strip_namespace(tag):
     return tag.split('}', 1)[1] if '}' in tag else tag
