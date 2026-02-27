@@ -190,6 +190,14 @@ st.header("🧾 Structured File Search")
 
 col1, col2 = st.columns(2)
 
+# 🧾 DAT & XML Search
+# --------------------------
+
+st.divider()
+st.header("🧾 Structured File Search")
+
+col1, col2 = st.columns(2)
+
 # -----------------------
 # 📂 DAT FILE SEARCH
 # -----------------------
@@ -241,5 +249,3 @@ with col2:
                     st.warning("No matching XML context found.")
             else:
                 st.error("Source Tag and Source Value required.")
-
-
