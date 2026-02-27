@@ -32,6 +32,12 @@ def handle_conversation(prompt):
     if any(greet in prompt for greet in greetings):
         return "Hello! How can I assist you today?"
 
+    if "how are you" in prompt:
+        return "I am fine, thank you and How are you ?"
+
+    if "I am good" in prompt:
+        return "Good to know that, how may I assistant you today"
+        
     if "who are you" in prompt:
         return "I am your AI-powered document assistant."
 
@@ -145,5 +151,6 @@ class AudioProcessor:
 # --------------------------
 def strip_namespace(tag):
     return tag.split('}', 1)[1] if '}' in tag else tag
+
 
 
