@@ -132,16 +132,16 @@ if not st.session_state.authenticated:
 # --------------------------
 else:
     # Welcome
-    img_base64 = get_base64_image("A-ZBlueProject/swapna.png")
+    img_base64 = get_base64_image("A-ZBlueProject/suntita.png.jpg")
     st.markdown(f"""
         <div style="position:fixed;top:50px;right:10px;background:#333;padding:10px;border-radius:10px;color:white;">
         <img src="data:image/png;base64,{img_base64}" width="75">
         <p><b>Welcome, {st.session_state['logged_in_user']}!</b></p>
-        <p style='font-size:12px;color:#ff9800;'>Created by Swapna Panicker</p></div>
+        <p style='font-size:12px;color:#ff9800;'>Created by Sunita Panicker Trivandrum</p></div>
     """, unsafe_allow_html=True)
 
-    st.sidebar.image("A-ZBlueProject/PSD.png")
-    st.title("🤖 PSD - AI-Chatbot")
+    st.sidebar.image(""A-ZBlueProject/AIChatbot.png")
+    st.title("🤖 Ameriben - AI-Chatbot")
     # st.sidebar.image("A-ZBlueProject/AIChatbot.png", use_container_width=True)
 
     # --------------------------
