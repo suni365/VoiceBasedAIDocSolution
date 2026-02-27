@@ -140,7 +140,7 @@ else:
         <p style='font-size:12px;color:#ff9800;'>Created by Sunita Panicker Trivandrum</p></div>
     """, unsafe_allow_html=True)
 
-    st.sidebar.image(""A-ZBlueProject/AIChatbot.png")
+    st.sidebar.image("A-ZBlueProject/AIChatbot.png")
     st.title("🤖 Ameriben - AI-Chatbot")
     # st.sidebar.image("A-ZBlueProject/AIChatbot.png", use_container_width=True)
 
