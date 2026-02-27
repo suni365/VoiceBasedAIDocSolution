@@ -89,19 +89,6 @@ st.set_page_config(layout="wide", page_title="AI-Chatbot")
 if "authenticated" not in st.session_state:
     st.session_state.authenticated = False
 
-if not st.session_state.authenticated:
-    st.sidebar.title("🔑 Login")
-    u = st.sidebar.text_input("Username")
-    p = st.sidebar.text_input("Password", type="password")
-    if st.sidebar.button("Login"):
-        if authenticate_user(u, p):
-            st.session_state.authenticated = True
-            st.session_state["logged_in_user"] = u
-            st.rerun()
-        else:
-            st.sidebar.error("Invalid credentials")
-    st.stop()
-
 # --------------------------
 # ✅ Main Application
 # --------------------------
