@@ -103,8 +103,8 @@ def search_large_xml(xml_file, source_tag, source_value, target_path):
 # --------------------------
 st.set_page_config(layout="wide")
 
-st.sidebar.title("PSD Property Developers Provate Limited")
-st.sidebar.image("A-ZBlueProject/PSD.png")
+# st.sidebar.title("PSD Property Developers Provate Limited")
+# st.sidebar.image("A-ZBlueProject/PSD.png")
 # st.sidebar.image("A-ZBlueProject/AIChatbot.png", use_container_width=True)
 st.sidebar.title("🔑 User Authentication")
 
@@ -178,7 +178,7 @@ else:
     # st.sidebar.image("A-ZBlueProject/AIChatbot.png", use_container_width=True)
 
     uploaded_file = st.file_uploader("Upload a Word Document (.docx)")
-    st.sidebar.image("A-ZBlueProject/PSD.png")
+    # st.sidebar.image("A-ZBlueProject/PSD.png")
     voice_file = st.file_uploader("Upload a voice file (.m4a/.wav)")
     user_input = st.text_input("Ask something:")
 
@@ -190,6 +190,13 @@ else:
         doc_text = "\n".join(p.text for p in doc.paragraphs)
 
     if voice_file:
+
+
+
+
+
+
+        
         st.write("Processing voice...")
         user_input = process_uploaded_voice(voice_file)
         st.write(f"**You said:** {user_input}")
