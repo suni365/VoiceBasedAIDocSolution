@@ -9,7 +9,7 @@ import streamlit as st
 # 🔐 Authentication
 # --------------------------
 def authenticate_user(username, password):
-    valid_users = {"swapna": "password123"}
+    valid_users = {"sunita": "password123"}
     return valid_users.get(username) == password
 
 
@@ -145,4 +145,5 @@ class AudioProcessor:
 # --------------------------
 def strip_namespace(tag):
     return tag.split('}', 1)[1] if '}' in tag else tag
+
 
