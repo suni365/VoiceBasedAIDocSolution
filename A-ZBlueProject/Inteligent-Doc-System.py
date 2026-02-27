@@ -168,12 +168,20 @@ if uploaded_data_file and data_keyword:
 
     if file_type == "Excel":
         results = search_excel(uploaded_data_file, data_keyword)
+
+        if results is not None and not results.empty:
+            st.subheader("Results")
+            st.dataframe(results)
+        else:
+            st.warning("No matching data found.")
+
     else:
         results = search_pdf(uploaded_data_file, data_keyword)
 
-    if results:
-        st.subheader("Results")
-        for r in results:
-            st.success(r)
-    else:
-        st.warning("No matching data found.")
+        if results:
+            st.subheader("Results")
+            for r in results:
+                st.success(r)
+        else:
+            st.warning("No matching data found.")
+
