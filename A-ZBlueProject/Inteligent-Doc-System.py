@@ -79,7 +79,7 @@ if not st.session_state.authenticated:
 # ✅ Main Application (Post-Login)
 # --------------------------
 st.sidebar.image("A-ZBlueProject/AIChatbot.png")
-st.title("🤖 Intelligent AI-Chatbot for document search 🔍 ")
+st.title("🤖 Intelligent AI-Chatbot for Document Search 🔍 ")
 
 # Sidebar User Greeting
 try:
@@ -322,6 +322,7 @@ with col2:
                     st.warning("No matching XML context found.")
             else:
                 st.error("Source Tag and Source Value required.")
+
 
 
 
