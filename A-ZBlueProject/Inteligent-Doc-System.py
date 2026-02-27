@@ -185,3 +185,61 @@ if uploaded_data_file and data_keyword:
         else:
             st.warning("No matching data found.")
 
+t.divider()
+st.header("🧾 Structured File Search")
+
+col1, col2 = st.columns(2)
+
+# -----------------------
+# 📂 DAT FILE SEARCH
+# -----------------------
+with col1:
+    st.subheader("📂 DAT Search")
+
+    if st.checkbox("Show DAT Tools", key="dat_tools"):
+        d_file = st.file_uploader("Upload .dat File", type="dat", key="dat_uploader")
+        s_seg = st.text_input("Enter Segment (e.g. NM1*87)", key="dat_segment")
+
+        if st.button("Search DAT", key="dat_search_btn"):
+            if d_file and s_seg:
+                content = d_file.read().decode("utf-8", errors="ignore")
+                dat_results = search_dat(content, s_seg)
+
+                if dat_results:
+                    st.success(f"Found {len(dat_results)} matches")
+                    for line in dat_results:
+                        st.code(line)
+                else:
+                    st.warning("Segment not found.")
+            else:
+                st.error("Please upload file and enter segment.")
+
+
+# -----------------------
+# 🔍 XML CONTEXT SEARCH
+# -----------------------
+with col2:
+    st.subheader("🔍 XML Context Search")
+
+    x_file = st.file_uploader("Upload .xml File", type="xml", key="xml_uploader")
+
+    if x_file:
+        xtag = st.text_input("Source Tag", key="xml_source_tag")
+        xval = st.text_input("Source Value", key="xml_source_value")
+        xpath = st.text_input("Target Path (Optional)", key="xml_target_path")
+
+        if st.button("Search XML", key="xml_search_btn"):
+            if xtag and xval:
+                xml_content = x_file.getvalue()
+                x_results = search_large_xml(xml_content, xtag, xval, xpath)
+
+                if x_results:
+                    st.success(f"Found {len(x_results)} matches")
+                    for r in x_results:
+                        st.code(r, language="xml")
+                else:
+                    st.warning("No matching XML context found.")
+            else:
+                st.error("Source Tag and Source Value required.")
+
+
