@@ -94,6 +94,8 @@ except:
 # --------------------------
 st.header("🔍 Document & Voice Search")
 
+📘
+
 # Added unique keys here to prevent duplicate ID errors
 uploaded_file = st.file_uploader("Upload Word Document (.docx)", type="docx", key="doc_search_uploader")
 user_input = st.text_input("Enter keyword or phrase to search in Doc:")
@@ -102,6 +104,9 @@ voice_file = st.file_uploader("OR Upload Voice (.m4a/.wav)", key="voice_search_u
 response = ""
 
 # 1. Handle Voice Transcription
+st.divider()
+st.header("📘 WORD DocSearch / 🎤Voice Processing")
+
 if voice_file:
     with st.spinner("Transcribing..."):
         voice_text = process_uploaded_voice(voice_file)
@@ -112,6 +117,8 @@ if voice_file:
             st.error(voice_text)
 
 # 2. Search Logic (Paragraph based)
+
+
 if uploaded_file and user_input:
     doc = docx.Document(uploaded_file)
     target = user_input.strip().lower()
@@ -250,5 +257,6 @@ with col2:
                     st.warning("No matching XML context found.")
             else:
                 st.error("Source Tag and Source Value required.")
+
 
 
