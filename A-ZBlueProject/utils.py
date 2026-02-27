@@ -41,6 +41,14 @@ def handle_conversation(prompt):
     if "who are you" in prompt:
         return "I am your AI-powered document assistant."
 
+    if "where are you from :
+        return "I am from Kerala Trivandrum."
+
+    if "Who cretaed you " in prompt:
+        return "Sunita from Trivandrum, created me."
+
+    
+
     if "what can you do" in prompt:
         return "I can search documents, analyze PDFs, Excel files, XML, and respond using voice or text."
 
@@ -151,6 +159,7 @@ class AudioProcessor:
 # --------------------------
 def strip_namespace(tag):
     return tag.split('}', 1)[1] if '}' in tag else tag
+
 
 
 
