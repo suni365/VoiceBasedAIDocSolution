@@ -41,13 +41,11 @@ def handle_conversation(prompt):
     if "who are you" in prompt:
         return "I am your AI-powered document assistant."
 
-    if "where are you from" :
+    if "where are you from" in prompt:
         return "I am from Kerala Trivandrum."
 
     if "Who cretaed you " in prompt:
         return "Sunita from Trivandrum, created me."
-
-    
 
     if "what can you do" in prompt:
         return "I can search documents, analyze PDFs, Excel files, XML, and respond using voice or text."
@@ -159,6 +157,67 @@ class AudioProcessor:
 # --------------------------
 def strip_namespace(tag):
     return tag.split('}', 1)[1] if '}' in tag else tag
+
+
+# --------------------------
+# 📂 DAT File Search
+# --------------------------
+def search_dat(file_content, segment):
+    lines = file_content.splitlines()
+    matches = []
+
+    for line in lines:
+        if segment.lower() in line.lower():
+            matches.append(line.strip())
+
+    return matches
+
+--------------------------
+# 🔍 XML Context Search
+# --------------------------
+def search_large_xml(xml_bytes, source_tag, source_value, target_path=None):
+    from lxml import etree
+    from io import BytesIO
+
+    results = []
+
+    try:
+        context = etree.iterparse(BytesIO(xml_bytes), events=("end",), recover=True)
+
+        for event, elem in context:
+            tag_name = strip_namespace(elem.tag)
+
+            if tag_name == source_tag and elem.text and elem.text.strip() == source_value:
+
+                if target_path:
+                    targets = elem.xpath(target_path)
+                    for t in targets:
+                        results.append(
+                            etree.tostring(t, pretty_print=True).decode()
+                        )
+                else:
+                    parent = elem.getparent()
+                    if parent is not None:
+                        results.append(
+                            etree.tostring(parent, pretty_print=True).decode()
+                        )
+
+                elem.clear()
+
+        return results
+
+    except Exception as e:
+        return [f"XML Processing Error: {str(e)}"]
+
+
+
+
+
+
+
+
+
+
 
 
 
