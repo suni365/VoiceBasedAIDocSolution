@@ -41,7 +41,7 @@ def handle_conversation(prompt):
     if "who are you" in prompt:
         return "I am your AI-powered document assistant."
 
-    if "where are you from :
+    if "where are you from" :
         return "I am from Kerala Trivandrum."
 
     if "Who cretaed you " in prompt:
@@ -159,6 +159,7 @@ class AudioProcessor:
 # --------------------------
 def strip_namespace(tag):
     return tag.split('}', 1)[1] if '}' in tag else tag
+
 
 
 
