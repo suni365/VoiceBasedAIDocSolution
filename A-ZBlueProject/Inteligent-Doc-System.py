@@ -16,10 +16,11 @@ os.system("apt-get install -y ffmpeg > /dev/null 2>&1")
 # --- SAFE IMPORT BLOCK ---
 try:
     from utils import (
-        authenticate_user, clean_text, handle_conversation, search_in_doc,
-        search_web, save_text_response, search_excel, search_pdf,
-        get_base64_image, AudioProcessor
-    )
+    authenticate_user, clean_text, handle_conversation, search_in_doc,
+    search_web, save_text_response, search_excel, search_pdf,
+    get_base64_image, AudioProcessor,
+    search_dat, search_large_xml
+)
 except SyntaxError as e:
     st.error(f"❌ Syntax Error in utils.py: {e.msg} at line {e.lineno}")
     st.stop()
@@ -249,3 +250,4 @@ with col2:
                     st.warning("No matching XML context found.")
             else:
                 st.error("Source Tag and Source Value required.")
+
