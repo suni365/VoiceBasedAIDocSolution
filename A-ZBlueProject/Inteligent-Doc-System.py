@@ -92,9 +92,8 @@ except:
 # --------------------------
 # 🔍 Main Document & Voice Search
 # --------------------------
-st.header("🔍 Document & Voice Search")
+st.header("🔍 Intelligent Document Search")
 
-📘
 
 # Added unique keys here to prevent duplicate ID errors
 uploaded_file = st.file_uploader("Upload Word Document (.docx)", type="docx", key="doc_search_uploader")
@@ -257,6 +256,7 @@ with col2:
                     st.warning("No matching XML context found.")
             else:
                 st.error("Source Tag and Source Value required.")
+
 
 
 
