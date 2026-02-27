@@ -172,7 +172,7 @@ def search_dat(file_content, segment):
 
     return matches
 
---------------------------
+# --------------------------
 # 🔍 XML Context Search
 # --------------------------
 def search_large_xml(xml_bytes, source_tag, source_value, target_path=None):
@@ -208,6 +208,7 @@ def search_large_xml(xml_bytes, source_tag, source_value, target_path=None):
 
     except Exception as e:
         return [f"XML Processing Error: {str(e)}"]
+
 
 
 
