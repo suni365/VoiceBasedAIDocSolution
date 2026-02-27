@@ -186,7 +186,7 @@ if uploaded_data_file and data_keyword:
         else:
             st.warning("No matching data found.")
 
-t.divider()
+st.divider()
 st.header("🧾 Structured File Search")
 
 col1, col2 = st.columns(2)
@@ -250,4 +250,5 @@ with col2:
                     st.warning("No matching XML context found.")
             else:
                 st.error("Source Tag and Source Value required.")
+
 
