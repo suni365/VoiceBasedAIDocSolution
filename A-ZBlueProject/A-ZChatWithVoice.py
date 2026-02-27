@@ -141,7 +141,7 @@ else:
     """, unsafe_allow_html=True)
 
     st.sidebar.image("A-ZBlueProject/AIChatbot.png")
-    st.title("🤖 Ameriben - AI-Chatbot")
+    st.title("🤖 Intelligent - AI-Chatbot")
     # st.sidebar.image("A-ZBlueProject/AIChatbot.png", use_container_width=True)
 
     # --------------------------
