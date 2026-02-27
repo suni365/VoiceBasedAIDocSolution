@@ -93,20 +93,80 @@ except:
 # 🔍 Main Document & Voice Search
 # --------------------------
 
-st.divider()
-st.header("📘 WORD DocSearch / 🎤Voice Processing")
+# st.divider()
+# st.header("📘 WORD DocSearch / 🎤Voice Processing")
 
 
 
-# Added unique keys here to prevent duplicate ID errors
+# # Added unique keys here to prevent duplicate ID errors
+# uploaded_file = st.file_uploader("Upload Word Document (.docx)", type="docx", key="doc_search_uploader")
+# user_input = st.text_input("Enter keyword or phrase to search in Doc:")
+# voice_file = st.file_uploader("OR Upload Voice (.m4a/.wav)", key="voice_search_uploader")
+
+# response = ""
+
+# # 1. Handle Voice Transcription
+
+# if voice_file:
+#     with st.spinner("Transcribing..."):
+#         voice_text = process_uploaded_voice(voice_file)
+#         if voice_text and not voice_text.startswith("Error"):
+#             user_input = voice_text
+#             st.success(f"Captured: {user_input}")
+#         else:
+#             st.error(voice_text)
+
+# # 2. Search Logic (Paragraph based)
+
+
+# if uploaded_file and user_input:
+#     doc = docx.Document(uploaded_file)
+#     target = user_input.strip().lower()
+#     matches = []
+    
+#     for para in doc.paragraphs:
+#         if target in para.text.lower():
+#             if para.text.strip():
+#                 matches.append(para.text)
+    
+#     if matches:
+#         st.subheader("Document Matches")
+#         for m in matches:
+#             st.info(m)
+#         response = matches[0] # Use first match for AI context
+#     else:
+#         st.warning("Phrase not found in document.")
+
+# # 3. AI / Web Fallback
+# if user_input and not response:
+#     with st.spinner("Consulting AI..."):
+#         response = handle_conversation(user_input)
+#         if not response or "No relevant info" in response:
+#             web_res = search_web(user_input)
+#             response = "\n\n".join(web_res) if web_res else "No info found."
+
+# if response:
+#     st.markdown(f"<div style='background:#f9f9f9;padding:15px;border-left:5px solid #007bff;color:black;'><b>🤖 AI Response:</b><br>{response}</div>", unsafe_allow_html=True)
+#     try:
+#         st.video("A-ZBlueProject/fixed_talking_lady.mp4")
+#     except: 
+#         pass
+
+
+# --------------------------
+# 🔍 Word Document Search
+# --------------------------
+
+st.header("📄🔍 Document & Voice Search")
+
 uploaded_file = st.file_uploader("Upload Word Document (.docx)", type="docx", key="doc_search_uploader")
-user_input = st.text_input("Enter keyword or phrase to search in Doc:")
-voice_file = st.file_uploader("OR Upload Voice (.m4a/.wav)", key="voice_search_uploader")
+user_input = st.text_input("Enter keyword or phrase to search:")
+voice_file = st.file_uploader("🎤 OR Upload Voice (.m4a/.wav)", key="voice_search_uploader")
 
 response = ""
+doc_match_found = False
 
-# 1. Handle Voice Transcription
-
+# 🎤 Voice Processing
 if voice_file:
     with st.spinner("Transcribing..."):
         voice_text = process_uploaded_voice(voice_file)
@@ -116,44 +176,47 @@ if voice_file:
         else:
             st.error(voice_text)
 
-# 2. Search Logic (Paragraph based)
-
-
+# 📄 Document Search
 if uploaded_file and user_input:
     doc = docx.Document(uploaded_file)
     target = user_input.strip().lower()
     matches = []
-    
+
     for para in doc.paragraphs:
         if target in para.text.lower():
             if para.text.strip():
                 matches.append(para.text)
-    
+
     if matches:
-        st.subheader("Document Matches")
+        doc_match_found = True
+        st.subheader("📄 Document Matches")
         for m in matches:
             st.info(m)
-        response = matches[0] # Use first match for AI context
+        response = matches[0]
     else:
-        st.warning("Phrase not found in document.")
+        st.warning("Phrase not found in document. Checking AI...")
 
-# 3. AI / Web Fallback
-if user_input and not response:
+# 🤖 AI + 🌐 Web Fallback (ONLY if document failed)
+if user_input and not doc_match_found:
     with st.spinner("Consulting AI..."):
         response = handle_conversation(user_input)
-        if not response or "No relevant info" in response:
+
+        if not response:
             web_res = search_web(user_input)
             response = "\n\n".join(web_res) if web_res else "No info found."
 
+# 🎯 Final Response Display
 if response:
-    st.markdown(f"<div style='background:#f9f9f9;padding:15px;border-left:5px solid #007bff;color:black;'><b>🤖 AI Response:</b><br>{response}</div>", unsafe_allow_html=True)
+    st.markdown(
+        f"<div style='background:#f9f9f9;padding:15px;border-left:5px solid #007bff;'>"
+        f"<b>🤖 AI Response:</b><br>{response}</div>",
+        unsafe_allow_html=True
+    )
+
     try:
         st.video("A-ZBlueProject/fixed_talking_lady.mp4")
-    except: 
+    except:
         pass
-
-
-
 # --- Optional Sidebar Search (Excel/PDF) ---
 
 st.divider()
@@ -257,6 +320,7 @@ with col2:
                     st.warning("No matching XML context found.")
             else:
                 st.error("Source Tag and Source Value required.")
+
 
 
 
