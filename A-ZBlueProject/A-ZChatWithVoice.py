@@ -177,30 +177,45 @@ else:
     # --------------------------
     # st.sidebar.image("A-ZBlueProject/AIChatbot.png", use_container_width=True)
 
-    uploaded_file = st.file_uploader("Upload a Word Document (.docx)")
-    # st.sidebar.image("A-ZBlueProject/PSD.png")
-    voice_file = st.file_uploader("Upload a voice file (.m4a/.wav)")
-    user_input = st.text_input("Ask something:")
+uploaded_file = st.file_uploader("Upload a Word Document (.docx)")
+user_input = st.text_input("Ask something (Type your keyword or phrase):")
+voice_file = st.file_uploader("Upload a voice file (.m4a/.wav)")
 
-    response = None
-    doc_text = ""
+# --- 1. Document Search Logic (Priority) ---
+if uploaded_file and user_input:
+    doc = docx.Document(uploaded_file)
+    search_phrase = user_input.strip().lower()
+    
+    found_matches = []
 
-    if uploaded_file:
-        doc = docx.Document(uploaded_file)
-        doc_text = "\n".join(p.text for p in doc.paragraphs)
+    # Iterate through paragraphs to find the specific block containing the words
+    for paragraph in doc.paragraphs:
+        if search_phrase in paragraph.text.lower():
+            if paragraph.text.strip():  # Ensure we don't capture empty lines
+                found_matches.append(paragraph.text)
 
-    if voice_file:
+    # Display only the relevant paragraphs
+    if found_matches:
+        st.subheader(f"Results for: '{user_input}'")
+        for i, match in enumerate(found_matches):
+            st.info(f"**Match {i+1}:**\n\n{match}")
+    else:
+        st.warning(f"The phrase '{user_input}' was not found in this document.")
 
-
-
-
-
-
-        
-        st.write("Processing voice...")
-        user_input = process_uploaded_voice(voice_file)
-        st.write(f"**You said:** {user_input}")
-
+# --- 2. Voice File Processing ---
+if voice_file:
+    st.write("---") # Visual separator
+    st.write("🎙️ Processing voice...")
+    
+    # Assuming process_uploaded_voice is defined elsewhere in your code
+    voice_text = process_uploaded_voice(voice_file)
+    
+    st.write(f"**Transcription:** {voice_text}")
+    
+    # Re-run search logic if voice provides new input
+    if voice_text:
+        user_input = voice_text
+        st.info("Voice captured. Please click the 'Search' button or refresh to apply to the document.")
     if user_input:
         response = handle_conversation(user_input)
         if uploaded_file:
