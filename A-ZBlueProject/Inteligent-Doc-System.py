@@ -303,7 +303,7 @@ with col1:
 with col2:
     st.subheader("🔍 XML Context Search")
 
-   def search_large_xml(xml_content, source_tag, source_value, target_path=None):
+def search_large_xml(xml_content, source_tag, source_value, target_path=None):
     # Convert bytes to a file-like object for streaming
     xml_file = io.BytesIO(xml_content)
     results = []
@@ -331,6 +331,7 @@ with col2:
         # elem.clear() 
 
     return results
+
 
 
 
