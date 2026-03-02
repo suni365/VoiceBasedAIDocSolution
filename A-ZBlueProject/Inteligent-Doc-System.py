@@ -1,6 +1,7 @@
 import streamlit as st
 import docx
 import os
+import io
 import time
 import speech_recognition as sr
 from lxml import etree
@@ -361,6 +362,7 @@ if x_file:
                 st.warning("No matching XML context found. Check your Tag names (case-sensitive).")
         else:
             st.error("Please enter both a Source Tag and a Source Value.")
+
 
 
 
