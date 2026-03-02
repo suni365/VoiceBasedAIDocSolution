@@ -98,7 +98,7 @@ except:
 # --------------------------
 
 # st.divider()
-# st.header("📘 WORD DocSearch / 🎤Voice Processing")
+# st.header("📘 Word Doc Search / 🎤Voice Processing")
 
 
 
@@ -364,6 +364,7 @@ if x_file:
                 st.warning("No matching XML context found. Check your Tag names (case-sensitive).")
         else:
             st.error("Please enter both a Source Tag and a Source Value.")
+
 
 
 
