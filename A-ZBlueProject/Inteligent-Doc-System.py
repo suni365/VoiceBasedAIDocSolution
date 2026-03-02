@@ -6,6 +6,7 @@ import speech_recognition as sr
 from lxml import etree
 from io import BytesIO
 from pydub import AudioSegment
+import xml.etree.ElementTree as ET
 
 # 1. SET PAGE CONFIG (MUST BE FIRST)
 st.set_page_config(layout="wide", page_title="AI-Chatbot")
@@ -302,29 +303,34 @@ with col1:
 with col2:
     st.subheader("🔍 XML Context Search")
 
-    x_file = st.file_uploader("Upload .xml File", type="xml", key="xml_uploader")
-
-    if x_file:
-        xtag = st.text_input("Source Tag", key="xml_source_tag")
-        xval = st.text_input("Source Value", key="xml_source_value")
-        xpath = st.text_input("Target Path (Optional)", key="xml_target_path")
-
-        if st.button("Search XML", key="xml_search_btn"):
-            if xtag and xval:
-                xml_content = x_file.getvalue()
-                x_results = search_large_xml(xml_content, xtag, xval, xpath)
-
-                if x_results:
-                    st.success(f"Found {len(x_results)} matches")
-                    for r in x_results:
-                        st.code(r, language="xml")
-                else:
-                    st.warning("No matching XML context found.")
+   def search_large_xml(xml_content, source_tag, source_value, target_path=None):
+    # Convert bytes to a file-like object for streaming
+    xml_file = io.BytesIO(xml_content)
+    results = []
+    
+    # Context managers handle memory cleanup
+    context = ET.iterparse(xml_file, events=('end',))
+    
+    for event, elem in context:
+        # Check if this element contains our search tag
+        found_tag = elem.find(f".//{source_tag}")
+        
+        if found_tag is not None and found_tag.text == source_value:
+            if target_path:
+                # Look for target specifically inside this parent block
+                target_node = elem.find(f".//{target_path}")
+                if target_node is not None:
+                    results.append(target_node.text)
             else:
-                st.error("Source Tag and Source Value required.")
+                # If no target, return the whole XML block as a string
+                results.append(ET.tostring(elem, encoding='unicode'))
+        
+        # Crucial for large files: clear the element to free memory
+        # Only clear if we've moved past the parent level we care about
+        # (For simple flat structures, clearing root helps)
+        # elem.clear() 
 
-
-
+    return results
 
 
 
