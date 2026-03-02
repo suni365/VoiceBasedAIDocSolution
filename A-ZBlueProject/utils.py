@@ -44,8 +44,11 @@ def handle_conversation(prompt):
     if "where are you from" in prompt:
         return "I am from Kerala Trivandrum."
 
-    if "Who cretaed you " in prompt:
+    if "Who created you" in prompt:
         return "Sunita from Trivandrum, created me."
+
+     if "what is your name" in prompt:
+        return "My name is Inteligent Document Assistant."
 
     if "what can you do" in prompt:
         return "I can search documents, analyze PDFs, Excel files, XML, and respond using voice or text."
@@ -208,6 +211,7 @@ def search_large_xml(xml_bytes, source_tag, source_value, target_path=None):
 
     except Exception as e:
         return [f"XML Processing Error: {str(e)}"]
+
 
 
 
