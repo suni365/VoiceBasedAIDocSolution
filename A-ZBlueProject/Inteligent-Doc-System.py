@@ -8,6 +8,7 @@ from lxml import etree
 from io import BytesIO
 from pydub import AudioSegment
 import xml.etree.ElementTree as ET
+from PIL import Image
 import pydub
 import shutil
 
@@ -364,6 +365,69 @@ if x_file:
                 st.warning("No matching XML context found. Check your Tag names (case-sensitive).")
         else:
             st.error("Please enter both a Source Tag and a Source Value.")
+
+# Page configuration
+st.set_page_config(page_title="AWS Deployment Debugger", layout="wide")
+
+# Custom CSS for a clean look
+st.markdown("""
+    <style>
+    .main {
+        background-color: #f5f7f9;
+    }
+    .stTextArea textarea {
+        font-family: monospace;
+    }
+    </style>
+    """, unsafe_allow_all_status=True)
+
+st.title("🛠️ AWS & ECR Deployment Troubleshooter")
+st.write("Upload your screenshot and/or paste your logs to identify deployment bottlenecks.")
+
+# Create two columns for inputs
+col1, col2 = st.columns(2)
+
+with col1:
+    st.subheader("📸 Step 1: Upload AWS Screenshot")
+    st.info("Upload a picture of your ECR status, ECS Task, or CloudWatch dashboard.")
+    uploaded_file = st.file_uploader("Choose an image...", type=["jpg", "jpeg", "png"])
+    
+    if uploaded_file is not None:
+        image = Image.open(uploaded_file)
+        st.image(image, caption='Target Screenshot for Analysis', use_container_width=True)
+
+with col2:
+    st.subheader("📄 Step 2: Paste Logs (Optional)")
+    st.info("Paste the text logs from your terminal or CloudWatch here.")
+    log_input = st.text_area("Deployment/Runtime Logs:", height=300, 
+                             placeholder="e.g., java.lang.NullPointerException or Standard Commons Logging errors...")
+
+# Action Button
+st.divider()
+if st.button("🚀 Analyze Deployment Issue"):
+    if uploaded_file or log_input:
+        with st.spinner('Processing data for analysis...'):
+            # This section displays the summary of what was provided
+            st.success("Data captured successfully!")
+            
+            res_col1, res_col2 = st.columns(2)
+            
+            with res_col1:
+                if uploaded_file:
+                    st.write("**Visual Evidence:** Image received.")
+                else:
+                    st.write("**Visual Evidence:** None provided.")
+            
+            with res_col2:
+                if log_input:
+                    st.write(f"**Log Evidence:** {len(log_input.split())} words detected.")
+                else:
+                    st.write("**Log Evidence:** None provided.")
+
+            st.warning("👉 **Next Step:** Please share the screenshot or the log text here in our chat! I can then tell you exactly which line in your Java service or which AWS Permission is causing the failure.")
+    else:
+        st.error("Please provide at least a screenshot or a log snippet to proceed.")
+
 
 
 
