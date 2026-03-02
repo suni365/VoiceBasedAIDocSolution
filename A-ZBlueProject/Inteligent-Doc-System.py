@@ -304,34 +304,63 @@ with col2:
     st.subheader("🔍 XML Context Search")
 
 def search_large_xml(xml_content, source_tag, source_value, target_path=None):
-    # Convert bytes to a file-like object for streaming
-    xml_file = io.BytesIO(xml_content)
-    results = []
-    
-    # Context managers handle memory cleanup
-    context = ET.iterparse(xml_file, events=('end',))
-    
-    for event, elem in context:
-        # Check if this element contains our search tag
-        found_tag = elem.find(f".//{source_tag}")
+    try:
+        # Wrap bytes in a file-like object for iterparse
+        xml_file = io.BytesIO(xml_content)
+        results = []
         
-        if found_tag is not None and found_tag.text == source_value:
-            if target_path:
-                # Look for target specifically inside this parent block
-                target_node = elem.find(f".//{target_path}")
-                if target_node is not None:
-                    results.append(target_node.text)
+        # We iterate through 'end' events of every element
+        for event, elem in ET.iterparse(xml_file, events=('end',)):
+            # Look for the source tag within the current element block
+            found_node = elem.find(f".//{source_tag}")
+            
+            if found_node is not None and found_node.text == source_value:
+                if target_path:
+                    # Look for target path within this same parent block
+                    target_node = elem.find(f".//{target_path}")
+                    if target_node is not None:
+                        results.append(target_node.text)
+                else:
+                    # If no target, return the whole block string
+                    results.append(ET.tostring(elem, encoding='unicode'))
+            
+            # This is important: it prevents the tree from building in memory
+            # but we only clear if we are done with the parent. 
+            # For simplicity in small/medium files, you can omit elem.clear()
+        return results
+    except Exception as e:
+        return [f"Error: {str(e)}"]
+
+# --- The UI ---
+st.subheader("🔍 XML Context Search")
+
+x_file = st.file_uploader("Upload .xml File", type="xml", key="xml_uploader")
+
+if x_file:
+    # These must be outside the button to be visible!
+    xtag = st.text_input("Source Tag (e.g., FullName)", key="xml_source_tag").strip()
+    xval = st.text_input("Source Value (e.g., John Doe)", key="xml_source_value").strip()
+    xpath = st.text_input("Target Path (e.g., Gender)", key="xml_target_path").strip()
+
+    if st.button("Search XML", key="xml_search_btn"):
+        if xtag and xval:
+            xml_content = x_file.getvalue()
+            
+            # Call the function
+            with st.spinner("Searching..."):
+                x_results = search_large_xml(xml_content, xtag, xval, xpath)
+
+            if x_results:
+                st.success(f"Found {len(x_results)} matches")
+                for r in x_results:
+                    if xpath:
+                        st.info(f"Result: {r}")
+                    else:
+                        st.code(r, language="xml")
             else:
-                # If no target, return the whole XML block as a string
-                results.append(ET.tostring(elem, encoding='unicode'))
-        
-        # Crucial for large files: clear the element to free memory
-        # Only clear if we've moved past the parent level we care about
-        # (For simple flat structures, clearing root helps)
-        # elem.clear() 
-
-    return results
-
+                st.warning("No matching XML context found. Check your Tag names (case-sensitive).")
+        else:
+            st.error("Please enter both a Source Tag and a Source Value.")
 
 
 
