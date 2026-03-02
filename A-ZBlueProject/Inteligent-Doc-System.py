@@ -379,7 +379,7 @@ st.markdown("""
         font-family: monospace;
     }
     </style>
-    """, unsafe_allow_all_status=True)
+    """, unsafe_allow_html=True)
 
 st.title("🛠️ AWS & ECR Deployment Troubleshooter")
 st.write("Upload your screenshot and/or paste your logs to identify deployment bottlenecks.")
@@ -427,6 +427,7 @@ if st.button("🚀 Analyze Deployment Issue"):
             st.warning("👉 **Next Step:** Please share the screenshot or the log text here in our chat! I can then tell you exactly which line in your Java service or which AWS Permission is causing the failure.")
     else:
         st.error("Please provide at least a screenshot or a log snippet to proceed.")
+
 
 
 
