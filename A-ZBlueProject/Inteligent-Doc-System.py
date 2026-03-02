@@ -8,6 +8,8 @@ from lxml import etree
 from io import BytesIO
 from pydub import AudioSegment
 import xml.etree.ElementTree as ET
+import pydub
+import shutil
 
 # 1. SET PAGE CONFIG (MUST BE FIRST)
 st.set_page_config(layout="wide", page_title="AI-Chatbot")
@@ -362,6 +364,7 @@ if x_file:
                 st.warning("No matching XML context found. Check your Tag names (case-sensitive).")
         else:
             st.error("Please enter both a Source Tag and a Source Value.")
+
 
 
 
