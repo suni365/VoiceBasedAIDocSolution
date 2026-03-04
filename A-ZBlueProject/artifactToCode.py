@@ -9,7 +9,8 @@ genai.configure(api_key=API_KEY)
 
 # Use 1.5-flash for speed/cost, or  1.5-pro for complex logic 
 
-model = genai.GenerativeModel('gemini-1.5-flash') 
+# model = genai.GenerativeModel('gemini-1.5-flash') 
+model = genai.GenerativeModel("gemini-1.5-flash-latest")
 
 def analyze_code_artifact(image, error_text): 
     prompt = f""" 
@@ -52,6 +53,7 @@ with col2:
                 st.info(result) 
         
         else: st.warning("Please provide both an image and an error log.")
+
 
 
 
