@@ -18,18 +18,18 @@ def analyze_code_artifact(image, error_text):
 
     Error Log: 
     {error_text} 
-
-   Tasks: 
-   1. Pinpoint the exact line number or code block in the image causing the issue. 
-   2. Explain the technical reason for the failure (e.g., Syntax, Logic, or Dependency). 
-   3. Provide the corrected code snippet. 
-   """ 
-   try: 
+    
+    Tasks: 
+    1. Pinpoint the exact line number or code block in the image causing the issue. 
+    2. Explain the technical reason for the failure (e.g., Syntax, Logic, or Dependency). 
+    3. Provide the corrected code snippet. 
+    """ 
+    try: 
        # The API accepts a list: [prompt, image] 
-       response = model.generate_content([prompt, image]) 
-       return response.text 
-   except Exception as e: 
-       return f"Error connecting to Gemini API: {str(e)}" # --- Streamlit UI --- 
+        response = model.generate_content([prompt, image]) 
+        return response.text 
+    except Exception as e: 
+        return f"Error connecting to Gemini API: {str(e)}" # --- Streamlit UI --- 
 st.set_page_config(page_title="Artifact Debugger", layout="wide") 
 st.title("🚀 AI Code Artifact & Error Reviewer") 
 st.write("Upload a screenshot of your code and paste the error to get a fix.") 
@@ -52,6 +52,7 @@ with col2:
                 st.info(result) 
         
         else: st.warning("Please provide both an image and an error log.")
+
 
 
 
