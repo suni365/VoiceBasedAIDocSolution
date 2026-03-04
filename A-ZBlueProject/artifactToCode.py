@@ -4,8 +4,8 @@ import Image
 import os 
 # --- Configuration --- # 
 # It is safer to use secrets or environment variables 
-API_KEY = "YOUR_API_KEY"  
-genai.configure(api_key=AIzaSyBVqeS6v4aPSUS6NeQ8h78HBUk4519gbKU) 
+API_KEY = "AIzaSyBVqeS6v4aPSUS6NeQ8h78HBUk4519gbKU"  
+genai.configure(api_key=API_KEY) 
 
 # Use 1.5-flash for speed/cost, or  1.5-pro for complex logic 
 
