@@ -12,7 +12,8 @@ lxml
 requests
 watchdog==2.1.9
 numpy
-google-generativeai>=0.5.0
+google-genai
 Pillow
+
 
 
