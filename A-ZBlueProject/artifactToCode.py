@@ -1,6 +1,6 @@
 import streamlit as st 
-import google.generativeai as genai from PIL 
-import Image 
+import google.generativeai as genai 
+from PIL import Image 
 import os 
 # --- Configuration --- # 
 # It is safer to use secrets or environment variables 
@@ -52,6 +52,7 @@ with col2:
                 st.info(result) 
         
         else: st.warning("Please provide both an image and an error log.")
+
 
 
 
