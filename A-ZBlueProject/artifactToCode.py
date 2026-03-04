@@ -57,7 +57,8 @@ with col1:
 
     if uploaded_file:
         img = Image.open(uploaded_file)
-        st.image(img, caption="Uploaded Artifact", use_container_width=True)
+        # st.image(img, caption="Uploaded Artifact", use_container_width=True)
+        st.image(img, caption="Uploaded Artifact", width="stretch")
 
 with col2:
     error_input = st.text_area(
@@ -76,5 +77,6 @@ with col2:
 
         else:
             st.warning("Please provide both an image and an error log.")
+
 
 
