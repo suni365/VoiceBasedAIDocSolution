@@ -1,6 +1,16 @@
+
+import streamlit as st
+import docx
+import os
+import time
+import speech_recognition as sr
+from lxml import etree
+from io import BytesIO
+from pydub import AudioSegment
 numpy
 google-genai>=0.3.0
 Pillow
+
 
 
 
