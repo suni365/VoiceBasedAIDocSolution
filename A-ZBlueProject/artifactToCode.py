@@ -17,7 +17,7 @@ def analyze_code_artifact(image, error_text):
     Analyze the provided image (code artifact) and the error log below. 
 
     Error Log: 
-   {error_text} 
+    {error_text} 
 
    Tasks: 
    1. Pinpoint the exact line number or code block in the image causing the issue. 
@@ -52,6 +52,7 @@ with col2:
                 st.info(result) 
         
         else: st.warning("Please provide both an image and an error log.")
+
 
 
 
