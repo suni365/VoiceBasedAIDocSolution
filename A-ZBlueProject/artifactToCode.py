@@ -28,17 +28,15 @@ def analyze_code_artifact(image, error_text):
     2. Explain the technical reason (Syntax, Logic, or Dependency).
     3. Provide the corrected code snippet.
     """
-
     try:
         response = client.models.generate_content(
-            model="gemini-1.5-flash",
-            contents=[prompt, image]
+            model="gemini-1.5-pro",
+            contents="Say hello in one sentence"
         )
-
+        st.write(response.text)
         return response.text
-
     except Exception as e:
-        return f"Error connecting to Gemini API: {str(e)}"
+    return f"Error connecting to Gemini API: {str(e)}"
 
 
 # ---------------------------
@@ -78,3 +76,4 @@ with col2:
 
         else:
             st.warning("Please provide both an image and an error log.")
+
