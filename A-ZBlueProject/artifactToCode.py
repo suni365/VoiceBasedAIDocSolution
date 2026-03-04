@@ -36,7 +36,7 @@ def analyze_code_artifact(image, error_text):
         st.write(response.text)
         return response.text
     except Exception as e:
-    return f"Error connecting to Gemini API: {str(e)}"
+        return f"Error connecting to Gemini API: {str(e)}"
 
 
 # ---------------------------
@@ -76,4 +76,5 @@ with col2:
 
         else:
             st.warning("Please provide both an image and an error log.")
+
 
