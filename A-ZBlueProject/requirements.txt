@@ -1,19 +1,7 @@
-streamlit
-streamlit-webrtc
-opencv-python-headless
-SpeechRecognition
-gtts
-pydub
-python-docx
-PyPDF2
-pandas
-openpyxl
-lxml
-requests
-watchdog==2.1.9
 numpy
 google-genai>=0.3.0
 Pillow
+
 
 
 
