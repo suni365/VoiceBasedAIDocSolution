@@ -1,5 +1,5 @@
 import streamlit as st 
-import google.generativeai as genai 
+from google import genai
 from PIL import Image 
 import os 
 # --- Configuration --- # 
@@ -53,6 +53,7 @@ with col2:
                 st.info(result) 
         
         else: st.warning("Please provide both an image and an error log.")
+
 
 
 
