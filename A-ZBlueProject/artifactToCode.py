@@ -5,7 +5,7 @@ import os
 # --- Configuration --- # 
 # It is safer to use secrets or environment variables 
 API_KEY = "YOUR_API_KEY"  
-genai.configure(api_key=API_KEY) 
+genai.configure(api_key=AIzaSyBVqeS6v4aPSUS6NeQ8h78HBUk4519gbKU) 
 
 # Use 1.5-flash for speed/cost, or  1.5-pro for complex logic 
 
@@ -52,6 +52,7 @@ with col2:
                 st.info(result) 
         
         else: st.warning("Please provide both an image and an error log.")
+
 
 
 
