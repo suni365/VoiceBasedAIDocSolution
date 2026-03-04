@@ -5,12 +5,16 @@ import os
 # --- Configuration --- # 
 # It is safer to use secrets or environment variables 
 API_KEY = "AIzaSyBVqeS6v4aPSUS6NeQ8h78HBUk4519gbKU"  
-genai.configure(api_key=API_KEY) 
-
+client = genai.Client(api_key=st.secrets["API_KEY"])
 # Use 1.5-flash for speed/cost, or  1.5-pro for complex logic 
 
 # model = genai.GenerativeModel('gemini-1.5-flash') 
-model = genai.GenerativeModel("gemini-1.5-flash-latest")
+# model = genai.GenerativeModel("gemini-1.5-flash-latest")
+client = genai.Client(api_key=st.secrets[client])
+response = client.models.generate_content(
+    model="gemini-1.5-flash",
+    contents=[prompt, image]
+)
 
 def analyze_code_artifact(image, error_text): 
     prompt = f""" 
@@ -27,7 +31,10 @@ def analyze_code_artifact(image, error_text):
     """ 
     try: 
        # The API accepts a list: [prompt, image] 
-        response = model.generate_content([prompt, image]) 
+        response = client.models.generate_content(
+        model="gemini-1.5-flash",
+        contents=[prompt, image]
+        )
         return response.text 
     except Exception as e: 
         return f"Error connecting to Gemini API: {str(e)}" # --- Streamlit UI --- 
@@ -53,6 +60,7 @@ with col2:
                 st.info(result) 
         
         else: st.warning("Please provide both an image and an error log.")
+
 
 
 
