@@ -1,1 +1,3 @@
 ffmpeg
+libxml2
+libxslt
