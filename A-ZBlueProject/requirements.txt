@@ -1,13 +1,19 @@
 streamlit==1.29.0
 docx==0.2.4
-numpy>=1.25,<2
+numpy<2,>=1.25
 google-genai>=0.3.0
-Pillow==9.5.0
+Pillow>=10.0,<10.3
 pydub==0.25.1
-lxml==4.9.5
+lxml>=4.9.6
 SpeechRecognition==3.11.0
 rich>=10.14.0,<14
 google-genai>=0.3.0
+
+
+
+
+
+
 
 
 
