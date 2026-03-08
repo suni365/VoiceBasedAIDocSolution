@@ -1,8 +1,10 @@
 streamlit==1.29.0
 docx==0.2.4
-numpy==1.27.5
+numpy>=2.4.0
 google-genai>=0.3.0
 Pillow==10.0.0
 pydub==0.25.1
 lxml==4.9.5
 SpeechRecognition==3.11.0
+rich>=14.3.3
+
