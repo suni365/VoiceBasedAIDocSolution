@@ -11,7 +11,6 @@ import xml.etree.ElementTree as ET
 from PIL import Image
 import pytesseract
 import google.generativeai as genai
-client = genai.Client
 import pydub
 import shutil
 
@@ -438,6 +437,7 @@ Error details:
         st.subheader("AI Diagnosis")
         # st.write(response.text)
         st.write(response.candidates[0].content.parts[0].text)
+
 
 
 
