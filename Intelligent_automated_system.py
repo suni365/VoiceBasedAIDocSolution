@@ -14,7 +14,7 @@ import google.generativeai as genai
 import pydub
 import shutil
 
-genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
+
 
 # 1. SET PAGE CONFIG (MUST BE FIRST)
 st.set_page_config(layout="wide", page_title="AI-Chatbot")
@@ -374,8 +374,10 @@ if x_file:
 
 
 # model = genai.GenerativeModel("gemini-1.5-flash")
-model = genai.GenerativeModel("gemini-pro")
-
+genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
+st.write("API Loaded:", "GEMINI_API_KEY" in st.secrets)
+# model = genai.GenerativeModel("gemini-pro")
+model = genai.GenerativeModel("gemini-1.5-flash-latest")
 st.set_page_config(page_title="AI DevOps Debugger", layout="wide")
 
 st.title("🛠️ AI Deployment Troubleshooter")
@@ -400,6 +402,10 @@ with col2:
     log_input = st.text_area("Logs", height=300)
 
 st.divider()
+
+if st.button("Test Gemini"):
+    test = model.generate_content("Say hello")
+    st.write(test.candidates[0].content.parts[0].text)
 
 if st.button("Analyze Issue"):
 
@@ -429,7 +435,9 @@ Error details:
         response = model.generate_content(prompt)
         
         st.subheader("AI Diagnosis")
-        st.write(response.text)
+        # st.write(response.text)
+        st.write(response.candidates[0].content.parts[0].text)
+
 
 
 
