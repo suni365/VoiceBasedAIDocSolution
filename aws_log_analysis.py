@@ -1,50 +1,76 @@
 import streamlit as st
 import re
 
-st.title("AI Log Analyzer (Local Version)")
+st.title("Smart Log Analyzer")
 
-# Text area for pasting logs
 log_text = st.text_area("Paste your log here")
 
-# File uploader for log files
 uploaded_file = st.file_uploader("Or upload a log file")
 if uploaded_file:
     log_text = uploaded_file.read().decode("utf-8")
 
-# Function to extract error lines
+def parse_log_line(line):
+    """
+    Parses a single log line to extract:
+    - Timestamp
+    - Component (package/class)
+    - Error message
+    """
+    timestamp = ""
+    component = ""
+    message = line.strip()
+
+    # Try to extract timestamp (common log format)
+    ts_match = re.match(r'(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}[.,]\d+)', line)
+    if ts_match:
+        timestamp = ts_match.group(1)
+        message = line[len(timestamp):].strip()
+
+    # Try to extract component/class from stack trace
+    comp_match = re.search(r'at ([\w\.]+\w)\(', message)
+    if comp_match:
+        component = comp_match.group(1)
+
+    # Try to extract actual error message (for Caused by lines)
+    error_match = re.search(r'Caused by: (.*)', message)
+    if error_match:
+        message = error_match.group(1)
+
+    return timestamp, component, message
+
 def extract_errors(log_text):
     lines = log_text.split("\n")
     errors = []
     for line in lines:
-        if re.search(r"error|exception|fail|traceback", line, re.IGNORECASE):
-            errors.append(line)
+        if re.search(r'error|exception|fail|traceback', line, re.IGNORECASE):
+            errors.append(parse_log_line(line))
     return errors
 
-# Simple local analysis function
 def analyze_errors(errors):
     if not errors:
-        return "No errors detected in the log."
+        return "No errors detected."
 
     analysis = []
-    for i, line in enumerate(errors, start=1):
-        component = "Unknown"
-        suggested_fix = "Check the log context and stack trace."
-
-        # Try to detect component from line (simple heuristic)
-        if ":" in line:
-            parts = line.split(":")
-            if len(parts) > 1:
-                component = parts[0].strip()
+    for i, (ts, comp, msg) in enumerate(errors, start=1):
+        suggested_fix = "Check stack trace and code."
+        # Add some basic known patterns
+        if "SQLServerException" in msg:
+            suggested_fix = "Check database column names and query."
+        elif "NullPointerException" in msg:
+            suggested_fix = "Check for null values before using the object."
+        elif "TimeoutException" in msg:
+            suggested_fix = "Check service connectivity or increase timeout."
 
         analysis.append(
             f"Error {i}:\n"
-            f"  Log: {line}\n"
-            f"  Component: {component}\n"
+            f"  Timestamp: {ts or 'N/A'}\n"
+            f"  Component: {comp or 'N/A'}\n"
+            f"  Error Message: {msg}\n"
             f"  Suggested Fix: {suggested_fix}\n"
         )
-    return "\n".join(analysis)
+    return "\n\n".join(analysis)
 
 if st.button("Analyze Log"):
     errors = extract_errors(log_text)
     result = analyze_errors(errors)
-    st.text_area("Analysis Result", result, height=400)
+    st.text_area("Analysis Result", result, height=600)
