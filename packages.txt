@@ -1,4 +1,4 @@
 ffmpeg
 libxml2
-libxslt
+libxslt1.1
 tesseract-ocr
