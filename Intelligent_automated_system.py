@@ -10,7 +10,8 @@ from pydub import AudioSegment
 import xml.etree.ElementTree as ET
 from PIL import Image
 import pytesseract
-import google.generativeai as genai
+# import google.generativeai as genai
+from google import genai
 import pydub
 import shutil
 
@@ -374,10 +375,17 @@ if x_file:
 
 
 # model = genai.GenerativeModel("gemini-1.5-flash")
-genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
-st.write("API Loaded:", "GEMINI_API_KEY" in st.secrets)
+# genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
+# st.write("API Loaded:", "GEMINI_API_KEY" in st.secrets)
+
+client = genai.Client(api_key=st.secrets["GEMINI_API_KEY"])
+
+response = client.models.generate_content(
+    model="gemini-1.5-flash",
+    contents=prompt
+)
 # model = genai.GenerativeModel("gemini-pro")
-model = genai.GenerativeModel("gemini-1.5-flash-latest")
+# model = genai.GenerativeModel("gemini-1.5-flash-latest")
 st.set_page_config(page_title="AI DevOps Debugger", layout="wide")
 
 st.title("🛠️ AI Deployment Troubleshooter")
@@ -437,6 +445,7 @@ Error details:
         st.subheader("AI Diagnosis")
         # st.write(response.text)
         st.write(response.candidates[0].content.parts[0].text)
+
 
 
 
