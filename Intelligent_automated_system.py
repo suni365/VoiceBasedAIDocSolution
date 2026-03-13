@@ -440,13 +440,15 @@ Error details:
 
       
 
-        response = client.models.generate_content(
-    model="gemini-1.5-flash",
+    response = client.models.generate_content(
+    model="gemini-2.0-flash",
     contents=prompt
+)
 )
         st.subheader("AI Diagnosis")
         # st.write(response.text)
         st.write(response.candidates[0].content.parts[0].text)
+
 
 
 
