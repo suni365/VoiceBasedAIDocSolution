@@ -382,6 +382,7 @@ client = genai.Client(api_key=st.secrets["GEMINI_API_KEY"])
 
 
 
+
 # model = genai.GenerativeModel("gemini-pro")
 # model = genai.GenerativeModel("gemini-1.5-flash-latest")
 st.set_page_config(page_title="AI DevOps Debugger", layout="wide")
@@ -449,6 +450,7 @@ Error details:
     # st.write(response.text)
     print(response.text)
     st.write(response.candidates[0].content.parts[0].text)
+
 
 
 
