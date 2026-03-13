@@ -1,68 +1,50 @@
 import streamlit as st
-from google import genai
+import re
 
-st.title("AI Log Analyzer")
+st.title("AI Log Analyzer (Local Version)")
 
+# Text area for pasting logs
 log_text = st.text_area("Paste your log here")
 
+# File uploader for log files
 uploaded_file = st.file_uploader("Or upload a log file")
-
 if uploaded_file:
     log_text = uploaded_file.read().decode("utf-8")
 
-
+# Function to extract error lines
 def extract_errors(log_text):
-
     lines = log_text.split("\n")
     errors = []
-
     for line in lines:
-        if "error" in line.lower() or "exception" in line.lower():
+        if re.search(r"error|exception|fail|traceback", line, re.IGNORECASE):
             errors.append(line)
+    return errors
 
-    return "\n".join(errors)
+# Simple local analysis function
+def analyze_errors(errors):
+    if not errors:
+        return "No errors detected in the log."
 
+    analysis = []
+    for i, line in enumerate(errors, start=1):
+        component = "Unknown"
+        suggested_fix = "Check the log context and stack trace."
 
-client = genai.Client(api_key=st.secrets["GEMINI_API_KEY"])
+        # Try to detect component from line (simple heuristic)
+        if ":" in line:
+            parts = line.split(":")
+            if len(parts) > 1:
+                component = parts[0].strip()
 
-
-def analyze_log(log_text):
-
-    prompt = f"""
-    Analyze the following system log.
-
-    Identify:
-    1. Root cause of the error
-    2. Which component is failing
-    3. Suggested fix
-
-    Log:
-    {log_text}
-    """
-
-    response = client.models.generate_content(
-        model="gemini-2.0-flash-lite",
-        contents=prompt
-    )
-
-    return response.text
-
+        analysis.append(
+            f"Error {i}:\n"
+            f"  Log: {line}\n"
+            f"  Component: {component}\n"
+            f"  Suggested Fix: {suggested_fix}\n"
+        )
+    return "\n".join(analysis)
 
 if st.button("Analyze Log"):
-
-    if log_text.strip() == "":
-        st.warning("Please paste or upload logs first.")
-
-    else:
-        errors = extract_errors(log_text)
-
-        if errors.strip() == "":
-            st.info("No obvious error lines found. Sending full log for analysis.")
-            errors = log_text
-
-        try:
-            result = analyze_log(errors)
-            st.write(result)
-
-        except Exception as e:
-            st.error(f"AI analysis failed: {e}")
+    errors = extract_errors(log_text)
+    result = analyze_errors(errors)
+    st.text_area("Analysis Result", result, height=400)
