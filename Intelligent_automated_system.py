@@ -380,10 +380,8 @@ if x_file:
 
 client = genai.Client(api_key=st.secrets["GEMINI_API_KEY"])
 
-response = client.models.generate_content(
-    model="gemini-1.5-flash",
-    contents=prompt
-)
+
+
 # model = genai.GenerativeModel("gemini-pro")
 # model = genai.GenerativeModel("gemini-1.5-flash-latest")
 st.set_page_config(page_title="AI DevOps Debugger", layout="wide")
@@ -440,11 +438,16 @@ Error details:
 {combined_text}
 """
 
-        response = model.generate_content(prompt)
-        
+      
+
+        response = client.models.generate_content(
+    model="gemini-1.5-flash",
+    contents=prompt
+)
         st.subheader("AI Diagnosis")
         # st.write(response.text)
         st.write(response.candidates[0].content.parts[0].text)
+
 
 
 
