@@ -1,0 +1,4 @@
+ffmpeg
+libxml2
+libxslt
+tesseract-ocr
