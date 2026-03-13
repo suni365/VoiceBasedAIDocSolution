@@ -13,6 +13,8 @@ numpy
 av
 google-genai
 protobuf>=4.25.3
+gTTS
+
 
 
 
