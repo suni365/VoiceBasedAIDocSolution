@@ -444,11 +444,12 @@ Error details:
     model="gemini-2.0-flash",
     contents=prompt
 )
-)
+
         st.subheader("AI Diagnosis")
         # st.write(response.text)
         print(response.text)
         st.write(response.candidates[0].content.parts[0].text)
+
 
 
 
