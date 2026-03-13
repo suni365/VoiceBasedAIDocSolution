@@ -14,6 +14,8 @@ import google.generativeai as genai
 import pydub
 import shutil
 
+genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
+
 # 1. SET PAGE CONFIG (MUST BE FIRST)
 st.set_page_config(layout="wide", page_title="AI-Chatbot")
 
@@ -368,9 +370,11 @@ if x_file:
         else:
             st.error("Please enter both a Source Tag and a Source Value.")
 
-genai.configure(api_key="AIzaSyBsk4BLyE8miw9S17UmwcVAh0FNZjkCci0")
+# genai.configure(api_key="AIzaSyBsk4BLyE8miw9S17UmwcVAh0FNZjkCci0")
 
-model = genai.GenerativeModel("gemini-1.5-flash")
+
+# model = genai.GenerativeModel("gemini-1.5-flash")
+model = genai.GenerativeModel("gemini-pro")
 
 st.set_page_config(page_title="AI DevOps Debugger", layout="wide")
 
@@ -423,9 +427,10 @@ Error details:
 """
 
         response = model.generate_content(prompt)
-
+        
         st.subheader("AI Diagnosis")
         st.write(response.text)
+
 
 
 
