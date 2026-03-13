@@ -1,4 +1,6 @@
 streamlit
+Pillow
+pytesseract
 python-docx
 speechrecognition
 lxml
@@ -9,6 +11,8 @@ openpyxl
 PyPDF2
 numpy
 av
+google-generativeai
+
 
 
 
