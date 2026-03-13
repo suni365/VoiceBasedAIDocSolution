@@ -371,7 +371,7 @@ if x_file:
         else:
             st.error("Please enter both a Source Tag and a Source Value.")
 
-# genai.configure(api_key="AIzaSyBsk4BLyE8miw9S17UmwcVAh0FNZjkCci0")
+
 
 
 # model = genai.GenerativeModel("gemini-1.5-flash")
@@ -449,6 +449,7 @@ Error details:
     # st.write(response.text)
     print(response.text)
     st.write(response.candidates[0].content.parts[0].text)
+
 
 
 
