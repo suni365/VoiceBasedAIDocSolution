@@ -1,8 +1,11 @@
 import streamlit as st
-import google.generativeai as genai
+# import google.generativeai as genai
 from PIL import Image
 import PyPDF2
 import docx
+from google import genai
+
+
 
 # ---------------- CONFIG ----------------
 st.set_page_config(
@@ -11,19 +14,39 @@ st.set_page_config(
 )
 
 # ---------------- API CONFIG ----------------
-genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
-# model = genai.GenerativeModel("gemini-1.5-flash")
-model = genai.GenerativeModel("gemini-1.5-flash-latest")
+# genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
+client = genai.Client(api_key=st.secrets["GEMINI_API_KEY"])
+# # model = genai.GenerativeModel("gemini-1.5-flash")
+# model = genai.GenerativeModel("gemini-1.5-flash-latest")
 
 # ---------------- COMMON AI FUNCTION ----------------
+# def analyze_with_ai(prompt, image=None):
+#     try:
+#         if image:
+#             response = model.generate_content([image, prompt])
+#         else:
+#             response = model.generate_content(prompt)
+
+#         return response.text
+#     except Exception as e:
+#         return f"Error: {str(e)}"
+
+
 def analyze_with_ai(prompt, image=None):
     try:
         if image:
-            response = model.generate_content([image, prompt])
+            response = client.models.generate_content(
+                model="gemini-2.0-flash",
+                contents=[prompt, image]
+            )
         else:
-            response = model.generate_content(prompt)
+            response = client.models.generate_content(
+                model="gemini-2.0-flash",
+                contents=prompt
+            )
 
         return response.text
+
     except Exception as e:
         return f"Error: {str(e)}"
 
