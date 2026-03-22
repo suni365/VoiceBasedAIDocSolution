@@ -1,76 +1,164 @@
 import streamlit as st
-import re
+import google.generativeai as genai
+from PIL import Image
+import PyPDF2
+import docx
 
-st.title("Smart Log Analyzer")
+# ---------------- CONFIG ----------------
+st.set_page_config(
+    page_title="AI Debug Assistant",
+    layout="wide"
+)
 
-log_text = st.text_area("Paste your log here")
+# ---------------- API CONFIG ----------------
+genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
+model = genai.GenerativeModel("gemini-1.5-flash")
 
-uploaded_file = st.file_uploader("Or upload a log file")
-if uploaded_file:
-    log_text = uploaded_file.read().decode("utf-8")
+# ---------------- COMMON AI FUNCTION ----------------
+def analyze_with_ai(prompt, image=None):
+    try:
+        if image:
+            response = model.generate_content([image, prompt])
+        else:
+            response = model.generate_content(prompt)
 
-def parse_log_line(line):
-    """
-    Parses a single log line to extract:
-    - Timestamp
-    - Component (package/class)
-    - Error message
-    """
-    timestamp = ""
-    component = ""
-    message = line.strip()
+        return response.text
+    except Exception as e:
+        return f"Error: {str(e)}"
 
-    # Try to extract timestamp (common log format)
-    ts_match = re.match(r'(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}[.,]\d+)', line)
-    if ts_match:
-        timestamp = ts_match.group(1)
-        message = line[len(timestamp):].strip()
+# ---------------- FILE READERS ----------------
+def read_pdf(file):
+    text = ""
+    pdf = PyPDF2.PdfReader(file)
+    for page in pdf.pages:
+        text += page.extract_text() or ""
+    return text
 
-    # Try to extract component/class from stack trace
-    comp_match = re.search(r'at ([\w\.]+\w)\(', message)
-    if comp_match:
-        component = comp_match.group(1)
+def read_docx(file):
+    doc = docx.Document(file)
+    return "\n".join([para.text for para in doc.paragraphs])
 
-    # Try to extract actual error message (for Caused by lines)
-    error_match = re.search(r'Caused by: (.*)', message)
-    if error_match:
-        message = error_match.group(1)
+# ---------------- SIDEBAR ----------------
+st.sidebar.title("🤖 AI Assistant")
 
-    return timestamp, component, message
+feature = st.sidebar.selectbox(
+    "Choose Feature",
+    [
+        "🔍 Code Analyzer",
+        "🐞 Error Debugger",
+        "📄 Document Analyzer",
+        "🖼️ Screenshot Analyzer"
+    ]
+)
 
-def extract_errors(log_text):
-    lines = log_text.split("\n")
-    errors = []
-    for line in lines:
-        if re.search(r'error|exception|fail|traceback', line, re.IGNORECASE):
-            errors.append(parse_log_line(line))
-    return errors
+# ---------------- CODE ANALYZER ----------------
+if feature == "🔍 Code Analyzer":
+    st.title("🔍 Code Analyzer")
 
-def analyze_errors(errors):
-    if not errors:
-        return "No errors detected."
+    code = st.text_area("Paste your code here")
 
-    analysis = []
-    for i, (ts, comp, msg) in enumerate(errors, start=1):
-        suggested_fix = "Check stack trace and code."
-        # Add some basic known patterns
-        if "SQLServerException" in msg:
-            suggested_fix = "Check database column names and query."
-        elif "NullPointerException" in msg:
-            suggested_fix = "Check for null values before using the object."
-        elif "TimeoutException" in msg:
-            suggested_fix = "Check service connectivity or increase timeout."
+    if st.button("Analyze Code"):
+        if code:
+            with st.spinner("Analyzing code..."):
+                prompt = f"""
+                Analyze the following code:
+                1. Errors
+                2. Improvements
+                3. Performance issues
+                4. Security risks
 
-        analysis.append(
-            f"Error {i}:\n"
-            f"  Timestamp: {ts or 'N/A'}\n"
-            f"  Component: {comp or 'N/A'}\n"
-            f"  Error Message: {msg}\n"
-            f"  Suggested Fix: {suggested_fix}\n"
-        )
-    return "\n\n".join(analysis)
+                Code:
+                {code}
+                """
+                result = analyze_with_ai(prompt)
 
-if st.button("Analyze Log"):
-    errors = extract_errors(log_text)
-    result = analyze_errors(errors)
-    st.text_area("Analysis Result", result, height=600)
+                st.subheader("📊 Analysis Result")
+                st.write(result)
+        else:
+            st.warning("Please enter code")
+
+# ---------------- ERROR DEBUGGER ----------------
+elif feature == "🐞 Error Debugger":
+    st.title("🐞 Error Debugger")
+
+    logs = st.text_area("Paste error logs / stack trace")
+
+    if st.button("Debug Issue"):
+        if logs:
+            with st.spinner("Debugging..."):
+                prompt = f"""
+                You are an expert software debugger.
+
+                Analyze this error/log:
+                {logs}
+
+                Provide:
+                1. Root Cause
+                2. Fix
+                3. Explanation (simple)
+                4. Severity
+                """
+                result = analyze_with_ai(prompt)
+
+                st.subheader("🧠 Debug Result")
+                st.write(result)
+        else:
+            st.warning("Please enter logs")
+
+# ---------------- DOCUMENT ANALYZER ----------------
+elif feature == "📄 Document Analyzer":
+    st.title("📄 Document Analyzer")
+
+    file = st.file_uploader("Upload document", type=["pdf", "docx"])
+
+    if st.button("Analyze Document"):
+        if file:
+            with st.spinner("Reading document..."):
+                if file.type == "application/pdf":
+                    text = read_pdf(file)
+                else:
+                    text = read_docx(file)
+
+            with st.spinner("Analyzing document..."):
+                prompt = f"""
+                Analyze this document and provide:
+                - Summary
+                - Key insights
+                - Important points
+
+                Document:
+                {text}
+                """
+                result = analyze_with_ai(prompt)
+
+                st.subheader("📘 Document Insights")
+                st.write(result)
+        else:
+            st.warning("Please upload a file")
+
+# ---------------- SCREENSHOT ANALYZER ----------------
+elif feature == "🖼️ Screenshot Analyzer":
+    st.title("🖼️ Screenshot Analyzer")
+
+    image_file = st.file_uploader("Upload screenshot", type=["png", "jpg", "jpeg"])
+
+    if image_file:
+        image = Image.open(image_file)
+        st.image(image, caption="Uploaded Image")
+
+        if st.button("Analyze Screenshot"):
+            with st.spinner("Analyzing screenshot..."):
+                prompt = """
+                Analyze this screenshot:
+                - Identify error (if any)
+                - Explain the issue
+                - Suggest fix
+                """
+                result = analyze_with_ai(prompt, image=image)
+
+                st.subheader("🧠 Screenshot Analysis")
+                st.write(result)
+
+# ---------------- FOOTER ----------------
+st.sidebar.markdown("---")
+st.sidebar.write("Built with ❤️ using Gemini + Streamlit")
