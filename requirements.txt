@@ -1,20 +1,14 @@
 streamlit
+google-generativeai
 Pillow
-pytesseract
-python-docx
-speechrecognition
-lxml
-pydub
-streamlit-webrtc
 pandas
-openpyxl
-PyPDF2
 numpy
-av
-google-genai
+PyPDF2
+python-docx
+openpyxl
+lxml
 protobuf>=4.25.3
 gTTS
-
 
 
 
