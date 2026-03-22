@@ -1,16 +1,14 @@
 streamlit
 google-generativeai
 Pillow
-pandas
-numpy
 PyPDF2
 python-docx
+pandas
+numpy
 openpyxl
 lxml
 protobuf>=4.25.3
 gTTS
-
-
 
 
 
