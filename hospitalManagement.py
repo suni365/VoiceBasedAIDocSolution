@@ -9,7 +9,8 @@ UPLOAD_DIR = "patient_reports"
 if not os.path.exists(UPLOAD_DIR):
     os.makedirs(UPLOAD_DIR)
 
-conn = sqlite3.connect('clinic_data.db', check_same_thread=False)
+# conn = sqlite3.connect('clinic_data.db', check_same_thread=False)
+conn = sqlite3.connect('clinic_v2.db', check_same_thread=False)
 
 # 1. CREATE THE CURSOR FIRST
 cursor = conn.cursor()
