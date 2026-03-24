@@ -10,6 +10,18 @@ if not os.path.exists(UPLOAD_DIR):
     os.makedirs(UPLOAD_DIR)
 
 conn = sqlite3.connect('clinic_data.db', check_same_thread=False)
+def migrate_db():
+    try:
+        # Check if the new column exists by trying to select it
+        cursor.execute("SELECT testing_fees FROM patients LIMIT 1")
+    except sqlite3.OperationalError:
+        # If it fails, the column is missing. Let's add it!
+        st.info("Updating database schema... adding 'testing_fees' column.")
+        cursor.execute("ALTER TABLE patients ADD COLUMN testing_fees REAL DEFAULT 0")
+        conn.commit()
+        st.success("Database updated successfully!")
+
+migrate_db()
 cursor = conn.cursor()
 # Added testing_fees to track lab revenue
 cursor.execute('''CREATE TABLE IF NOT EXISTS patients 
