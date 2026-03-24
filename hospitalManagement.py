@@ -10,25 +10,51 @@ if not os.path.exists(UPLOAD_DIR):
     os.makedirs(UPLOAD_DIR)
 
 conn = sqlite3.connect('clinic_data.db', check_same_thread=False)
+
+# 1. CREATE THE CURSOR FIRST
+cursor = conn.cursor()
+
+# 2. DEFINE THE MIGRATION FUNCTION
 def migrate_db():
     try:
-        # Check if the new column exists by trying to select it
+        # Check if the new column exists
         cursor.execute("SELECT testing_fees FROM patients LIMIT 1")
     except sqlite3.OperationalError:
-        # If it fails, the column is missing. Let's add it!
+        # If it fails, add the column
         st.info("Updating database schema... adding 'testing_fees' column.")
         cursor.execute("ALTER TABLE patients ADD COLUMN testing_fees REAL DEFAULT 0")
         conn.commit()
         st.success("Database updated successfully!")
 
+# 3. NOW CALL MIGRATION
 migrate_db()
-cursor = conn.cursor()
-# Added testing_fees to track lab revenue
+
+# 4. INITIALIZE TABLE (This will run if the DB is brand new)
 cursor.execute('''CREATE TABLE IF NOT EXISTS patients 
                  (pid TEXT PRIMARY KEY, name TEXT, phone TEXT, 
                   visit_date TEXT, illness TEXT, report_path TEXT, 
                   fees REAL, testing_done TEXT, testing_fees REAL)''')
 conn.commit()
+
+# def migrate_db():
+#     try:
+#         # Check if the new column exists by trying to select it
+#         cursor.execute("SELECT testing_fees FROM patients LIMIT 1")
+#     except sqlite3.OperationalError:
+#         # If it fails, the column is missing. Let's add it!
+#         st.info("Updating database schema... adding 'testing_fees' column.")
+#         cursor.execute("ALTER TABLE patients ADD COLUMN testing_fees REAL DEFAULT 0")
+#         conn.commit()
+#         st.success("Database updated successfully!")
+
+# migrate_db()
+# cursor = conn.cursor()
+# # Added testing_fees to track lab revenue
+# cursor.execute('''CREATE TABLE IF NOT EXISTS patients 
+#                  (pid TEXT PRIMARY KEY, name TEXT, phone TEXT, 
+#                   visit_date TEXT, illness TEXT, report_path TEXT, 
+#                   fees REAL, testing_done TEXT, testing_fees REAL)''')
+# conn.commit()
 
 # --- 2. LIVE DATA CALCULATIONS ---
 def get_daily_stats():
