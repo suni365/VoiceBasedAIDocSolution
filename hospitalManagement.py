@@ -5,37 +5,37 @@ import os
 from datetime import datetime
 
 # --- 1. CONFIGURATION & DATABASE SETUP ---
-UPLOAD_DIR = "patient_reports"
-if not os.path.exists(UPLOAD_DIR):
-    os.makedirs(UPLOAD_DIR)
+# UPLOAD_DIR = "patient_reports"
+# if not os.path.exists(UPLOAD_DIR):
+#     os.makedirs(UPLOAD_DIR)
 
-# conn = sqlite3.connect('clinic_data.db', check_same_thread=False)
-conn = sqlite3.connect('clinic_v2.db', check_same_thread=False)
+# # conn = sqlite3.connect('clinic_data.db', check_same_thread=False)
+# conn = sqlite3.connect('clinic_v2.db', check_same_thread=False)
 
-# 1. CREATE THE CURSOR FIRST
-cursor = conn.cursor()
+# # 1. CREATE THE CURSOR FIRST
+# cursor = conn.cursor()
 
-# 2. DEFINE THE MIGRATION FUNCTION
-def migrate_db():
-    try:
-        # Check if the new column exists
-        cursor.execute("SELECT testing_fees FROM patients LIMIT 1")
-    except sqlite3.OperationalError:
-        # If it fails, add the column
-        st.info("Updating database schema... adding 'testing_fees' column.")
-        cursor.execute("ALTER TABLE patients ADD COLUMN testing_fees REAL DEFAULT 0")
-        conn.commit()
-        st.success("Database updated successfully!")
+# # 2. DEFINE THE MIGRATION FUNCTION
+# def migrate_db():
+#     try:
+#         # Check if the new column exists
+#         cursor.execute("SELECT testing_fees FROM patients LIMIT 1")
+#     except sqlite3.OperationalError:
+#         # If it fails, add the column
+#         st.info("Updating database schema... adding 'testing_fees' column.")
+#         cursor.execute("ALTER TABLE patients ADD COLUMN testing_fees REAL DEFAULT 0")
+#         conn.commit()
+#         st.success("Database updated successfully!")
 
-# 3. NOW CALL MIGRATION
-migrate_db()
+# # 3. NOW CALL MIGRATION
+# migrate_db()
 
-# 4. INITIALIZE TABLE (This will run if the DB is brand new)
-cursor.execute('''CREATE TABLE IF NOT EXISTS patients 
-                 (pid TEXT PRIMARY KEY, name TEXT, phone TEXT, 
-                  visit_date TEXT, illness TEXT, report_path TEXT, 
-                  fees REAL, testing_done TEXT, testing_fees REAL)''')
-conn.commit()
+# # 4. INITIALIZE TABLE (This will run if the DB is brand new)
+# cursor.execute('''CREATE TABLE IF NOT EXISTS patients 
+#                  (pid TEXT PRIMARY KEY, name TEXT, phone TEXT, 
+#                   visit_date TEXT, illness TEXT, report_path TEXT, 
+#                   fees REAL, testing_done TEXT, testing_fees REAL)''')
+# conn.commit()
 
 # def migrate_db():
 #     try:
@@ -58,52 +58,101 @@ conn.commit()
 # conn.commit()
 
 # --- 2. LIVE DATA CALCULATIONS ---
+# def get_daily_stats():
+#     today = str(datetime.now().date())
+    
+#     # 1. Count Patients
+#     cursor.execute("SELECT COUNT(*) FROM patients WHERE visit_date = ?", (today,))
+#     count = cursor.fetchone()[0]
+    
+#     # 2. Sum Consultation Fees
+#     cursor.execute("SELECT SUM(fees) FROM patients WHERE visit_date = ?", (today,))
+#     fees_sum = cursor.fetchone()[0] or 0
+    
+#     # 3. Sum Testing/Medicine Revenue
+#     cursor.execute("SELECT SUM(testing_fees) FROM patients WHERE visit_date = ?", (today,))
+#     test_sum = cursor.fetchone()[0] or 0
+    
+#     return count, fees_sum, test_sum
+
+# # --- 3. UI MODULES ---
+
+# def show_dashboard():
+#     st.markdown("<h1 class='main-header'>🏥 Clinic Dashboard</h1>", unsafe_allow_html=True)
+    
+#     # PULL LIVE DATA
+#     p_count, f_total, t_total = get_daily_stats()
+    
+#     col1, col2, col3, col4 = st.columns(4)
+#     with col1:
+#         st.metric("Patients Today", f"{p_count}")
+#     with col2:
+#         st.metric("Consultation Fees", f"₹ {f_total:,.2f}")
+#     with col3:
+#         st.metric("Lab/Testing Revenue", f"₹ {t_total:,.2f}")
+#     with col4:
+#         st.metric("Total Revenue", f"₹ {f_total + t_total:,.2f}")
+
+#     st.divider()
+    
+#     # Doctors & Appointments (Still Dummy for now)
+#     l, r = st.columns(2)
+#     with l:
+#         st.subheader("👨‍⚕️ Doctors Available")
+#         st.table(pd.DataFrame({"Doctor": ["Dr. Arya", "Dr. Smith"], "Status": ["Active", "On Call"]}))
+#     with r:
+#         st.subheader("📅 Recent Registrations")
+#         recent_df = pd.read_sql("SELECT name, visit_date, fees FROM patients ORDER BY pid DESC LIMIT 5", conn)
+#         st.dataframe(recent_df, use_container_width=True)
+
 def get_daily_stats():
-    today = str(datetime.now().date())
-    
-    # 1. Count Patients
-    cursor.execute("SELECT COUNT(*) FROM patients WHERE visit_date = ?", (today,))
-    count = cursor.fetchone()[0]
-    
-    # 2. Sum Consultation Fees
-    cursor.execute("SELECT SUM(fees) FROM patients WHERE visit_date = ?", (today,))
-    fees_sum = cursor.fetchone()[0] or 0
-    
-    # 3. Sum Testing/Medicine Revenue
-    cursor.execute("SELECT SUM(testing_fees) FROM patients WHERE visit_date = ?", (today,))
-    test_sum = cursor.fetchone()[0] or 0
-    
-    return count, fees_sum, test_sum
+    # We will return dummy values for now to avoid SQL errors
+    p_count = 12          # Total Patients Today
+    fees_sum = 4500.0     # Consultation Revenue
+    test_sum = 2100.0     # Lab/Medicine Revenue
+    return p_count, fees_sum, test_sum
 
 # --- 3. UI MODULES ---
 
 def show_dashboard():
     st.markdown("<h1 class='main-header'>🏥 Clinic Dashboard</h1>", unsafe_allow_html=True)
     
-    # PULL LIVE DATA
+    # PULL DUMMY DATA
     p_count, f_total, t_total = get_daily_stats()
     
     col1, col2, col3, col4 = st.columns(4)
     with col1:
-        st.metric("Patients Today", f"{p_count}")
+        st.metric("Patients Today", f"{p_count}", delta="2")
     with col2:
-        st.metric("Consultation Fees", f"₹ {f_total:,.2f}")
+        st.metric("Consultation Fees", f"₹ {f_total:,.2f}", delta="10%")
     with col3:
-        st.metric("Lab/Testing Revenue", f"₹ {t_total:,.2f}")
+        st.metric("Lab/Testing Revenue", f"₹ {t_total:,.2f}", delta="-5%")
     with col4:
         st.metric("Total Revenue", f"₹ {f_total + t_total:,.2f}")
 
     st.divider()
     
-    # Doctors & Appointments (Still Dummy for now)
+    # 4. DOCTORS & RECENT VISITS
     l, r = st.columns(2)
     with l:
-        st.subheader("👨‍⚕️ Doctors Available")
-        st.table(pd.DataFrame({"Doctor": ["Dr. Arya", "Dr. Smith"], "Status": ["Active", "On Call"]}))
+        st.subheader("👨‍⚕️ Doctors Available Today")
+        # Hardcoded for the UI demo
+        doctors_df = pd.DataFrame({
+            "Doctor Name": ["Dr. Arya (Pediatrics)", "Dr. Smith (General)"],
+            "Status": ["In Consultation", "Available"],
+            "Room": ["101", "102"]
+        })
+        st.table(doctors_df)
+        
     with r:
-        st.subheader("📅 Recent Registrations")
-        recent_df = pd.read_sql("SELECT name, visit_date, fees FROM patients ORDER BY pid DESC LIMIT 5", conn)
-        st.dataframe(recent_df, use_container_width=True)
+        st.subheader("📅 Today's Appointment Queue")
+        # Hardcoded dummy list
+        appointments = pd.DataFrame({
+            "Time": ["10:00 AM", "10:30 AM", "11:00 AM"],
+            "Patient": ["Rahul Sharma", "Sita Devi", "Anjali Nair"],
+            "Status": ["Completed", "Waiting", "Waiting"]
+        })
+        st.dataframe(appointments, use_container_width=True)
 
 def register_patient():
     st.markdown("<h2 class='main-header'>📝 Patient Registration</h2>", unsafe_allow_html=True)
