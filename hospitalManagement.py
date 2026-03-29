@@ -209,38 +209,104 @@ def register_patient():
             conn.commit()
             st.success(f"Success! ID: {patient_id}")
 
+# def search_records():
+#     st.markdown("<h2 class='main-header'>🔍 Patient Records</h2>", unsafe_allow_html=True)
+#     search = st.text_input("Search Name/Phone")
+#     if search:
+#         df = pd.read_sql("SELECT * FROM patients WHERE name LIKE ? OR phone LIKE ?", 
+#                          conn, params=(f'%{search}%', f'%{search}%'))
+#         for _, row in df.iterrows():
+#             with st.expander(f"👤 {row['name']} ({row['visit_date']})"):
+#                 st.write(f"**ID:** {row['pid']} | **Fees:** ₹{row['fees'] + row['testing_fees']}")
+#                 st.write(f"**Diagnosis:** {row['illness']}")
+#                 if st.session_state.get('user_role') == 'admin':
+#                     if st.button(f"Delete {row['pid']}", key=row['pid']):
+#                         cursor.execute("DELETE FROM patients WHERE pid=?", (row['pid'],))
+#                         conn.commit()
+#                         st.rerun()
+
+# # --- 4. NAVIGATION ---
+# if 'logged_in' not in st.session_state: st.session_state['logged_in'] = False
+
+# if not st.session_state['logged_in']:
+#     st.title("Clinic Login")
+#     u, p = st.text_input("User"), st.text_input("Pass", type="password")
+#     if st.button("Login"):
+#         if u == "admin" and p == "clinic123":
+#             st.session_state.update({'logged_in': True, 'user_role': 'admin'})
+#             st.rerun()
+# else:
+#     choice = st.sidebar.radio("Menu", ["Dashboard", "Register Patient", "Search Records"])
+#     if st.sidebar.button("Logout"):
+#         st.session_state['logged_in'] = False
+#         st.rerun()
+    
+#     if choice == "Dashboard": show_dashboard()
+#     elif choice == "Register Patient": register_patient()
+#     elif choice == "Search Records": search_records()
+
 def search_records():
     st.markdown("<h2 class='main-header'>🔍 Patient Records</h2>", unsafe_allow_html=True)
-    search = st.text_input("Search Name/Phone")
+    
+    search = st.text_input("Search by Name / Phone / Patient ID")
+
     if search:
-        df = pd.read_sql("SELECT * FROM patients WHERE name LIKE ? OR phone LIKE ?", 
-                         conn, params=(f'%{search}%', f'%{search}%'))
+        df = pd.read_sql("""
+            SELECT * FROM patients 
+            WHERE name LIKE ? 
+            OR phone LIKE ? 
+            OR pid LIKE ?
+        """, conn, params=(f'%{search}%', f'%{search}%', f'%{search}%'))
+
+        if df.empty:
+            st.warning("No records found")
+            return
+
         for _, row in df.iterrows():
-            with st.expander(f"👤 {row['name']} ({row['visit_date']})"):
-                st.write(f"**ID:** {row['pid']} | **Fees:** ₹{row['fees'] + row['testing_fees']}")
-                st.write(f"**Diagnosis:** {row['illness']}")
+            with st.expander(f"👤 {row['name']} | {row['visit_date']}"):
+
+                # --- BASIC DETAILS ---
+                st.write(f"**🆔 Patient ID:** {row['pid']}")
+                st.write(f"**📞 Phone:** {row['phone']}")
+                st.write(f"**🩺 Diagnosis:** {row['illness']}")
+
+                # --- FEES ---
+                st.write(f"**💰 Consultation Fees:** ₹{row['fees']}")
+                st.write(f"**🧪 Testing Fees:** ₹{row['testing_fees']}")
+                st.write(f"**💵 Total:** ₹{row['fees'] + row['testing_fees']}")
+
+                # --- TEST DETAILS ---
+                st.write(f"**🧾 Tests / Medicines:** {row['testing_done']}")
+
+                # --- FILE DISPLAY ---
+                if row['report_path'] and os.path.exists(row['report_path']):
+                    
+                    file_path = row['report_path']
+                    file_ext = file_path.split('.')[-1].lower()
+
+                    st.write("**📎 Uploaded Report:**")
+
+                    # Show image
+                    if file_ext in ['png', 'jpg', 'jpeg']:
+                        st.image(file_path, caption="Patient Report", use_container_width=True)
+
+                    # Show PDF
+                    elif file_ext == 'pdf':
+                        with open(file_path, "rb") as f:
+                            st.download_button("📥 Download Report", f, file_name=os.path.basename(file_path))
+
+                    else:
+                        st.info("File uploaded (preview not supported)")
+                        with open(file_path, "rb") as f:
+                            st.download_button("📥 Download File", f, file_name=os.path.basename(file_path))
+
+                else:
+                    st.info("No report uploaded")
+
+                # --- DELETE OPTION ---
                 if st.session_state.get('user_role') == 'admin':
-                    if st.button(f"Delete {row['pid']}", key=row['pid']):
+                    if st.button(f"❌ Delete {row['pid']}", key=row['pid']):
                         cursor.execute("DELETE FROM patients WHERE pid=?", (row['pid'],))
                         conn.commit()
+                        st.success("Deleted successfully")
                         st.rerun()
-
-# --- 4. NAVIGATION ---
-if 'logged_in' not in st.session_state: st.session_state['logged_in'] = False
-
-if not st.session_state['logged_in']:
-    st.title("Clinic Login")
-    u, p = st.text_input("User"), st.text_input("Pass", type="password")
-    if st.button("Login"):
-        if u == "admin" and p == "clinic123":
-            st.session_state.update({'logged_in': True, 'user_role': 'admin'})
-            st.rerun()
-else:
-    choice = st.sidebar.radio("Menu", ["Dashboard", "Register Patient", "Search Records"])
-    if st.sidebar.button("Logout"):
-        st.session_state['logged_in'] = False
-        st.rerun()
-    
-    if choice == "Dashboard": show_dashboard()
-    elif choice == "Register Patient": register_patient()
-    elif choice == "Search Records": search_records()
