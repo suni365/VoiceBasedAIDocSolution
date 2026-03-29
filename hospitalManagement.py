@@ -4,6 +4,31 @@ import pandas as pd
 import os
 from datetime import datetime
 
+UPLOAD_DIR = "patient_reports"
+if not os.path.exists(UPLOAD_DIR):
+    os.makedirs(UPLOAD_DIR)
+
+# Create DB connection
+conn = sqlite3.connect('clinic.db', check_same_thread=False)
+cursor = conn.cursor()
+
+# Create table if not exists
+cursor.execute('''
+CREATE TABLE IF NOT EXISTS patients (
+    pid TEXT PRIMARY KEY,
+    name TEXT,
+    phone TEXT,
+    visit_date TEXT,
+    illness TEXT,
+    report_path TEXT,
+    fees REAL,
+    testing_done TEXT,
+    testing_fees REAL
+)
+''')
+
+conn.commit()
+
 # --- 1. CONFIGURATION & DATABASE SETUP ---
 # UPLOAD_DIR = "patient_reports"
 # if not os.path.exists(UPLOAD_DIR):
