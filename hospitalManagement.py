@@ -33,8 +33,8 @@ if not os.path.exists(UPLOAD_DIR):
     os.makedirs(UPLOAD_DIR)
 
 # Create DB connection
-# conn = sqlite3.connect('clinic.db', check_same_thread=False)
-# cursor = conn.cursor()
+conn = sqlite3.connect('clinic1.db', check_same_thread=False)
+cursor = conn.cursor()
 
 # Create table if not exists
 cursor.execute('''
