@@ -4,6 +4,28 @@ import pandas as pd
 import os
 from datetime import datetime
 
+import urllib.parse
+
+def send_whatsapp_msg(phone, name, patient_id, total_fees):
+    # Ensure phone has the country code (91 for India)
+    if not phone.startswith('91'):
+        phone = f"91{phone}"
+    
+    # Create a professional message template
+    message = (
+        f"*🏥 Clinic Visit Summary*\n\n"
+        f"Hi *{name}*,\n"
+        f"Thank you for visiting us today.\n\n"
+        f"🆔 *Patient ID:* {patient_id}\n"
+        f"💰 *Total Fees:* ₹{total_fees}\n\n"
+        f"Please keep this ID for your next visit. Get well soon!"
+    )
+    
+    # Encode the message for a URL
+    encoded_msg = urllib.parse.quote(message)
+    whatsapp_url = f"https://wa.me/{phone}?text={encoded_msg}"
+    return whatsapp_url
+
 UPLOAD_DIR = "patient_reports"
 if not os.path.exists(UPLOAD_DIR):
     os.makedirs(UPLOAD_DIR)
@@ -206,8 +228,22 @@ def register_patient():
             
             cursor.execute("INSERT INTO patients VALUES (?,?,?,?,?,?,?,?,?)", 
                            (patient_id, name, phone, str(visit_date), illness, path, fees, testing, t_fees))
+            if submit and name and phone:
+            patient_id = f"PAT-{datetime.now().strftime('%y%m%d%H%M')}"
+            # ... (keep your existing file saving logic here) ...
+            
+            cursor.execute("INSERT INTO patients VALUES (?,?,?,?,?,?,?,?,?)", 
+                           (patient_id, name, phone, str(visit_date), illness, path, fees, testing, t_fees))
             conn.commit()
-            st.success(f"Success! ID: {patient_id}")
+            
+            # --- NEW WHATSAPP BUTTON ---
+            st.success(f"Record Saved! ID: {patient_id}")
+            
+            total_amt = fees + t_fees
+            wa_link = send_whatsapp_msg(phone, name, patient_id, total_amt)
+            
+            # Use a link button for the best user experience
+            st.link_button("📲 Send Summary via WhatsApp", wa_link)
 
 # def search_records():
 #     st.markdown("<h2 class='main-header'>🔍 Patient Records</h2>", unsafe_allow_html=True)
