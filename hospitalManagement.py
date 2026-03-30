@@ -5,6 +5,8 @@ import os
 from datetime import datetime
 
 import urllib.parse
+import time
+patient_id = f"PAT-{datetime.now().strftime('%y%m%d%H%M%S')}" # Added %S for seconds
 
 def send_whatsapp_msg(phone, name, patient_id, total_fees):
     # Ensure phone has the country code (91 for India)
@@ -31,7 +33,7 @@ if not os.path.exists(UPLOAD_DIR):
     os.makedirs(UPLOAD_DIR)
 
 # Create DB connection
-conn = sqlite3.connect('clinic.db', check_same_thread=False)
+# conn = sqlite3.connect('clinic.db', check_same_thread=False)
 cursor = conn.cursor()
 
 # Create table if not exists
