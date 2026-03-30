@@ -229,7 +229,7 @@ def register_patient():
             cursor.execute("INSERT INTO patients VALUES (?,?,?,?,?,?,?,?,?)", 
                            (patient_id, name, phone, str(visit_date), illness, path, fees, testing, t_fees))
             if submit and name and phone:
-            patient_id = f"PAT-{datetime.now().strftime('%y%m%d%H%M')}"
+                patient_id = f"PAT-{datetime.now().strftime('%y%m%d%H%M')}"
             # ... (keep your existing file saving logic here) ...
             
             cursor.execute("INSERT INTO patients VALUES (?,?,?,?,?,?,?,?,?)", 
