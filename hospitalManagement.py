@@ -310,3 +310,36 @@ def search_records():
                         conn.commit()
                         st.success("Deleted successfully")
                         st.rerun()
+
+  if 'logged_in' not in st.session_state:
+    st.session_state['logged_in'] = False
+
+if not st.session_state['logged_in']:
+    st.title("🏥 Clinic Management System")
+    st.subheader("Login")
+    u = st.text_input("Username")
+    p = st.text_input("Password", type="password")
+    
+    if st.button("Login"):
+        # Simple check - you can change these credentials
+        if u == "admin" and p == "clinic123":
+            st.session_state.update({'logged_in': True, 'user_role': 'admin'})
+            st.rerun()
+        else:
+            st.error("Invalid credentials")
+else:
+    # Sidebar Menu
+    st.sidebar.title(f"Welcome, {st.session_state.get('user_role', 'User')}")
+    choice = st.sidebar.radio("Menu", ["Dashboard", "Register Patient", "Search Records"])
+    
+    if st.sidebar.button("Logout"):
+        st.session_state['logged_in'] = False
+        st.rerun()
+    
+    # Routing to the functions you defined
+    if choice == "Dashboard":
+        show_dashboard()
+    elif choice == "Register Patient":
+        register_patient()
+    elif choice == "Search Records":
+        search_records()
