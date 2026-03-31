@@ -40,7 +40,7 @@ def send_whatsapp_msg(phone, name, patient_id, total_fees):
         phone = f"91{phone}"
     
     message = (
-        f"*🏥 Clinic Visit Summary*\n\n"
+        f"*🏥 S.P.SAMPATH M.B.B.S Visit Summary*\n\n"
         f"Hi *{name}*,\n"
         f"Thank you for visiting us today.\n\n"
         f"🆔 *Patient ID:* {patient_id}\n"
@@ -65,7 +65,7 @@ def get_daily_stats():
 # --- UI MODULES ---
 
 def show_dashboard():
-    st.markdown("<h1>🏥 Clinic Dashboard</h1>", unsafe_allow_html=True)
+    st.markdown("<h1>🏥 S.P.SAMPATH M.B.B.S Clinic Dashboard</h1>", unsafe_allow_html=True)
     p_count, total_rev = get_daily_stats()
     
     col1, col2 = st.columns(2)
@@ -175,12 +175,73 @@ if not st.session_state['logged_in']:
             st.rerun()
         else:
             st.error("Invalid Login")
-else:
-    menu = st.sidebar.radio("Navigation", ["Dashboard", "Register Patient", "Search Records"])
-    if st.sidebar.button("Logout"):
-        st.session_state['logged_in'] = False
-        st.rerun()
+# else:
+#     menu = st.sidebar.radio("Navigation", ["Dashboard", "Register Patient", "Search Records"])
+#     if st.sidebar.button("Logout"):
+#         st.session_state['logged_in'] = False
+#         st.rerun()
     
-    if menu == "Dashboard": show_dashboard()
-    elif menu == "Register Patient": register_patient()
-    elif menu == "Search Records": search_records()
+#     if menu == "Dashboard": show_dashboard()
+#     elif menu == "Register Patient": register_patient()
+#     elif menu == "Search Records": search_records()
+
+  else:
+    # 1. Add "Admin Reports" to the sidebar radio options
+      menu = st.sidebar.radio("Navigation", ["Dashboard", "Register Patient", "Search Records", "Admin Reports"])
+      if st.sidebar.button("Logout"):
+          st.session_state['logged_in'] = False
+          st.rerun()
+    
+    # 2. Logic to route to the new reports page
+      if menu == "Dashboard": 
+          show_dashboard()
+      elif menu == "Register Patient": 
+          register_patient()   
+      elif menu == "Search Records":   
+          search_records()
+      elif menu == "Admin Reports":
+          st.header("📊 Financial & Revenue Reports")
+          st.write("Generate monthly summaries for accounting and clinic audits.")
+        
+        # User selects a month/year
+          report_month = st.date_input("Select Month", value=datetime.now())
+          formatted_month = report_month.strftime('%Y-%m') # Results in '2026-03'
+        
+      if st.button("Generate Monthly Excel Report"):
+            # --- CALLING THE FUNCTION HERE ---
+           report_data = export_monthly_report(formatted_month)
+            
+           if report_data:
+               st.success(f"✅ Report for {formatted_month} is ready!")
+               st.download_button(
+                   label="📥 Download Excel File",
+                   data=report_data,
+                   file_name=f"Clinic_Revenue_{formatted_month}.xlsx",
+                   mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                   )
+            else:
+               st.warning("No patient records found for the selected month.")
+
+
+
+import io
+
+def export_monthly_report(month_year):
+    """
+    Generates an Excel report for a specific month (Format: 'YYYY-MM').
+    """
+    query = "SELECT * FROM patients WHERE visit_date LIKE ?"
+    df = pd.read_sql(query, conn, params=(f'{month_year}%',))
+    
+    if df.empty:
+        return None
+    
+    # Calculate Total per row for the report
+    df['Total_Paid'] = df['fees'] + df['testing_fees'] + df['medicine_fees']
+    
+    # Create an in-memory buffer for the Excel file
+    output = io.BytesIO()
+    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+        df.to_excel(writer, index=False, sheet_name='Monthly_Report')
+    
+    return output.getvalue()
