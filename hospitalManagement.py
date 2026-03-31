@@ -184,45 +184,43 @@ if not st.session_state['logged_in']:
 #     if menu == "Dashboard": show_dashboard()
 #     elif menu == "Register Patient": register_patient()
 #     elif menu == "Search Records": search_records()
-
-  else:
+else:
     # 1. Add "Admin Reports" to the sidebar radio options
-      menu = st.sidebar.radio("Navigation", ["Dashboard", "Register Patient", "Search Records", "Admin Reports"])
-      if st.sidebar.button("Logout"):
-          st.session_state['logged_in'] = False
-          st.rerun()
+    menu = st.sidebar.radio("Navigation", ["Dashboard", "Register Patient", "Search Records", "Admin Reports"])
+    
+    if st.sidebar.button("Logout"):
+        st.session_state['logged_in'] = False
+        st.rerun()
     
     # 2. Logic to route to the new reports page
-      if menu == "Dashboard": 
-          show_dashboard()
-      elif menu == "Register Patient": 
-          register_patient()   
-      elif menu == "Search Records":   
-          search_records()
-      elif menu == "Admin Reports":
-          st.header("📊 Financial & Revenue Reports")
-          st.write("Generate monthly summaries for accounting and clinic audits.")
+    if menu == "Dashboard": 
+        show_dashboard()
+    elif menu == "Register Patient": 
+        register_patient()   
+    elif menu == "Search Records": 
+        search_records()
+    elif menu == "Admin Reports":
+        st.header("📊 Financial & Revenue Reports")
+        st.write("Generate monthly summaries for accounting and clinic audits.")
         
         # User selects a month/year
-          report_month = st.date_input("Select Month", value=datetime.now())
-          formatted_month = report_month.strftime('%Y-%m') # Results in '2026-03'
+        report_month = st.date_input("Select Month", value=datetime.now())
+        formatted_month = report_month.strftime('%Y-%m') # Results in '2026-03'
         
-      if st.button("Generate Monthly Excel Report"):
+        if st.button("Generate Monthly Excel Report"):
             # --- CALLING THE FUNCTION HERE ---
-           report_data = export_monthly_report(formatted_month)
+            report_data = export_monthly_report(formatted_month)
             
-           if report_data:
-               st.success(f"✅ Report for {formatted_month} is ready!")
-               st.download_button(
-                   label="📥 Download Excel File",
-                   data=report_data,
-                   file_name=f"Clinic_Revenue_{formatted_month}.xlsx",
-                   mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                   )
+            if report_data:
+                st.success(f"✅ Report for {formatted_month} is ready!")
+                st.download_button(
+                    label="📥 Download Excel File",
+                    data=report_data,
+                    file_name=f"Clinic_Revenue_{formatted_month}.xlsx",
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                )
             else:
-               st.warning("No patient records found for the selected month.")
-
-
+                st.warning("No patient records found for the selected month.")
 
 import io
 
