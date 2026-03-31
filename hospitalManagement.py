@@ -3,17 +3,19 @@ import sqlite3
 import pandas as pd
 import os
 import urllib.parse
-import io
-from datetime import datetime
+import base64
+from datetime import datetime, timedelta
 
-# --- 1. DATABASE & DIRECTORY SETUP ---
+# --- DATABASE & DIRECTORY SETUP ---
 UPLOAD_DIR = "patient_reports"
 if not os.path.exists(UPLOAD_DIR):
     os.makedirs(UPLOAD_DIR)
 
+# Using v3 database for consistency
 conn = sqlite3.connect('clinic_v3.db', check_same_thread=False)
 cursor = conn.cursor()
 
+# Comprehensive Schema
 cursor.execute('''
 CREATE TABLE IF NOT EXISTS patients (
     pid TEXT PRIMARY KEY,
@@ -26,155 +28,160 @@ CREATE TABLE IF NOT EXISTS patients (
     testing_done TEXT,
     testing_fees REAL,
     medicine_fees REAL,
-    remarks TEXT
+    remarks TEXT,
+    medicine_details TEXT,
+    testing_results TEXT
 )
 ''')
 conn.commit()
 
-# --- 2. HELPER FUNCTIONS ---
+# --- HELPER FUNCTIONS ---
 
-def export_monthly_report(month_year):
-    query = "SELECT * FROM patients WHERE visit_date LIKE ?"
-    df = pd.read_sql(query, conn, params=(f'{month_year}%',))
-    if df.empty: return None
-    df['Total_Paid'] = df['fees'] + df['testing_fees'] + df['medicine_fees']
-    output = io.BytesIO()
-    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-        df.to_excel(writer, index=False, sheet_name='Monthly_Report')
-    return output.getvalue()
+def display_pdf(file_path):
+    """Embeds PDF in Streamlit."""
+    with open(file_path, "rb") as f:
+        base64_pdf = base64.b64encode(f.read()).decode('utf-8')
+    pdf_display = f'<iframe src="data:application/pdf;base64,{base64_pdf}" width="100%" height="600" type="application/pdf"></iframe>'
+    st.markdown(pdf_display, unsafe_allow_html=True)
 
 def send_whatsapp_msg(phone, name, patient_id, total_fees):
     if not phone.startswith('91'): phone = f"91{phone}"
-    message = (
-        f"*🏥 S.P.SAMPATH M.B.B.S Visit Summary*\n\n"
-        f"Hi *{name}*,\n"
-        f"🆔 *Patient ID:* {patient_id}\n"
-        f"💰 *Amount Paid:* ₹{total_fees}\n\n"
-        f"Get well soon!"
-    )
-    encoded_msg = urllib.parse.quote(message)
-    return f"https://wa.me/{phone}?text={encoded_msg}"
+    message = (f"*🏥 Clinic Visit Summary*\n\nHi *{name}*,\n🆔 *ID:* {patient_id}\n💰 *Total:* ₹{total_fees}\n\nGet well soon!")
+    return f"https://wa.me/{phone}?text={urllib.parse.quote(message)}"
 
-def get_daily_stats():
-    today = str(datetime.now().date())
-    cursor.execute("SELECT COUNT(*) FROM patients WHERE visit_date = ?", (today,))
-    p_count = cursor.fetchone()[0]
-    cursor.execute("SELECT SUM(fees + testing_fees + medicine_fees) FROM patients WHERE visit_date = ?", (today,))
-    total_rev = cursor.fetchone()[0] or 0.0
-    return p_count, total_rev
-
-# --- 3. UI MODULES ---
+# --- UI MODULES ---
 
 def show_dashboard():
     st.markdown("<h1>🏥 Clinic Dashboard</h1>", unsafe_allow_html=True)
-    p_count, total_rev = get_daily_stats()
-    col1, col2 = st.columns(2)
-    col1.metric("Patients Today", p_count)
-    col2.metric("Revenue Today", f"₹ {total_rev:,.2f}")
+    today = str(datetime.now().date())
+    
+    # Stats
+    p_today = pd.read_sql("SELECT COUNT(*) as count FROM patients WHERE visit_date = ?", conn, params=(today,)).iloc[0]['count']
+    rev_today = pd.read_sql("SELECT SUM(fees + testing_fees + medicine_fees) as rev FROM patients WHERE visit_date = ?", conn, params=(today,)).iloc[0]['rev'] or 0.0
+    
+    c1, c2 = st.columns(2)
+    c1.metric("Patients Today", p_today)
+    c2.metric("Revenue Today", f"₹{rev_today:,.2f}")
+    
     st.divider()
     st.subheader("📅 Recent Activity")
-    recent_df = pd.read_sql("SELECT pid, name, visit_date FROM patients ORDER BY pid DESC LIMIT 5", conn)
-    st.table(recent_df)
+    recent = pd.read_sql("SELECT name, visit_date, (fees + testing_fees + medicine_fees) as Total FROM patients ORDER BY pid DESC LIMIT 5", conn)
+    st.table(recent)
 
-def register_patient():
-    st.markdown("<h2>📝 Front-Desk: New Registration</h2>", unsafe_allow_html=True)
-    with st.form("reg_form", clear_on_submit=True):
-        name = st.text_input("Patient Full Name")
-        phone = st.text_input("Mobile Number")
-        visit_date = st.date_input("Visit Date", value=datetime.now())
-        fees = st.number_input("Consultation Fees (₹)", min_value=0.0, value=500.0)
-        submit = st.form_submit_button("Register Patient")
-
-        if submit:
-            if not name or not phone:
-                st.error("Missing Details")
-            else:
-                # SIMPLE ID: Using last 6 digits of timestamp
-                p_id = datetime.now().strftime('%H%M%S') 
-                try:
-                    cursor.execute("INSERT INTO patients (pid, name, phone, visit_date, fees) VALUES (?,?,?,?,?)", 
-                                   (p_id, name, phone, str(visit_date), fees))
-                    conn.commit()
-                    st.success(f"Registered! Short ID: {p_id}")
-                except Exception as e: st.error(f"Error: {e}")
-
-def dr_consultation():
-    st.markdown("<h2>👨‍⚕️ Doctor's Consultation</h2>", unsafe_allow_html=True)
-    search_q = st.text_input("🔍 Search Patient by ID or Name to start treatment")
-    
-    if search_q:
-        cursor.execute("SELECT * FROM patients WHERE pid = ? OR name LIKE ?", (search_q, f'%{search_q}%'))
-        patient = cursor.fetchone()
+def doctor_consultation():
+    st.markdown("<h2>👨‍⚕️ Doctor Consultation / Registration</h2>", unsafe_allow_html=True)
+    with st.form("doc_form", clear_on_submit=True):
+        col1, col2 = st.columns(2)
+        with col1:
+            name = st.text_input("Full Name")
+            phone = st.text_input("Mobile Number")
+            visit_date = st.date_input("Visit Date", value=datetime.now())
+            illness = st.text_area("Diagnosis / Illness Details")
+        with col2:
+            fees = st.number_input("Consultation Fees (₹)", value=500.0)
+            tests = st.text_input("Recommended Tests")
+            meds = st.text_area("Prescribed Medicines")
+        remarks = st.text_area("Final Remarks")
         
-        if patient:
-            st.info(f"Selected: {patient[1]} (ID: {patient[0]})")
-            
-            with st.form("treatment_form"):
-                st.subheader("Medical Entry")
-                illness = st.text_area("Diagnosis / Illness", value=patient[4] if patient[4] else "")
-                testing = st.text_input("Tests Required", value=patient[7] if patient[7] else "")
-                t_fees = st.number_input("Testing Fees (₹)", value=patient[8] if patient[8] else 0.0)
-                m_fees = st.number_input("Medicine Fees (₹)", value=patient[9] if patient[9] else 0.0)
-                remarks = st.text_area("Doctor's Final Description", value=patient[10] if patient[10] else "")
-                
-                uploaded_file = st.file_uploader("Update Medical Report (Optional)")
-                
-                if st.form_submit_button("✅ Update Treatment & Save"):
-                    path = patient[5]
-                    if uploaded_file:
-                        path = os.path.join(UPLOAD_DIR, f"{patient[0]}_{uploaded_file.name}")
-                        with open(path, "wb") as f: f.write(uploaded_file.getbuffer())
-                    
-                    cursor.execute("""
-                        UPDATE patients SET illness=?, report_path=?, testing_done=?, 
-                        testing_fees=?, medicine_fees=?, remarks=? WHERE pid=?
-                    """, (illness, path, testing, t_fees, m_fees, remarks, patient[0]))
-                    conn.commit()
-                    
-                    st.success("Patient Record Updated Successfully!")
-                    total = patient[6] + t_fees + m_fees
-                    st.link_button("📲 Send Updated Summary to WhatsApp", send_whatsapp_msg(patient[2], patient[1], patient[0], total))
-        else:
-            st.error("Patient not found.")
+        if st.form_submit_button("💾 Save Record"):
+            if name and phone:
+                p_id = f"PAT-{datetime.now().strftime('%y%m%d%H%M%S')}"
+                cursor.execute("INSERT INTO patients (pid, name, phone, visit_date, illness, fees, testing_done, medicine_details, remarks) VALUES (?,?,?,?,?,?,?,?,?)",
+                               (p_id, name, phone, str(visit_date), illness, fees, tests, meds, remarks))
+                conn.commit()
+                st.success(f"Patient Registered! ID: {p_id}")
+            else: st.error("Name and Phone required.")
 
-def search_records():
-    st.markdown("<h2>🔍 Master Records</h2>", unsafe_allow_html=True)
-    query = st.text_input("Search ID, Name, or Phone")
+def testing_lab():
+    st.markdown("<h2>🔬 Laboratory Unit</h2>", unsafe_allow_html=True)
+    p_id = st.text_input("Enter Patient ID for Lab Update")
+    if p_id:
+        row = cursor.execute("SELECT name, testing_done FROM patients WHERE pid = ?", (p_id,)).fetchone()
+        if row:
+            st.info(f"Patient: {row[0]} | Tests: {row[1]}")
+            res = st.text_area("Testing Results")
+            t_fees = st.number_input("Testing Fees (₹)", min_value=0.0)
+            file = st.file_uploader("Upload Report (PDF)")
+            if st.button("Update Lab Record"):
+                path = ""
+                if file:
+                    path = os.path.join(UPLOAD_DIR, f"{p_id}_{file.name}")
+                    with open(path, "wb") as f: f.write(file.getbuffer())
+                cursor.execute("UPDATE patients SET testing_results=?, testing_fees=?, report_path=? WHERE pid=?", (res, t_fees, path, p_id))
+                conn.commit()
+                st.success("Lab record updated!")
+        else: st.error("Not found.")
+
+def pharmacy_unit():
+    st.markdown("<h2>💊 Pharmacy Unit</h2>", unsafe_allow_html=True)
+    p_id = st.text_input("Enter Patient ID for Pharmacy")
+    if p_id:
+        row = cursor.execute("SELECT name, medicine_details FROM patients WHERE pid = ?", (p_id,)).fetchone()
+        if row:
+            st.info(f"Patient: {row[0]} | Prescribed: {row[1]}")
+            m_fees = st.number_input("Medicine Fees (₹)", min_value=0.0)
+            if st.button("Update Pharmacy Record"):
+                cursor.execute("UPDATE patients SET medicine_fees=? WHERE pid=?", (m_fees, p_id))
+                conn.commit()
+                st.success("Pharmacy charges updated!")
+
+def search_patient():
+    st.markdown("<h2>🔍 Search & Final Bill</h2>", unsafe_allow_html=True)
+    query = st.text_input("Search Name/Phone/ID")
     if query:
-        df = pd.read_sql("SELECT * FROM patients WHERE pid LIKE ? OR name LIKE ?", conn, params=(f'%{query}%', f'%{query}%'))
-        for _, row in df.iterrows():
-            with st.expander(f"ID: {row['pid']} | {row['name']}"):
-                st.write(f"**Diagnosis:** {row['illness']}")
-                st.write(f"**Medicines/Tests:** {row['testing_done']}")
-                st.write(f"**Remarks:** {row['remarks']}")
-                total = row['fees'] + row['testing_fees'] + row['medicine_fees']
-                st.write(f"**Total Paid:** ₹{total}")
+        df = pd.read_sql("SELECT * FROM patients WHERE name LIKE ? OR phone LIKE ? OR pid LIKE ?", conn, params=(f'%{query}%',f'%{query}%',f'%{query}%'))
+        for _, r in df.iterrows():
+            with st.expander(f"👤 {r['name']} - {r['visit_date']}"):
+                c1, c2 = st.columns(2)
+                c1.write(f"**ID:** {r['pid']}\n\n**Diagnosis:** {r['illness']}\n\n**Meds:** {r['medicine_details']}")
+                total = (r['fees'] or 0) + (r['testing_fees'] or 0) + (r['medicine_fees'] or 0)
+                c2.metric("Total Bill", f"₹{total}")
+                c2.write(f"Cons: ₹{r['fees']} | Lab: ₹{r['testing_fees']} | Meds: ₹{r['medicine_fees']}")
+                
+                if r['report_path'] and os.path.exists(r['report_path']):
+                    col_v, col_d = st.columns(2)
+                    with col_v: 
+                        if st.button("👁️ View", key=f"v{r['pid']}"): display_pdf(r['report_path'])
+                    with col_d: 
+                        st.download_button("📥 Download", open(r['report_path'], 'rb'), file_name=os.path.basename(r['report_path']), key=f"d{r['pid']}")
+                
+                st.link_button("📲 WhatsApp Summary", send_whatsapp_msg(r['phone'], r['name'], r['pid'], total))
 
-# --- 4. APP FLOW ---
+def monthly_reports():
+    st.markdown("<h2>📊 Monthly Revenue Report</h2>", unsafe_allow_html=True)
+    month = st.selectbox("Select Month", range(1, 13), index=datetime.now().month-1)
+    year = st.number_input("Year", value=datetime.now().year)
+    
+    start_date = f"{year}-{month:02d}-01"
+    df = pd.read_sql("SELECT * FROM patients WHERE visit_date LIKE ?", conn, params=(f'{year}-{month:02d}%',))
+    
+    if not df.empty:
+        st.dataframe(df[['pid', 'name', 'visit_date', 'fees', 'testing_fees', 'medicine_fees']])
+        total_m = (df['fees'].sum() + df['testing_fees'].sum() + df['medicine_fees'].sum())
+        st.subheader(f"Total Revenue for {month}/{year}: ₹{total_m:,.2f}")
+    else: st.info("No records for this month.")
+
+# --- APP FLOW ---
 
 if 'logged_in' not in st.session_state: st.session_state['logged_in'] = False
 
 if not st.session_state['logged_in']:
     st.title("🏥 Clinic Login")
-    u, p = st.text_input("User"), st.text_input("Pass", type="password")
-    if st.button("Login"):
-        if u == "admin" and p == "clinic123":
+    if st.text_input("User") == "admin" and st.text_input("Pass", type="password") == "clinic123":
+        if st.button("Login"):
             st.session_state['logged_in'] = True
             st.rerun()
 else:
-    menu = st.sidebar.radio("Go To:", ["Dashboard", "New Registration", "Doctor Consultation", "Search Records", "Admin Reports"])
+    st.sidebar.title("Clinic Management")
+    menu = st.sidebar.radio("Navigation", ["Dashboard", "Dr. Consultation", "Testing/Lab", "Pharmacy", "Search Patient", "Monthly Report"])
+    
+    if menu == "Dashboard": show_dashboard()
+    elif menu == "Dr. Consultation": doctor_consultation()
+    elif menu == "Testing/Lab": testing_lab()
+    elif menu == "Pharmacy": pharmacy_unit()
+    elif menu == "Search Patient": search_patient()
+    elif menu == "Monthly Report": monthly_reports()
+
     if st.sidebar.button("Logout"):
         st.session_state['logged_in'] = False
         st.rerun()
-    
-    if menu == "Dashboard": show_dashboard()
-    elif menu == "New Registration": register_patient()
-    elif menu == "Doctor Consultation": dr_consultation()
-    elif menu == "Search Records": search_records()
-    elif menu == "Admin Reports":
-        st.header("📊 Admin Reports")
-        m = st.date_input("Month").strftime('%Y-%m')
-        if st.button("Generate Excel"):
-            data = export_monthly_report(m)
-            if data: st.download_button("📥 Download", data, f"Report_{m}.xlsx")
-            else: st.warning("No data.")
