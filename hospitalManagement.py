@@ -241,27 +241,24 @@ def show_dashboard():
 #             # --- NEW WHATSAPP BUTTON ---
 #             st.success(f"Record Saved! ID: {patient_id}")
 
-        def register_patient():
-    st.markdown("<h2 class='main-header'>📝 Patient Registration</h2>", unsafe_allow_html=True)
-    with st.form("reg_form", clear_on_submit=True):
-        c1, c2 = st.columns(2)
-        with c1:
-            name = st.text_input("Full Name")
-            phone = st.text_input("Mobile Number")
-            visit_date = st.date_input("Date", value=datetime.now())
-        with c2:
-            fees = st.number_input("Consultation Fees (₹)", value=500)
-            t_fees = st.number_input("Testing/Medicine Fees (₹)", value=0)
-            testing = st.text_input("Tests/Medicine Details")
-            
-        illness = st.text_area("Illness Details")
-        uploaded_file = st.file_uploader("Upload Report")
-        
-        submit = st.form_submit_button("💾 Save & Generate ID")
-
-        if submit:
-            if not name or not phone:
-                st.error("Please provide Name and Phone Number")
+  def register_patient():
+      st.markdown("<h2 class='main-header'>📝 Patient Registration</h2>", unsafe_allow_html=True)
+      with st.form("reg_form", clear_on_submit=True):
+          c1, c2 = st.columns(2)
+          with c1:
+              name = st.text_input("Full Name")
+              phone = st.text_input("Mobile Number")
+              visit_date = st.date_input("Date", value=datetime.now())
+          with c2:
+              fees = st.number_input("Consultation Fees (₹)", value=500)
+              t_fees = st.number_input("Testing/Medicine Fees (₹)", value=0)
+              testing = st.text_input("Tests/Medicine Details")
+          illness = st.text_area("Illness Details")
+          uploaded_file = st.file_uploader("Upload Report")
+          submit = st.form_submit_button("💾 Save & Generate ID")
+          if submit:
+              if not name or not phone:
+                  st.error("Please provide Name and Phone Number")
             else:
                 # 1. Generate unique ID
                 patient_id = f"PAT-{datetime.now().strftime('%y%m%d%H%M%S')}" # Added %S for uniqueness
