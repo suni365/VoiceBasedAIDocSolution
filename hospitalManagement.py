@@ -31,7 +31,7 @@ CREATE TABLE IF NOT EXISTS patients (
 ''')
 conn.commit()
 
-# --- 2. HELPER FUNCTIONS (Defined BEFORE they are called) ---
+# --- 2. HELPER FUNCTIONS (Must be defined BEFORE they are called) ---
 
 def export_monthly_report(month_year):
     """Generates an Excel report for a specific month (Format: 'YYYY-MM')."""
@@ -45,7 +45,7 @@ def export_monthly_report(month_year):
     df['Total_Paid'] = df['fees'] + df['testing_fees'] + df['medicine_fees']
     
     output = io.BytesIO()
-    # Note: ensure 'xlsxwriter' is installed in your requirements.txt
+    # Note: ensure 'xlsxwriter' is installed: pip install xlsxwriter
     with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
         df.to_excel(writer, index=False, sheet_name='Monthly_Report')
     
@@ -149,7 +149,7 @@ def search_records():
                         st.download_button("Download Report", open(row['report_path'], 'rb'), 
                                            file_name=os.path.basename(row['report_path']))
 
-# --- 4. APP FLOW (Logic that calls the functions) ---
+# --- 4. APP FLOW (The logic that calls the UI) ---
 
 if 'logged_in' not in st.session_state:
     st.session_state['logged_in'] = False
@@ -183,7 +183,6 @@ else:
         formatted_month = report_month.strftime('%Y-%m')
         
         if st.button("Generate Monthly Excel Report"):
-            # Now Python knows what this is because it was defined above!
             report_data = export_monthly_report(formatted_month)
             if report_data:
                 st.success(f"✅ Report for {formatted_month} is ready!")
