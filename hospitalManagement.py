@@ -203,7 +203,45 @@ def show_dashboard():
         })
         st.dataframe(appointments, use_container_width=True)
 
-def register_patient():
+# def register_patient():
+#     st.markdown("<h2 class='main-header'>📝 Patient Registration</h2>", unsafe_allow_html=True)
+#     with st.form("reg_form", clear_on_submit=True):
+#         c1, c2 = st.columns(2)
+#         with c1:
+#             name = st.text_input("Full Name")
+#             phone = st.text_input("Mobile Number")
+#             visit_date = st.date_input("Date", value=datetime.now())
+#         with c2:
+#             fees = st.number_input("Consultation Fees (₹)", value=500)
+#             t_fees = st.number_input("Testing/Medicine Fees (₹)", value=0)
+#             testing = st.text_input("Tests/Medicine Details")
+            
+#         illness = st.text_area("Illness Details")
+#         uploaded_file = st.file_uploader("Upload Report")
+        
+#         submit = st.form_submit_button("💾 Save & Generate ID")
+
+#         if submit and name and phone:
+#             patient_id = f"PAT-{datetime.now().strftime('%y%m%d%H%M')}"
+#             path = ""
+#             if uploaded_file:
+#                 path = os.path.join(UPLOAD_DIR, f"{patient_id}_{uploaded_file.name}")
+#                 with open(path, "wb") as f: f.write(uploaded_file.getbuffer())
+            
+#             cursor.execute("INSERT INTO patients VALUES (?,?,?,?,?,?,?,?,?)", 
+#                            (patient_id, name, phone, str(visit_date), illness, path, fees, testing, t_fees))
+#             if submit and name and phone:
+#                 patient_id = f"PAT-{datetime.now().strftime('%y%m%d%H%M')}"
+#             # ... (keep your existing file saving logic here) ...
+            
+#             cursor.execute("INSERT INTO patients VALUES (?,?,?,?,?,?,?,?,?)", 
+#                            (patient_id, name, phone, str(visit_date), illness, path, fees, testing, t_fees))
+#             conn.commit()
+            
+#             # --- NEW WHATSAPP BUTTON ---
+#             st.success(f"Record Saved! ID: {patient_id}")
+
+        def register_patient():
     st.markdown("<h2 class='main-header'>📝 Patient Registration</h2>", unsafe_allow_html=True)
     with st.form("reg_form", clear_on_submit=True):
         c1, c2 = st.columns(2)
@@ -221,31 +259,40 @@ def register_patient():
         
         submit = st.form_submit_button("💾 Save & Generate ID")
 
-        if submit and name and phone:
-            patient_id = f"PAT-{datetime.now().strftime('%y%m%d%H%M')}"
-            path = ""
-            if uploaded_file:
-                path = os.path.join(UPLOAD_DIR, f"{patient_id}_{uploaded_file.name}")
-                with open(path, "wb") as f: f.write(uploaded_file.getbuffer())
+        if submit:
+            if not name or not phone:
+                st.error("Please provide Name and Phone Number")
+            else:
+                # 1. Generate unique ID
+                patient_id = f"PAT-{datetime.now().strftime('%y%m%d%H%M%S')}" # Added %S for uniqueness
+                
+                # 2. Handle File Upload
+                path = ""
+                if uploaded_file:
+                    path = os.path.join(UPLOAD_DIR, f"{patient_id}_{uploaded_file.name}")
+                    with open(path, "wb") as f: 
+                        f.write(uploaded_file.getbuffer())
+                
+                # 3. Database Insert (ONLY ONCE)
+                try:
+                    cursor.execute("INSERT INTO patients VALUES (?,?,?,?,?,?,?,?,?)", 
+                                   (patient_id, name, phone, str(visit_date), illness, path, fees, testing, t_fees))
+                    conn.commit()
+                    
+                    st.success(f"Record Saved! ID: {patient_id}")
+                    
+                    # 4. WhatsApp Link
+                    total_amt = fees + t_fees
+                    wa_link = send_whatsapp_msg(phone, name, patient_id, total_amt)
+                    st.link_button("📲 Send Summary via WhatsApp", wa_link)
+                except sqlite3.IntegrityError:
+                    st.error("This Patient ID already exists. Please try again.")
             
-            cursor.execute("INSERT INTO patients VALUES (?,?,?,?,?,?,?,?,?)", 
-                           (patient_id, name, phone, str(visit_date), illness, path, fees, testing, t_fees))
-            if submit and name and phone:
-                patient_id = f"PAT-{datetime.now().strftime('%y%m%d%H%M')}"
-            # ... (keep your existing file saving logic here) ...
+            # total_amt = fees + t_fees
+            # wa_link = send_whatsapp_msg(phone, name, patient_id, total_amt)
             
-            cursor.execute("INSERT INTO patients VALUES (?,?,?,?,?,?,?,?,?)", 
-                           (patient_id, name, phone, str(visit_date), illness, path, fees, testing, t_fees))
-            conn.commit()
-            
-            # --- NEW WHATSAPP BUTTON ---
-            st.success(f"Record Saved! ID: {patient_id}")
-            
-            total_amt = fees + t_fees
-            wa_link = send_whatsapp_msg(phone, name, patient_id, total_amt)
-            
-            # Use a link button for the best user experience
-            st.link_button("📲 Send Summary via WhatsApp", wa_link)
+            # # Use a link button for the best user experience
+            # st.link_button("📲 Send Summary via WhatsApp", wa_link)
 
 # def search_records():
 #     st.markdown("<h2 class='main-header'>🔍 Patient Records</h2>", unsafe_allow_html=True)
