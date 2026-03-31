@@ -9,7 +9,7 @@ openpyxl
 lxml
 protobuf>=4.25.3
 gTTS
-
+xlsxwriter
 
 
 
