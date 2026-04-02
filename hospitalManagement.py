@@ -151,7 +151,6 @@ def lab_module():
                                (results, breakdown, total_lab, path, p_id))
                 conn.commit()
                 st.success("Lab results updated.")
-
 def pharmacy_module():
     st.header("💊 Pharmacy")
     p_id = st.number_input("Pharma: Enter Patient ID", min_value=1, step=1)
@@ -159,15 +158,40 @@ def pharmacy_module():
         res = cursor.execute("SELECT name, med_prescription FROM patients WHERE pid=?", (p_id,)).fetchone()
         if res:
             st.info(f"Patient: {res[0]} | **Prescription:** {res[1]}")
-            st.write("Enter medicine details below:")
+
+            # Editable medicine table
             meds = st.data_editor(
                 pd.DataFrame(columns=["Medicine", "Qty", "Price", "Timing"]),
                 num_rows="dynamic"
             )
-            total_med = (meds["Qty"] * meds["Price"]).sum() if not meds.empty else 0.0
-            st.number_input("Total Pharmacy Amount (₹)", value=float(total_med))
+
+            # Force numeric conversion for Qty and Price
+            if not meds.empty:
+                meds["Qty"] = pd.to_numeric(meds["Qty"], errors="coerce").fillna(0)
+                meds["Price"] = pd.to_numeric(meds["Price"], errors="coerce").fillna(0)
+
+                # Add timing options dropdown
+                timing_options = ["Morning", "Afternoon", "Evening", "Before Food", "After Food"]
+                meds["Timing"] = meds["Timing"].apply(
+                    lambda x: x if x in timing_options else timing_options[0]
+                )
+
+                # Calculate total per medicine
+                meds["Total"] = meds["Qty"] * meds["Price"]
+
+                # Show updated table
+                st.dataframe(meds)
+
+                # Auto grand total
+                total_med = meds["Total"].sum()
+            else:
+                total_med = 0.0
+
+            st.metric("Total Pharmacy Amount", f"₹{total_med:.2f}")
+
             if st.button("Finalize Pharmacy Bill"):
-                cursor.execute("UPDATE patients SET med_breakdown=?, med_fees=? WHERE pid=?", (meds.to_json(), total_med, p_id))
+                cursor.execute("UPDATE patients SET med_breakdown=?, med_fees=? WHERE pid=?",
+                               (meds.to_json(), total_med, p_id))
                 conn.commit()
                 st.success("Pharmacy charges added.")
 
