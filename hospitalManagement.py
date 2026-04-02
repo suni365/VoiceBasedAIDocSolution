@@ -216,8 +216,9 @@ def billing_search():
                 total = cons_fee + lab_fee + med_fee
                 # total = (p['consultation_fees'] or 0) + (p['test_fees'] or 0) + (p['med_fees'] or 0)
                 
-                st.metric("Total Payable", f"₹{total}")
-                st.write(f"Breakdown: Cons(₹{p['consultation_fees']}) + Lab(₹{p['test_fees']}) + Meds(₹{p['med_fees']})")
+                # st.metric("Total Payable", f"₹{total}")
+                # st.write(f"Breakdown: Cons(₹{p['consultation_fees']}) + Lab(₹{p['test_fees']}) + Meds(₹{p['med_fees']})")
+                st.write(f"Breakdown: Cons(₹{cons_fee}) + Lab(₹{lab_fee}) + Meds(₹{med_fee})")
         else:
             st.error("No record.")
 
