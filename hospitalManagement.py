@@ -16,7 +16,9 @@ cursor = conn.cursor()
 
 # Schema update with new fields
 cursor.execute('''
-CREATE TABLE IF NOT EXISTS patients (
+cursor.execute("DROP TABLE IF EXISTS patients")
+cursor.execute('''
+CREATE TABLE patients (
     pid INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT,
     phone TEXT,
