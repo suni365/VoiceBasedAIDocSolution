@@ -209,7 +209,13 @@ def billing_search():
                 st.write(f"**Lab Results:** {p['test_results']}")
                 if p['report_path']: st.button("View Report", on_click=display_pdf, args=(p['report_path'],))
             with c2:
-                total = (p['consultation_fees'] or 0) + (p['test_fees'] or 0) + (p['med_fees'] or 0)
+                cons_fee = float(p['consultation_fees']) if pd.notnull(p['consultation_fees']) else 0.0
+                lab_fee  = float(p['test_fees']) if pd.notnull(p['test_fees']) else 0.0
+                med_fee  = float(p['med_fees']) if pd.notnull(p['med_fees']) else 0.0
+
+                total = cons_fee + lab_fee + med_fee
+                # total = (p['consultation_fees'] or 0) + (p['test_fees'] or 0) + (p['med_fees'] or 0)
+                
                 st.metric("Total Payable", f"₹{total}")
                 st.write(f"Breakdown: Cons(₹{p['consultation_fees']}) + Lab(₹{p['test_fees']}) + Meds(₹{p['med_fees']})")
         else:
