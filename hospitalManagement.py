@@ -14,9 +14,9 @@ if not os.path.exists(UPLOAD_DIR):
 conn = sqlite3.connect('clinic_v5.db', check_same_thread=False)
 cursor = conn.cursor()
 
-# Schema update with new fields
-cursor.execute('''
+# Drop old table and recreate with new schema
 cursor.execute("DROP TABLE IF EXISTS patients")
+
 cursor.execute('''
 CREATE TABLE patients (
     pid INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -38,6 +38,7 @@ CREATE TABLE patients (
     med_fees REAL,
     consultation_fees REAL DEFAULT 500.0
 )
+''')
 
 conn.commit()
 
