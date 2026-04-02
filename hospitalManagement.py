@@ -132,8 +132,14 @@ def lab_module():
             st.info(f"Patient: {res[0]} | **Tests Requested:** {res[1]}")
             results = st.text_area("Test Results")
             breakdown = st.text_area("Rate Breakdown (e.g. Blood:200, Sugar:100)")
-            auto_total = calc_lab_total(breakdown)
-            total_lab = st.number_input("Total Lab Amount (₹)", min_value=0.0, value=auto_total)
+            # auto_total = calc_lab_total(breakdown)
+            # total_lab = st.number_input("Total Lab Amount (₹)", min_value=0.0, value=auto_total)
+            # auto_total = float(calc_lab_total(breakdown))
+            # total_lab = st.number_input("Total Lab Amount (₹)", min_value=0.0, value=auto_total)
+            # file = st.file_uploader("Upload PDF Report")
+
+            auto_total = float(calc_lab_total(breakdown))
+            total_lab = st.number_input("Total Lab Amount (₹)", min_value=0.0, value=auto_total, step=0.1)
             file = st.file_uploader("Upload PDF Report")
             
             if st.button("Submit Lab Data"):
