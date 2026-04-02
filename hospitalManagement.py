@@ -11,16 +11,18 @@ UPLOAD_DIR = "patient_reports"
 if not os.path.exists(UPLOAD_DIR):
     os.makedirs(UPLOAD_DIR)
 
-conn = sqlite3.connect('clinic_v5.db', check_same_thread=False)
-cursor = conn.cursor()
+# conn = sqlite3.connect('clinic_v5.db', check_same_thread=False)
+# cursor = conn.cursor()
 
 # Drop old table and recreate with new schema
 # cursor.execute("DROP TABLE IF EXISTS patients")
 
-cursor.execute('''CREATE TABLE IF NOT EXISTS patients (...)''')
+conn = sqlite3.connect('clinic_v5.db', check_same_thread=False)
+cursor = conn.cursor()
 
+# Create table only if it does not exist
 cursor.execute('''
-CREATE TABLE patients (
+CREATE TABLE IF NOT EXISTS patients (
     pid INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT,
     phone TEXT,
@@ -43,6 +45,7 @@ CREATE TABLE patients (
 ''')
 
 conn.commit()
+
 
 # --- HELPER FUNCTIONS ---
 def display_pdf(file_path):
