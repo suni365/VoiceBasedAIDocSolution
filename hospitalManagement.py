@@ -225,7 +225,7 @@ def monthly_report_module():
         else:
             st.warning("No records found for the selected period.")
 
-   if 'logged_in' not in st.session_state:
+if 'logged_in' not in st.session_state:
     st.session_state['logged_in'] = False
 
 if not st.session_state['logged_in']:
