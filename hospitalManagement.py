@@ -38,7 +38,7 @@ CREATE TABLE patients (
     med_fees REAL,
     consultation_fees REAL DEFAULT 500.0
 )
-''')
+
 conn.commit()
 
 # --- HELPER FUNCTIONS ---
