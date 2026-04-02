@@ -195,6 +195,33 @@ def pharmacy_module():
                 conn.commit()
                 st.success("Pharmacy charges added.")
 
+# def billing_search():
+#     st.header("🔍 Search & Final Bill")
+#     p_id = st.number_input("Search ID", min_value=1, step=1)
+#     if p_id:
+#         r = pd.read_sql("SELECT * FROM patients WHERE pid=?", conn, params=(p_id,))
+#         if not r.empty:
+#             p = r.iloc[0]
+#             st.write(f"### {p['name']} (Visit: {p['visit_date']})")
+#             c1, c2 = st.columns(2)
+#             with c1:
+#                 st.write(f"**Diagnosis:** {p['illness_description']}")
+#                 st.write(f"**Lab Results:** {p['test_results']}")
+#                 if p['report_path']: st.button("View Report", on_click=display_pdf, args=(p['report_path'],))
+#             with c2:
+#                 cons_fee = float(p['consultation_fees']) if pd.notnull(p['consultation_fees']) else 0.0
+#                 lab_fee  = float(p['test_fees']) if pd.notnull(p['test_fees']) else 0.0
+#                 med_fee  = float(p['med_fees']) if pd.notnull(p['med_fees']) else 0.0
+
+#                 total = cons_fee + lab_fee + med_fee
+#                 # total = (p['consultation_fees'] or 0) + (p['test_fees'] or 0) + (p['med_fees'] or 0)
+                
+#                 # st.metric("Total Payable", f"₹{total}")
+#                 # st.write(f"Breakdown: Cons(₹{p['consultation_fees']}) + Lab(₹{p['test_fees']}) + Meds(₹{p['med_fees']})")
+#                 st.write(f"Breakdown: Cons(₹{cons_fee}) + Lab(₹{lab_fee}) + Meds(₹{med_fee})")
+#         else:
+#             st.error("No record.")
+
 def billing_search():
     st.header("🔍 Search & Final Bill")
     p_id = st.number_input("Search ID", min_value=1, step=1)
@@ -204,23 +231,31 @@ def billing_search():
             p = r.iloc[0]
             st.write(f"### {p['name']} (Visit: {p['visit_date']})")
             c1, c2 = st.columns(2)
+
+            def safe_float(x):
+                try:
+                    return float(x)
+                except (TypeError, ValueError):
+                    return 0.0
+
             with c1:
                 st.write(f"**Diagnosis:** {p['illness_description']}")
                 st.write(f"**Lab Results:** {p['test_results']}")
-                if p['report_path']: st.button("View Report", on_click=display_pdf, args=(p['report_path'],))
+                if p['report_path']:
+                    st.button("View Report", on_click=display_pdf, args=(p['report_path'],))
+
             with c2:
-                cons_fee = float(p['consultation_fees']) if pd.notnull(p['consultation_fees']) else 0.0
-                lab_fee  = float(p['test_fees']) if pd.notnull(p['test_fees']) else 0.0
-                med_fee  = float(p['med_fees']) if pd.notnull(p['med_fees']) else 0.0
+                cons_fee = safe_float(p['consultation_fees'])
+                lab_fee  = safe_float(p['test_fees'])
+                med_fee  = safe_float(p['med_fees'])
 
                 total = cons_fee + lab_fee + med_fee
-                # total = (p['consultation_fees'] or 0) + (p['test_fees'] or 0) + (p['med_fees'] or 0)
-                
-                # st.metric("Total Payable", f"₹{total}")
-                # st.write(f"Breakdown: Cons(₹{p['consultation_fees']}) + Lab(₹{p['test_fees']}) + Meds(₹{p['med_fees']})")
+
+                st.metric("Total Payable", f"₹{total:.2f}")
                 st.write(f"Breakdown: Cons(₹{cons_fee}) + Lab(₹{lab_fee}) + Meds(₹{med_fee})")
         else:
             st.error("No record.")
+
 
 def dashboard_module():
     st.title("📊 Clinic Dashboard")
