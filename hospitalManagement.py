@@ -15,7 +15,9 @@ conn = sqlite3.connect('clinic_v5.db', check_same_thread=False)
 cursor = conn.cursor()
 
 # Drop old table and recreate with new schema
-cursor.execute("DROP TABLE IF EXISTS patients")
+# cursor.execute("DROP TABLE IF EXISTS patients")
+
+cursor.execute('''CREATE TABLE IF NOT EXISTS patients (...)''')
 
 cursor.execute('''
 CREATE TABLE patients (
