@@ -91,6 +91,38 @@ def registration_module():
             else:
                 st.error("Please fill Name and Phone.")
 
+# def doctor_module():
+#     st.header("👨‍⚕️ Doctor's Consultation")
+#     p_id = st.number_input("Enter Patient ID", min_value=1, step=1)
+#     if p_id:
+#         res = cursor.execute("SELECT name, basic_symptoms, report_path FROM patients WHERE pid=?", (p_id,)).fetchone()
+#         if res:
+#             st.subheader(f"Patient: {res[0]}")
+#             st.warning(f"**Reported Symptoms:** {res[1]}")
+            
+#             # View existing reports if any
+#             if res[2] and os.path.exists(res[2]):
+#                 if st.checkbox("👁️ View Existing Lab Report"):
+#                     display_pdf(res[2])
+            
+#             # Previous visits
+#             prev_visits = pd.read_sql("SELECT visit_date, illness_description, test_results FROM patients WHERE name=?", conn, params=(res[0],))
+#             if not prev_visits.empty:
+#                 st.write("### Previous Visits")
+#                 st.dataframe(prev_visits)
+            
+#             with st.form("doc_notes"):
+#                 descr = st.text_area("Full Illness Description")
+#                 tests = st.text_input("Tests Recommended")
+#                 meds = st.text_area("Medicine Prescription")
+#                 if st.form_submit_button("Submit Clinical Notes"):
+#                     cursor.execute("UPDATE patients SET illness_description=?, test_recommendations=?, med_prescription=? WHERE pid=?",
+#                                    (descr, tests, meds, p_id))
+#                     conn.commit()
+#                     st.success("Doctor's notes saved.")
+#         else:
+#             st.error("ID not found.")
+
 def doctor_module():
     st.header("👨‍⚕️ Doctor's Consultation")
     p_id = st.number_input("Enter Patient ID", min_value=1, step=1)
@@ -99,29 +131,65 @@ def doctor_module():
         if res:
             st.subheader(f"Patient: {res[0]}")
             st.warning(f"**Reported Symptoms:** {res[1]}")
-            
+
             # View existing reports if any
             if res[2] and os.path.exists(res[2]):
                 if st.checkbox("👁️ View Existing Lab Report"):
                     display_pdf(res[2])
-            
-            # Previous visits
-            prev_visits = pd.read_sql("SELECT visit_date, illness_description, test_results FROM patients WHERE name=?", conn, params=(res[0],))
+
+            # Show previous visits (excluding current one)
+            prev_visits = pd.read_sql(
+                "SELECT visit_date, illness_description, test_results FROM patients WHERE name=? AND pid<>?",
+                conn,
+                params=(res[0], p_id)
+            )
             if not prev_visits.empty:
                 st.write("### Previous Visits")
                 st.dataframe(prev_visits)
-            
+
             with st.form("doc_notes"):
                 descr = st.text_area("Full Illness Description")
                 tests = st.text_input("Tests Recommended")
                 meds = st.text_area("Medicine Prescription")
                 if st.form_submit_button("Submit Clinical Notes"):
-                    cursor.execute("UPDATE patients SET illness_description=?, test_recommendations=?, med_prescription=? WHERE pid=?",
-                                   (descr, tests, meds, p_id))
+                    cursor.execute(
+                        "UPDATE patients SET illness_description=?, test_recommendations=?, med_prescription=? WHERE pid=?",
+                        (descr, tests, meds, p_id)
+                    )
                     conn.commit()
                     st.success("Doctor's notes saved.")
         else:
             st.error("ID not found.")
+
+
+# def lab_module():
+#     st.header("🔬 Laboratory")
+#     p_id = st.number_input("Lab: Enter Patient ID", min_value=1, step=1)
+#     if p_id:
+#         res = cursor.execute("SELECT name, test_recommendations FROM patients WHERE pid=?", (p_id,)).fetchone()
+#         if res:
+#             st.info(f"Patient: {res[0]} | **Tests Requested:** {res[1]}")
+#             results = st.text_area("Test Results")
+#             breakdown = st.text_area("Rate Breakdown (e.g. Blood:200, Sugar:100)")
+#             # auto_total = calc_lab_total(breakdown)
+#             # total_lab = st.number_input("Total Lab Amount (₹)", min_value=0.0, value=auto_total)
+#             # auto_total = float(calc_lab_total(breakdown))
+#             # total_lab = st.number_input("Total Lab Amount (₹)", min_value=0.0, value=auto_total)
+#             # file = st.file_uploader("Upload PDF Report")
+
+#             auto_total = float(calc_lab_total(breakdown))
+#             total_lab = st.number_input("Total Lab Amount (₹)", min_value=0.0, value=auto_total, step=0.1)
+#             file = st.file_uploader("Upload PDF Report")
+            
+#             if st.button("Submit Lab Data"):
+#                 path = ""
+#                 if file:
+#                     path = os.path.join(UPLOAD_DIR, f"LAB_{p_id}_{file.name}")
+#                     with open(path, "wb") as f: f.write(file.getbuffer())
+#                 cursor.execute("UPDATE patients SET test_results=?, test_breakdown=?, test_fees=?, report_path=? WHERE pid=?",
+#                                (results, breakdown, total_lab, path, p_id))
+#                 conn.commit()
+#                 st.success("Lab results updated.")
 
 def lab_module():
     st.header("🔬 Laboratory")
@@ -130,27 +198,92 @@ def lab_module():
         res = cursor.execute("SELECT name, test_recommendations FROM patients WHERE pid=?", (p_id,)).fetchone()
         if res:
             st.info(f"Patient: {res[0]} | **Tests Requested:** {res[1]}")
-            results = st.text_area("Test Results")
-            breakdown = st.text_area("Rate Breakdown (e.g. Blood:200, Sugar:100)")
-            # auto_total = calc_lab_total(breakdown)
-            # total_lab = st.number_input("Total Lab Amount (₹)", min_value=0.0, value=auto_total)
-            # auto_total = float(calc_lab_total(breakdown))
-            # total_lab = st.number_input("Total Lab Amount (₹)", min_value=0.0, value=auto_total)
-            # file = st.file_uploader("Upload PDF Report")
 
+            # Free text results
+            results = st.text_area("Test Results")
+
+            # Option 1: Structured entry (new)
+            st.write("### Enter Test Breakdown")
+            tests_df = st.data_editor(
+                pd.DataFrame(columns=["Test", "Result", "Price"]),
+                num_rows="dynamic"
+            )
+
+            if not tests_df.empty:
+                tests_df["Price"] = pd.to_numeric(tests_df["Price"], errors="coerce").fillna(0)
+                total_lab_structured = tests_df["Price"].sum()
+            else:
+                total_lab_structured = 0.0
+
+            st.metric("Total Lab Amount (Structured)", f"₹{total_lab_structured:.2f}")
+
+            # Option 2: Keep existing breakdown text input
+            breakdown = st.text_area("Rate Breakdown (e.g. Blood:200, Sugar:100)")
             auto_total = float(calc_lab_total(breakdown))
-            total_lab = st.number_input("Total Lab Amount (₹)", min_value=0.0, value=auto_total, step=0.1)
+            total_lab_breakdown = st.number_input("Total Lab Amount (Breakdown)", min_value=0.0, value=auto_total, step=0.1)
+
+            # File upload
             file = st.file_uploader("Upload PDF Report")
-            
+
             if st.button("Submit Lab Data"):
                 path = ""
                 if file:
                     path = os.path.join(UPLOAD_DIR, f"LAB_{p_id}_{file.name}")
-                    with open(path, "wb") as f: f.write(file.getbuffer())
-                cursor.execute("UPDATE patients SET test_results=?, test_breakdown=?, test_fees=?, report_path=? WHERE pid=?",
-                               (results, breakdown, total_lab, path, p_id))
+                    with open(path, "wb") as f: 
+                        f.write(file.getbuffer())
+
+                # Save both structured and breakdown options
+                cursor.execute(
+                    "UPDATE patients SET test_results=?, test_breakdown=?, test_fees=?, report_path=? WHERE pid=?",
+                    (results, breakdown, max(total_lab_structured, total_lab_breakdown), path, p_id)
+                )
                 conn.commit()
                 st.success("Lab results updated.")
+
+# def pharmacy_module():
+#     st.header("💊 Pharmacy")
+#     p_id = st.number_input("Pharma: Enter Patient ID", min_value=1, step=1)
+#     if p_id:
+#         res = cursor.execute("SELECT name, med_prescription FROM patients WHERE pid=?", (p_id,)).fetchone()
+#         if res:
+#             st.info(f"Patient: {res[0]} | **Prescription:** {res[1]}")
+
+#             # Editable medicine table
+#             meds = st.data_editor(
+#                 pd.DataFrame(columns=["Medicine", "Qty", "Price", "Timing"]),
+#                 num_rows="dynamic"
+#             )
+
+#             # Force numeric conversion for Qty and Price
+#             if not meds.empty:
+#                 meds["Qty"] = pd.to_numeric(meds["Qty"], errors="coerce").fillna(0)
+#                 meds["Price"] = pd.to_numeric(meds["Price"], errors="coerce").fillna(0)
+
+#                 # Add timing options dropdown
+#                 timing_options = ["Morning", "Afternoon", "Evening", "Before Food", "After Food"]
+#                 meds["Timing"] = meds["Timing"].apply(
+#                     lambda x: x if x in timing_options else timing_options[0]
+#                 )
+
+#                 # Calculate total per medicine
+#                 meds["Total"] = meds["Qty"] * meds["Price"]
+
+#                 # Show updated table
+#                 st.dataframe(meds)
+
+#                 # Auto grand total
+#                 total_med = meds["Total"].sum()
+#             else:
+#                 total_med = 0.0
+
+#             st.metric("Total Pharmacy Amount", f"₹{total_med:.2f}")
+
+#             if st.button("Finalize Pharmacy Bill"):
+#                 cursor.execute("UPDATE patients SET med_breakdown=?, med_fees=? WHERE pid=?",
+#                                (meds.to_json(), total_med, p_id))
+#                 conn.commit()
+#                 st.success("Pharmacy charges added.")
+
 def pharmacy_module():
     st.header("💊 Pharmacy")
     p_id = st.number_input("Pharma: Enter Patient ID", min_value=1, step=1)
@@ -159,22 +292,25 @@ def pharmacy_module():
         if res:
             st.info(f"Patient: {res[0]} | **Prescription:** {res[1]}")
 
-            # Editable medicine table
+            # Editable medicine table with dropdown for Timing
+            timing_options = ["Morning", "Afternoon", "Evening", "Before Food", "After Food"]
+
             meds = st.data_editor(
                 pd.DataFrame(columns=["Medicine", "Qty", "Price", "Timing"]),
-                num_rows="dynamic"
+                num_rows="dynamic",
+                column_config={
+                    "Timing": st.column_config.SelectboxColumn(
+                        "Timing",
+                        options=timing_options,
+                        default=timing_options[0]
+                    )
+                }
             )
 
             # Force numeric conversion for Qty and Price
             if not meds.empty:
                 meds["Qty"] = pd.to_numeric(meds["Qty"], errors="coerce").fillna(0)
                 meds["Price"] = pd.to_numeric(meds["Price"], errors="coerce").fillna(0)
-
-                # Add timing options dropdown
-                timing_options = ["Morning", "Afternoon", "Evening", "Before Food", "After Food"]
-                meds["Timing"] = meds["Timing"].apply(
-                    lambda x: x if x in timing_options else timing_options[0]
-                )
 
                 # Calculate total per medicine
                 meds["Total"] = meds["Qty"] * meds["Price"]
@@ -194,6 +330,10 @@ def pharmacy_module():
                                (meds.to_json(), total_med, p_id))
                 conn.commit()
                 st.success("Pharmacy charges added.")
+
+
+
+
 
 # def billing_search():
 #     st.header("🔍 Search & Final Bill")
@@ -256,54 +396,84 @@ def billing_search():
         else:
             st.error("No record.")
 
-
 def dashboard_module():
     st.title("📊 Clinic Dashboard")
     total_patients = cursor.execute("SELECT COUNT(*) FROM patients").fetchone()[0]
-    today_patients = cursor.execute("SELECT COUNT(*) FROM patients WHERE visit_date=?", (str(datetime.now().date()),)).fetchone()[0]
+    today_patients = cursor.execute(
+        "SELECT COUNT(*) FROM patients WHERE visit_date=?",
+        (str(datetime.now().date()),)
+    ).fetchone()[0]
+
     st.metric("Total Patients", total_patients)
     st.metric("Today's Patients", today_patients)
+
     df = pd.read_sql("SELECT visit_date FROM patients", conn)
+
     if not df.empty:
-        st.line_chart(df['visit_date'].value_counts().sort_index())
-def monthly_report_module():
-    st.header("📅 Monthly Report")
-    start = st.date_input("Start Date")
-    end = st.date_input("End Date")
+        # Convert visit_date to datetime for proper time-series chart
+        df['visit_date'] = pd.to_datetime(df['visit_date'], errors='coerce')
+
+        # Drop invalid dates if any
+        df = df.dropna(subset=['visit_date'])
+
+        # Count visits per day
+        visit_counts = df['visit_date'].value_counts().sort_index()
+
+        # Ensure index is sorted chronologically
+        visit_counts.index = pd.to_datetime(visit_counts.index)
+        visit_counts = visit_counts.sort_index()
+
+        st.line_chart(visit_counts)
+
+
+
+# def dashboard_module():
+#     st.title("📊 Clinic Dashboard")
+#     total_patients = cursor.execute("SELECT COUNT(*) FROM patients").fetchone()[0]
+#     today_patients = cursor.execute("SELECT COUNT(*) FROM patients WHERE visit_date=?", (str(datetime.now().date()),)).fetchone()[0]
+#     st.metric("Total Patients", total_patients)
+#     st.metric("Today's Patients", today_patients)
+#     df = pd.read_sql("SELECT visit_date FROM patients", conn)
+#     if not df.empty:
+#         st.line_chart(df['visit_date'].value_counts().sort_index())
+# def monthly_report_module():
+#     st.header("📅 Monthly Report")
+#     start = st.date_input("Start Date")
+#     end = st.date_input("End Date")
     
-    if st.button("Generate Report"):
-        # Fetch patients between selected dates
-        df = pd.read_sql(
-            "SELECT * FROM patients WHERE visit_date BETWEEN ? AND ?",
-            conn,
-            params=(str(start), str(end))
-        )
+#     if st.button("Generate Report"):
+#         # Fetch patients between selected dates
+#         df = pd.read_sql(
+#             "SELECT * FROM patients WHERE visit_date BETWEEN ? AND ?",
+#             conn,
+#             params=(str(start), str(end))
+#         )
         
-        if not df.empty:
-            st.subheader("Patient Records")
-            st.dataframe(df)
+#         if not df.empty:
+#             st.subheader("Patient Records")
+#             st.dataframe(df)
 
-            # Summary metrics
-            st.metric("Total Patients", len(df))
-            st.metric("Total Consultation Fees", df['consultation_fees'].sum())
-            st.metric("Total Lab Fees", df['test_fees'].sum())
-            st.metric("Total Pharmacy Fees", df['med_fees'].sum())
-            st.metric("Grand Total Revenue", df[['consultation_fees','test_fees','med_fees']].sum().sum())
+#             # Summary metrics
+#             st.metric("Total Patients", len(df))
+#             st.metric("Total Consultation Fees", df['consultation_fees'].sum())
+#             st.metric("Total Lab Fees", df['test_fees'].sum())
+#             st.metric("Total Pharmacy Fees", df['med_fees'].sum())
+#             st.metric("Grand Total Revenue", df[['consultation_fees','test_fees','med_fees']].sum().sum())
 
-            # Charts
-            st.subheader("Visits Over Time")
-            visit_counts = df['visit_date'].value_counts().sort_index()
-            st.line_chart(visit_counts)
+#             # Charts
+#             st.subheader("Visits Over Time")
+#             visit_counts = df['visit_date'].value_counts().sort_index()
+#             st.line_chart(visit_counts)
 
-            st.subheader("Revenue Breakdown")
-            revenue_breakdown = pd.DataFrame({
-                "Consultation": [df['consultation_fees'].sum()],
-                "Lab": [df['test_fees'].sum()],
-                "Pharmacy": [df['med_fees'].sum()]
-            })
-            st.bar_chart(revenue_breakdown.T)
-        else:
-            st.warning("No records found for the selected period.")
+#             st.subheader("Revenue Breakdown")
+#             revenue_breakdown = pd.DataFrame({
+#                 "Consultation": [df['consultation_fees'].sum()],
+#                 "Lab": [df['test_fees'].sum()],
+#                 "Pharmacy": [df['med_fees'].sum()]
+#             })
+#             st.bar_chart(revenue_breakdown.T)
+#         else:
+#             st.warning("No records found for the selected period.")
 
 if 'logged_in' not in st.session_state:
     st.session_state['logged_in'] = False
