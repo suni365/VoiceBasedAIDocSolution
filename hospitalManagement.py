@@ -143,6 +143,12 @@ else:
             )
             st.dataframe(history)
 
+            history = pd.read_sql(
+    "SELECT visit_id, visit_date, diagnosis FROM visits WHERE patient_id=?",
+    conn, params=(pid,)
+)
+st.dataframe(history)
+
             symptoms = st.text_area("Symptoms")
             diagnosis = st.text_area("Diagnosis")
             tests = st.text_input("Tests Recommended")
