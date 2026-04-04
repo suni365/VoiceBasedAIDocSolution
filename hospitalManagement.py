@@ -225,20 +225,20 @@ def lab_module():
             # File upload
             file = st.file_uploader("Upload PDF Report")
 
-            if st.button("Submit Lab Data"):
-                path = ""
-                if file:
-                    path = os.path.join(UPLOAD_DIR, f"LAB_{p_id}_{file.name}")
-                    with open(path, "wb") as f: 
-                        f.write(file.getbuffer())
+           if st.button("Submit Lab Data"):
+    path = ""
+    if file:
+        path = os.path.join(UPLOAD_DIR, f"LAB_{p_id}_{file.name}")
+        with open(path, "wb") as f: 
+            f.write(file.getbuffer())
 
-                # Save both structured and breakdown options
-                cursor.execute(
-                    "UPDATE patients SET test_results=?, test_breakdown=?, test_fees=?, report_path=? WHERE pid=?",
-                    (results, breakdown, max(total_lab_structured, total_lab_breakdown), path, p_id)
-                )
-                conn.commit()
-                st.success("Lab results updated.")
+    # Save structured test data as JSON
+    cursor.execute(
+        "UPDATE patients SET test_results=?, test_breakdown=?, test_fees=?, report_path=? WHERE pid=?",
+        (results, tests_df.to_json(), max(total_lab_structured, total_lab_breakdown), path, p_id)
+    )
+    conn.commit()
+    st.success("Lab results updated.")
 
 # def pharmacy_module():
 #     st.header("💊 Pharmacy")
