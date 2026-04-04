@@ -109,7 +109,13 @@ else:
                 "INSERT INTO patients(name,phone,email,address) VALUES (?,?,?,?)",
                 (name, phone, email, address))
             conn.commit()
-            st.success("Patient Registered")
+            new_id = cursor.execute("SELECT last_insert_rowid()").fetchone()[0]
+            st.success(f"✅ Registered Successfully!")
+            st.info(f"🆔 Patient ID: {new_id}")
+            st.session_state["last_pid"] = new_id
+            wa_link = send_wa_reg(phone, name, new_id)
+            st.link_button("📲 Send Registration WhatsApp", wa_link)
+
 
     # ---------------- DOCTOR ----------------
     if menu == "Doctor":
@@ -143,6 +149,24 @@ else:
                 """, (pid, str(date.today()), symptoms, diagnosis, tests, prescription, fee))
                 conn.commit()
                 st.success("Visit Saved")
+                lab_data = cursor.execute(
+                "SELECT test_results, test_breakdown, report_path FROM patients WHERE pid=?",
+                (p_id,)
+                ).fetchone()
+
+            if lab_data and lab_data[0]:
+                st.subheader("🧪 Lab Results")
+                st.write(lab_data[0])
+
+                if lab_data[1]:
+                    try:
+                        df = pd.read_json(lab_data[1])
+                        st.dataframe(df)
+                    except:
+                        st.write(lab_data[1])
+                        if lab_data[2] and os.path.exists(lab_data[2]):
+                            if st.checkbox("📄 View Lab Report"):
+            d                    isplay_pdf(lab_data[2])
 
     # ---------------- LAB ----------------
     if menu == "Lab":
