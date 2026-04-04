@@ -162,6 +162,18 @@ else:
     if menu == "Lab":
         st.title("🔬 Lab")
         vid = st.number_input("Visit ID", 1)
+        visit = cursor.execute("""
+            SELECT v.tests, p.name
+            FROM visits v
+            JOIN patients p ON v.patient_id = p.patient_id
+            WHERE v.visit_id=?
+        """, (vid,)).fetchone()
+        if visit:
+            st.info(f"👤 Patient: {visit[1]}")
+            st.warning(f"🧪 Tests Prescribed by Doctor: {visit[0]}")
+        else:
+            st.error("Invalid Visit ID")
+            st.stop()
 
         visit = cursor.execute(
             "SELECT p.phone, p.name FROM visits v JOIN patients p ON v.patient_id=p.patient_id WHERE v.visit_id=?",
