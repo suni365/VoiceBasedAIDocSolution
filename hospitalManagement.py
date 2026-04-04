@@ -2,8 +2,8 @@ import streamlit as st
 import sqlite3
 import pandas as pd
 import os
-import json
-from datetime import datetime, date
+import urllib.parse
+from datetime import date
 
 # ---------------- CONFIG ----------------
 DB = "clinic_final.db"
@@ -43,59 +43,69 @@ CREATE TABLE IF NOT EXISTS visits (
     FOREIGN KEY(patient_id) REFERENCES patients(patient_id)
 )
 """)
-
 conn.commit()
 
 # ---------------- HELPERS ----------------
+def send_wa_reg(phone, name, pid):
+    phone = ''.join(filter(str.isdigit, phone))
+    if len(phone) == 10:
+        phone = "91" + phone
+    msg = f"🏥 Clinic Registration\nHi {name}, your Patient ID is {pid}"
+    return f"https://wa.me/{phone}?text={urllib.parse.quote(msg)}"
+
+def send_wa_report(phone, name):
+    phone = ''.join(filter(str.isdigit, phone))
+    if len(phone) == 10:
+        phone = "91" + phone
+    msg = f"Hi {name}, your lab report is ready. Please collect it from the clinic."
+    return f"https://wa.me/{phone}?text={urllib.parse.quote(msg)}"
+
 def show_json_table(j):
-    try:
-        df = pd.read_json(j)
-        st.dataframe(df)
-    except:
-        st.write(j)
+    if j:
+        try:
+            st.dataframe(pd.read_json(j))
+        except:
+            st.write(j)
+
+def display_pdf(path):
+    if path and os.path.exists(path):
+        with open(path, "rb") as f:
+            st.download_button("📄 Download Lab Report", f, file_name=os.path.basename(path))
 
 # ---------------- LOGIN ----------------
-if "login" not in st.session_state:
-    st.session_state.login = False
+if "logged_in" not in st.session_state:
+    st.session_state.logged_in = False
 
-if not st.session_state.login:
+if not st.session_state.logged_in:
     st.title("🏥 Clinic Management System")
-    user = st.text_input("Username")
-    pwd = st.text_input("Password", type="password")
-
-    if st.button("Login"):
-        if user == "admin" and pwd == "clinic123":
-            st.session_state.login = True
-            st.rerun()
-        else:
-            st.error("Invalid login")
-
-# ================= MAIN APP =================
+    u = st.text_input("Username")
+    p = st.text_input("Password", type="password")
+    if st.button("Login") and u == "admin" and p == "clinic123":
+        st.session_state.logged_in = True
+        st.rerun()
 else:
-    st.sidebar.title("Navigation")
+
     menu = st.sidebar.radio(
-        "Go to",
+        "Navigation",
         ["Dashboard", "Registration", "Doctor", "Lab", "Pharmacy", "Billing", "Monthly Report"]
     )
 
-    # ---------------- DASHBOARD ----------------
+# ---------------- DASHBOARD ----------------
     if menu == "Dashboard":
         st.title("📊 Dashboard")
-
         today = str(date.today())
 
         df = pd.read_sql("""
-        SELECT p.name, v.visit_date,
-        (v.consultation_fee + COALESCE(v.lab_fee,0) + COALESCE(v.med_fee,0)) AS revenue
-        FROM visits v JOIN patients p ON p.patient_id = v.patient_id
+            SELECT p.name, v.visit_date,
+            (v.consultation_fee + COALESCE(v.lab_fee,0) + COALESCE(v.med_fee,0)) AS revenue
+            FROM visits v JOIN patients p ON v.patient_id = p.patient_id
         """, conn)
 
         st.metric("Total Visits", len(df))
         st.metric("Today's Revenue", df[df.visit_date == today]["revenue"].sum())
-
         st.dataframe(df[df.visit_date == today])
 
-    # ---------------- REGISTRATION ----------------
+# ---------------- REGISTRATION ----------------
     if menu == "Registration":
         st.title("📝 Patient Registration")
 
@@ -104,34 +114,33 @@ else:
         email = st.text_input("Email")
         address = st.text_area("Address")
 
-        if st.button("Register"):
+        if st.button("Register") and name and phone:
             cursor.execute(
                 "INSERT INTO patients(name,phone,email,address) VALUES (?,?,?,?)",
-                (name, phone, email, address))
+                (name, phone, email, address)
+            )
             conn.commit()
-            new_id = cursor.execute("SELECT last_insert_rowid()").fetchone()[0]
-            st.success(f"✅ Registered Successfully!")
-            st.info(f"🆔 Patient ID: {new_id}")
-            st.session_state["last_pid"] = new_id
-            wa_link = send_wa_reg(phone, name, new_id)
-            st.link_button("📲 Send Registration WhatsApp", wa_link)
+            pid = cursor.execute("SELECT last_insert_rowid()").fetchone()[0]
+            st.success(f"Registered – Patient ID: {pid}")
+            st.link_button("📲 Send WhatsApp", send_wa_reg(phone, name, pid))
 
-
-    # ---------------- DOCTOR ----------------
+# ---------------- DOCTOR ----------------
     if menu == "Doctor":
         st.title("👨‍⚕️ Doctor Consultation")
-
         pid = st.number_input("Patient ID", 1)
-        patient = cursor.execute("SELECT * FROM patients WHERE patient_id=?", (pid,)).fetchone()
+
+        patient = cursor.execute(
+            "SELECT * FROM patients WHERE patient_id=?", (pid,)
+        ).fetchone()
 
         if patient:
             st.subheader(patient[1])
             st.write(f"📞 {patient[2]} | 🏠 {patient[4]}")
 
             history = pd.read_sql(
-                "SELECT visit_date, diagnosis FROM visits WHERE patient_id=?",
-                conn, params=(pid,))
-            st.write("### Previous Visits")
+                "SELECT visit_id, visit_date, diagnosis FROM visits WHERE patient_id=?",
+                conn, params=(pid,)
+            )
             st.dataframe(history)
 
             symptoms = st.text_area("Symptoms")
@@ -142,64 +151,49 @@ else:
 
             if st.button("Save Visit"):
                 cursor.execute("""
-                INSERT INTO visits
-                (patient_id, visit_date, symptoms, diagnosis, tests,
-                 prescription, consultation_fee)
-                VALUES (?,?,?,?,?,?,?)
+                    INSERT INTO visits
+                    (patient_id, visit_date, symptoms, diagnosis, tests, prescription, consultation_fee)
+                    VALUES (?,?,?,?,?,?,?)
                 """, (pid, str(date.today()), symptoms, diagnosis, tests, prescription, fee))
                 conn.commit()
-                st.success("Visit Saved")
-                lab_data = cursor.execute(
-                "SELECT test_results, test_breakdown, report_path FROM patients WHERE pid=?",
-                (p_id,)
-                ).fetchone()
+                st.success("Visit saved")
 
-            if lab_data and lab_data[0]:
-                st.subheader("🧪 Lab Results")
-                st.write(lab_data[0])
-
-                if lab_data[1]:
-                    try:
-                        df = pd.read_json(lab_data[1])
-                        st.dataframe(df)
-                    except:
-                        st.write(lab_data[1])
-                        if lab_data[2] and os.path.exists(lab_data[2]):
-                            if st.checkbox("📄 View Lab Report"):
-                                display_pdf(lab_data[2])
-
-    # ---------------- LAB ----------------
+# ---------------- LAB ----------------
     if menu == "Lab":
         st.title("🔬 Lab")
-
         vid = st.number_input("Visit ID", 1)
-        results = st.text_area("Results")
+
+        visit = cursor.execute(
+            "SELECT p.phone, p.name FROM visits v JOIN patients p ON v.patient_id=p.patient_id WHERE v.visit_id=?",
+            (vid,)
+        ).fetchone()
 
         df = st.data_editor(
             pd.DataFrame(columns=["Test", "Result", "Price"]),
             num_rows="dynamic"
         )
-
-        total = df["Price"].astype(float).sum() if not df.empty else 0
-
-        file = st.file_uploader("Upload Report PDF")
+        total = df["Price"].sum() if not df.empty else 0.0
+        file = st.file_uploader("Upload PDF")
 
         if st.button("Save Lab"):
             path = ""
             if file:
-                path = os.path.join(UPLOAD_DIR, file.name)
-                open(path, "wb").write(file.getbuffer())
+                path = os.path.join(UPLOAD_DIR, f"LAB_{vid}.pdf")
+                with open(path, "wb") as f:
+                    f.write(file.getbuffer())
 
             cursor.execute("""
-            UPDATE visits SET lab_json=?, lab_fee=?, report_path=? WHERE visit_id=?
+                UPDATE visits SET lab_json=?, lab_fee=?, report_path=? WHERE visit_id=?
             """, (df.to_json(), total, path, vid))
             conn.commit()
-            st.success("Lab Updated")
+            st.success("Lab data saved")
 
-    # ---------------- PHARMACY ----------------
+            if visit:
+                st.link_button("📲 Send Lab WhatsApp", send_wa_report(visit[0], visit[1]))
+
+# ---------------- PHARMACY ----------------
     if menu == "Pharmacy":
         st.title("💊 Pharmacy")
-
         vid = st.number_input("Visit ID", 1)
 
         meds = st.data_editor(
@@ -207,51 +201,54 @@ else:
             num_rows="dynamic"
         )
 
-        meds["Total"] = meds["Qty"].astype(float) * meds["Price"].astype(float)
-        total = meds["Total"].sum()
+        if not meds.empty:
+            meds["Total"] = meds["Qty"] * meds["Price"]
+            total = meds["Total"].sum()
+        else:
+            total = 0
 
         st.metric("Total", f"₹{total}")
 
         if st.button("Save Pharmacy"):
             cursor.execute("""
-            UPDATE visits SET med_json=?, med_fee=? WHERE visit_id=?
+                UPDATE visits SET med_json=?, med_fee=? WHERE visit_id=?
             """, (meds.to_json(), total, vid))
             conn.commit()
-            st.success("Pharmacy Updated")
+            st.success("Pharmacy saved")
 
-    # ---------------- BILLING ----------------
+# ---------------- BILLING ----------------
     if menu == "Billing":
         st.title("🧾 Billing")
-
         vid = st.number_input("Visit ID", 1)
-        v = pd.read_sql("SELECT * FROM visits WHERE visit_id=?", conn, params=(vid,))
 
-        if not v.empty:
-            v = v.iloc[0]
-            total = v["consultation_fee"] + (v["lab_fee"] or 0) + (v["med_fee"] or 0)
+        v = cursor.execute("SELECT * FROM visits WHERE visit_id=?", (vid,)).fetchone()
+        if v:
+            total = (v[11] or 0) + (v[7] or 0) + (v[9] or 0)
             st.metric("Total Payable", f"₹{total}")
 
             st.write("### Lab")
-            show_json_table(v["lab_json"])
-            st.write("### Pharmacy")
-            show_json_table(v["med_json"])
+            show_json_table(v[6])
+            display_pdf(v[12])
 
-    # ---------------- MONTHLY REPORT ----------------
+            st.write("### Pharmacy")
+            show_json_table(v[8])
+
+# ---------------- MONTHLY REPORT ----------------
     if menu == "Monthly Report":
         st.title("📅 Monthly Report")
-
         start = st.date_input("Start")
         end = st.date_input("End")
 
         df = pd.read_sql("""
-        SELECT visit_date,
-        consultation_fee + COALESCE(lab_fee,0) + COALESCE(med_fee,0) AS revenue
-        FROM visits WHERE visit_date BETWEEN ? AND ?
+            SELECT visit_date,
+            consultation_fee + COALESCE(lab_fee,0) + COALESCE(med_fee,0) AS revenue
+            FROM visits
+            WHERE visit_date BETWEEN ? AND ?
         """, conn, params=(str(start), str(end)))
 
         st.metric("Total Revenue", df["revenue"].sum())
-        st.line_chart(df.groupby("visit_date").sum())
+        st.line_chart(df.groupby("visit_date")["revenue"].sum())
 
     if st.sidebar.button("Logout"):
-        st.session_state.login = False
+        st.session_state.logged_in = False
         st.rerun()
