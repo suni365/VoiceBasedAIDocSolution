@@ -166,7 +166,7 @@ else:
                         st.write(lab_data[1])
                         if lab_data[2] and os.path.exists(lab_data[2]):
                             if st.checkbox("📄 View Lab Report"):
-            d                    isplay_pdf(lab_data[2])
+                                display_pdf(lab_data[2])
 
     # ---------------- LAB ----------------
     if menu == "Lab":
