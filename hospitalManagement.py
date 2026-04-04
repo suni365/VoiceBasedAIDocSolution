@@ -226,19 +226,19 @@ def lab_module():
             file = st.file_uploader("Upload PDF Report")
 
            if st.button("Submit Lab Data"):
-    path = ""
-    if file:
-        path = os.path.join(UPLOAD_DIR, f"LAB_{p_id}_{file.name}")
-        with open(path, "wb") as f: 
-            f.write(file.getbuffer())
+               path = ""
+               if file:
+                   path = os.path.join(UPLOAD_DIR, f"LAB_{p_id}_{file.name}")
+                   with open(path, "wb") as f: 
+                       f.write(file.getbuffer())
 
     # Save structured test data as JSON
-    cursor.execute(
-        "UPDATE patients SET test_results=?, test_breakdown=?, test_fees=?, report_path=? WHERE pid=?",
-        (results, tests_df.to_json(), max(total_lab_structured, total_lab_breakdown), path, p_id)
-    )
-    conn.commit()
-    st.success("Lab results updated.")
+               cursor.execute(
+                   "UPDATE patients SET test_results=?, test_breakdown=?, test_fees=?, report_path=? WHERE pid=?",
+                   (results, tests_df.to_json(), max(total_lab_structured, total_lab_breakdown), path, p_id)
+               )
+               conn.commit()
+               st.success("Lab results updated.")
 
 # def pharmacy_module():
 #     st.header("💊 Pharmacy")
@@ -381,6 +381,8 @@ def billing_search():
             with c1:
                 st.write(f"**Diagnosis:** {p['illness_description']}")
                 st.write(f"**Lab Results:** {p['test_results']}")
+                st.write(f"**Lab Breakdown:** {p['test_breakdown']}")
+                st.write(f"**Pharmacy Breakdown:** {p['med_breakdown']}")
                 if p['report_path']:
                     st.button("View Report", on_click=display_pdf, args=(p['report_path'],))
 
@@ -393,6 +395,7 @@ def billing_search():
 
                 st.metric("Total Payable", f"₹{total:.2f}")
                 st.write(f"Breakdown: Cons(₹{cons_fee}) + Lab(₹{lab_fee}) + Meds(₹{med_fee})")
+              
         else:
             st.error("No record.")
 
