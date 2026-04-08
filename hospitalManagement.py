@@ -147,12 +147,12 @@ else:
     "SELECT visit_id, visit_date, diagnosis FROM visits WHERE patient_id=?",
     conn, params=(pid,)
 )
-st.dataframe(history)
+# st.dataframe(history)
 symptoms = st.text_area("Symptoms")
 diagnosis = st.text_area("Diagnosis")
 tests = st.text_input("Tests Recommended")
 prescription = st.text_area("Prescription")
-fee = st.number_input("Consultation Fee", value=500.0)
+fee = st.number_input("Consultation Fee", value=300.0)
 if st.button("Save Visit"):
     cursor.execute("""
         INSERT INTO visits
@@ -162,7 +162,7 @@ if st.button("Save Visit"):
     conn.commit()
     st.success("Visit saved")
 
-# ---------------- LAB ----------------
+ # ---------------- LAB ----------------
     if menu == "Lab":
         st.title("🔬 Lab")
         vid = st.number_input("Visit ID", 1)
