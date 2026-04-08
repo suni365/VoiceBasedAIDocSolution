@@ -148,13 +148,11 @@ else:
     conn, params=(pid,)
 )
 st.dataframe(history)
-
     symptoms = st.text_area("Symptoms")
     diagnosis = st.text_area("Diagnosis")
     tests = st.text_input("Tests Recommended")
     prescription = st.text_area("Prescription")
     fee = st.number_input("Consultation Fee", value=500.0)
-
     if st.button("Save Visit"):
         cursor.execute("""
             INSERT INTO visits
