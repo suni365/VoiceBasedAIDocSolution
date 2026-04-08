@@ -148,19 +148,19 @@ else:
     conn, params=(pid,)
 )
 st.dataframe(history)
-    symptoms = st.text_area("Symptoms")
-    diagnosis = st.text_area("Diagnosis")
-    tests = st.text_input("Tests Recommended")
-    prescription = st.text_area("Prescription")
-    fee = st.number_input("Consultation Fee", value=500.0)
-    if st.button("Save Visit"):
-        cursor.execute("""
-            INSERT INTO visits
-            (patient_id, visit_date, symptoms, diagnosis, tests, prescription, consultation_fee)
-            VALUES (?,?,?,?,?,?,?)
-            """, (pid, str(date.today()), symptoms, diagnosis, tests, prescription, fee))
-                conn.commit()
-                st.success("Visit saved")
+symptoms = st.text_area("Symptoms")
+diagnosis = st.text_area("Diagnosis")
+tests = st.text_input("Tests Recommended")
+prescription = st.text_area("Prescription")
+fee = st.number_input("Consultation Fee", value=500.0)
+if st.button("Save Visit"):
+    cursor.execute("""
+        INSERT INTO visits
+        (patient_id, visit_date, symptoms, diagnosis, tests, prescription, consultation_fee)
+        VALUES (?,?,?,?,?,?,?)
+    """, (pid, str(date.today()), symptoms, diagnosis, tests, prescription, fee))
+    conn.commit()
+    st.success("Visit saved")
 
 # ---------------- LAB ----------------
     if menu == "Lab":
