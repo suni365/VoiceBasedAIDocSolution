@@ -352,12 +352,11 @@ elif menu == "Lab":
             st.success("Pharmacy saved")
 
 # ---------------- BILLING ----------------
-    elif menu == "Billing":
-        st.title("🧾 Billing")
-        vid = st.number_input("Visit ID", 1)
+elif menu == "Billing":
+    st.title("🧾 Billing")
+    vid = st.number_input("Visit ID", 1)
 
-        v = cursor.execute("SELECT * FROM visits WHERE visit_id=?", (vid,)).fetchone()
-
+    v = cursor.execute("SELECT * FROM visits WHERE visit_id=?", (vid,)).fetchone()
         if v:
             total = (v[11] or 0) + (v[7] or 0) + (v[9] or 0)
             st.metric("Total Payable", f"₹{total}")
