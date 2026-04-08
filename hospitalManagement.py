@@ -278,6 +278,35 @@ elif menu == "Registration":
 
 # ---------------- DOCTOR ----------------
 
+# elif menu == "Doctor":
+#     st.title("👨‍⚕️ Doctor Consultation")
+#     pid = st.number_input("Patient ID", 1)
+
+#     patient = cursor.execute(
+#         "SELECT * FROM patients WHERE patient_id=?", (pid,)
+#     ).fetchone()
+
+#     if patient:
+#         st.subheader(patient[1])
+#         st.write(f"📞 {patient[2]} | 🏠 {patient[4]}")
+
+#         history = pd.read_sql(
+#             "SELECT visit_id, visit_date, diagnosis FROM visits WHERE patient_id=?",
+#             conn, params=(pid,)
+#         )
+
+#         if not history.empty:
+#             st.dataframe(history)
+#         else:
+#             st.info("No previous visits found")
+
+#         symptoms = st.text_area("Symptoms")
+#         diagnosis = st.text_area("Diagnosis")
+#         tests = st.text_input("Tests Recommended")
+#         prescription = st.text_area("Prescription")
+#         fee = st.number_input("Consultation Fee", value=300.0)
+
+# ---------------- DOCTOR ----------------
 elif menu == "Doctor":
     st.title("👨‍⚕️ Doctor Consultation")
     pid = st.number_input("Patient ID", 1)
@@ -290,21 +319,47 @@ elif menu == "Doctor":
         st.subheader(patient[1])
         st.write(f"📞 {patient[2]} | 🏠 {patient[4]}")
 
+        # Show full visit history with more details
         history = pd.read_sql(
-            "SELECT visit_id, visit_date, diagnosis FROM visits WHERE patient_id=?",
+            """
+            SELECT visit_id, visit_date, symptoms, diagnosis, tests,
+                   prescription, med_json, med_fee, lab_json, lab_fee,
+                   consultation_fee
+            FROM visits
+            WHERE patient_id=?
+            """,
             conn, params=(pid,)
         )
 
         if not history.empty:
+            st.subheader("📜 Previous Visit History")
             st.dataframe(history)
         else:
             st.info("No previous visits found")
 
+        # New consultation entry
+        st.subheader("🩺 New Consultation")
         symptoms = st.text_area("Symptoms")
         diagnosis = st.text_area("Diagnosis")
         tests = st.text_input("Tests Recommended")
         prescription = st.text_area("Prescription")
         fee = st.number_input("Consultation Fee", value=300.0)
+
+        # Optional: show lab results and medicines if available
+        st.subheader("🔬 Lab Results & Medicines")
+        if not history.empty:
+            for _, row in history.iterrows():
+                with st.expander(f"Visit {row['visit_id']} on {row['visit_date']}"):
+                    st.write(f"Diagnosis: {row['diagnosis']}")
+                    st.write(f"Symptoms: {row['symptoms']}")
+                    st.write(f"Tests: {row['tests']}")
+                    st.write(f"Prescription: {row['prescription']}")
+                    st.write(f"Consultation Fee: {row['consultation_fee']}")
+                    st.write(f"Medicine Fee: {row['med_fee']}")
+                    st.write(f"Lab Fee: {row['lab_fee']}")
+                    show_json_table(row["med_json"])
+                    show_json_table(row["lab_json"])
+
 
 # ---------------- DOCTOR ----------------
 
