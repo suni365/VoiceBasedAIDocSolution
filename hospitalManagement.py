@@ -1,7 +1,7 @@
 import streamlit as st
 import sqlite3
 import pandas as pd
-import os
+import oshttps://github.com/suni365/VoiceBasedAIDocSolution/pulse
 import urllib.parse
 from datetime import date
 
@@ -106,60 +106,60 @@ else:
         st.dataframe(df[df.visit_date == today])
 
 # ---------------- REGISTRATION ----------------
-   elif menu == "Registration":
-    st.title("📝 Patient Registration")
+    elif menu == "Registration":
+        st.title("📝 Patient Registration")
 
     # --- Registration Form ---
-    with st.form("register_form", clear_on_submit=True):
-        name = st.text_input("Name")
-        phone = st.text_input("Phone")
-        email = st.text_input("Email")
-        address = st.text_area("Address")
-        submitted = st.form_submit_button("Register")
-        if submitted and name and phone:
-            try:
-                cursor.execute(
-                    "INSERT INTO patients(name,phone,email,address) VALUES (?,?,?,?)",
-                    (name, phone, email, address)
-                )
-                conn.commit()
-                pid = cursor.execute("SELECT last_insert_rowid()").fetchone()[0]
-                st.success(f"Registered – Patient ID: {pid}")
-                wa_link = send_wa_reg(phone, name, pid)
-                st.markdown(f"[📲 Send WhatsApp]({wa_link})", unsafe_allow_html=True)
-            except Exception as e:
-                st.error(f"Registration failed: {e}")
+        with st.form("register_form", clear_on_submit=True):
+            name = st.text_input("Name")
+            phone = st.text_input("Phone")
+            email = st.text_input("Email")
+            address = st.text_area("Address")
+            submitted = st.form_submit_button("Register")
+            if submitted and name and phone:
+                try:
+                    cursor.execute(
+                        "INSERT INTO patients(name,phone,email,address) VALUES (?,?,?,?)",
+                        (name, phone, email, address)
+                    )
+                    conn.commit()
+                    pid = cursor.execute("SELECT last_insert_rowid()").fetchone()[0]
+                    st.success(f"Registered – Patient ID: {pid}")
+                    wa_link = send_wa_reg(phone, name, pid)
+                    st.markdown(f"[📲 Send WhatsApp]({wa_link})", unsafe_allow_html=True)
+                except Exception as e:
+                    st.error(f"Registration failed: {e}")
 
     # --- Patient List with Edit/Delete ---
-    st.subheader("👥 Existing Patients")
-    patients_df = pd.read_sql("SELECT * FROM patients", conn)
+                    st.subheader("👥 Existing Patients")
+                    patients_df = pd.read_sql("SELECT * FROM patients", conn)
 
-    if not patients_df.empty:
-        for _, row in patients_df.iterrows():
-            with st.expander(f"🧑 {row['name']} (ID: {row['patient_id']})"):
-                new_name = st.text_input("Name", row["name"], key=f"name_{row['patient_id']}")
-                new_phone = st.text_input("Phone", row["phone"], key=f"phone_{row['patient_id']}")
-                new_email = st.text_input("Email", row["email"], key=f"email_{row['patient_id']}")
-                new_address = st.text_area("Address", row["address"], key=f"addr_{row['patient_id']}")
+                    if not patients_df.empty:
+                        for _, row in patients_df.iterrows():
+                            with st.expander(f"🧑 {row['name']} (ID: {row['patient_id']})"):
+                                new_name = st.text_input("Name", row["name"], key=f"name_{row['patient_id']}")
+                                new_phone = st.text_input("Phone", row["phone"], key=f"phone_{row['patient_id']}")
+                                new_email = st.text_input("Email", row["email"], key=f"email_{row['patient_id']}")
+                                new_address = st.text_area("Address", row["address"], key=f"addr_{row['patient_id']}")
 
-                col1, col2 = st.columns(2)
-                with col1:
-                    if st.button("💾 Update", key=f"update_{row['patient_id']}"):
-                        cursor.execute(
-                            "UPDATE patients SET name=?, phone=?, email=?, address=? WHERE patient_id=?",
-                            (new_name, new_phone, new_email, new_address, row["patient_id"])
-                        )
-                        conn.commit()
-                        st.success("Patient updated successfully!")
-                        st.rerun()
-                with col2:
-                    if st.button("🗑️ Delete", key=f"delete_{row['patient_id']}"):
-                        cursor.execute("DELETE FROM patients WHERE patient_id=?", (row["patient_id"],))
-                        conn.commit()
-                        st.warning("Patient deleted successfully!")
-                        st.rerun()
-    else:
-        st.info("No patients registered yet.")
+                                col1, col2 = st.columns(2)
+                                with col1:
+                                    if st.button("💾 Update", key=f"update_{row['patient_id']}"):
+                                        cursor.execute(
+                                            "UPDATE patients SET name=?, phone=?, email=?, address=? WHERE patient_id=?",
+                                             (new_name, new_phone, new_email, new_address, row["patient_id"])
+                                        )
+                                        conn.commit()
+                                        st.success("Patient updated successfully!")
+                                        st.rerun()
+                                with col2:
+                                    if st.button("🗑️ Delete", key=f"delete_{row['patient_id']}"):
+                                        cursor.execute("DELETE FROM patients WHERE patient_id=?", (row["patient_id"],))
+                                        conn.commit()
+                                        st.warning("Patient deleted successfully!")
+                                        st.rerun()
+                    else:
+                        st.info("No patients registered yet.")
 
 
 
