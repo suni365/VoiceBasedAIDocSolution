@@ -326,23 +326,20 @@ elif menu == "Lab":
     else:
         st.info("No pending lab tests.")
 
-    elif menu == "Pharmacy":
-        st.title("💊 Pharmacy")
-        vid = st.number_input("Visit ID", 1)
+elif menu == "Pharmacy":
+    st.title("💊 Pharmacy")
+    vid = st.number_input("Visit ID", 1)
 
-        meds = st.data_editor(
-            pd.DataFrame(columns=["Medicine", "Qty", "Price", "Timing (1-1-1)"]),
-            num_rows="dynamic"
-        )
-
-        if not meds.empty:
-            meds["Total"] = meds["Qty"] * meds["Price"]
-            total = meds["Total"].sum()
-        else:
-            total = 0
-
+    meds = st.data_editor(
+    pd.DataFrame(columns=["Medicine", "Qty", "Price", "Timing (1-1-1)"]),
+    num_rows="dynamic"
+    )
+    if not meds.empty:
+        meds["Total"] = meds["Qty"] * meds["Price"]
+        total = meds["Total"].sum()
+    else:
+        total = 0
         st.metric("Total", f"₹{total}")
-
         if st.button("Save Pharmacy"):
             cursor.execute("""
                 UPDATE visits SET med_json=?, med_fee=? WHERE visit_id=?
