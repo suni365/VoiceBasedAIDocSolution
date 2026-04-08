@@ -108,82 +108,64 @@ else:
 # ---------------- REGISTRATION ----------------
     elif menu == "Registration":
         st.title("📝 Patient Registration")
+    # --- New Patient Registration ---
+        with st.expander("➕ Register New Patient"):
+            name = st.text_input("Name", key="name")
+            phone = st.text_input("Phone", key="phone")
+            email = st.text_input("Email", key="email")
+            address = st.text_area("Address", key="address")
+            if st.button("Register") and name and phone:
+                try:
+                    cursor.execute(
+                        "INSERT INTO patients(name,phone,email,address) VALUES (?,?,?,?)",
+                        (name, phone, email, address)
+                    )
+                    conn.commit()
+                    pid = cursor.execute("SELECT last_insert_rowid()").fetchone()[0]
+                    st.success(f"Registered – Patient ID: {pid}")
+                    wa_link = send_wa_reg(phone, name, pid)
+                    st.markdown(f"[📲 Send WhatsApp]({wa_link})", unsafe_allow_html=True)
+                    st.session_state.name = ""
+                    st.session_state.phone = ""
+                    st.session_state.email = ""
+                    st.session_state.address = ""
+                except Exception as e:
+                    st.error(f"Registration failed: {e}")
 
-    # Use keys so we can clear inputs after registration
-        name = st.text_input("Name", key="name")
-        phone = st.text_input("Phone", key="phone")
-        email = st.text_input("Email", key="email")
-        address = st.text_area("Address", key="address")
-        if st.button("Register") and name and phone:
-            try:
-            # Insert into DB
-                cursor.execute(
-                    "INSERT INTO patients(name,phone,email,address) VALUES (?,?,?,?)",
-                    (name, phone, email, address)
-                )
-                conn.commit()
-            # Get last inserted ID
-                pid = cursor.execute("SELECT last_insert_rowid()").fetchone()[0]
-                st.success(f"Registered – Patient ID: {pid}")
-            # WhatsApp link
-                wa_link = send_wa_reg(phone, name, pid)
-                st.markdown(f"[📲 Send WhatsApp]({wa_link})", unsafe_allow_html=True)
-            # Clear input fields
-                st.session_state.name = "" 
-                st.session_state.phone = ""
-                st.session_state.email = ""
-                st.session_state.address = ""
-            except Exception as e:
-                st.error(f"Registration failed: {e}")
-    # elif menu == "Registration":
-    #     st.title("📝 Patient Registration")
-    #     name = st.text_input("Name")
-    #     phone = st.text_input("Phone")
-    #     email = st.text_input("Email")
-    #     address = st.text_area("Address")
-    #     if st.button("Register") and name and phone:
-    #     # Insert patient into DB
-    #         cursor.execute(
-    #             "INSERT INTO patients(name,phone,email,address) VALUES (?,?,?,?)",
-    #             (name, phone, email, address)
-    #         )
-    #         conn.commit()
+    # --- Manage Existing Patients ---
+                    st.subheader("👥 Manage Patients")
+                    patients_df = pd.read_sql("SELECT * FROM patients", conn)
 
-        # Get last inserted patient ID
-        #     pid = cursor.execute("SELECT last_insert_rowid()").fetchone()[0]
-        #     st.success(f"Registered – Patient ID: {pid}")
+                    if not patients_df.empty:
+                        selected_pid = st.selectbox("Select Patient ID", patients_df["patient_id"])
+                        patient = patients_df[patients_df["patient_id"] == selected_pid].iloc[0]
 
-        # # WhatsApp link
-        #     wa_link = send_wa_reg(phone, name, pid)
-        #     st.markdown(f"[📲 Send WhatsApp]({wa_link})", unsafe_allow_html=True)
+        # Editable fields
+                        new_name = st.text_input("Edit Name", patient["name"])
+                        new_phone = st.text_input("Edit Phone", patient["phone"])
+                        new_email = st.text_input("Edit Email", patient["email"])
+                        new_address = st.text_area("Edit Address", patient["address"])
 
-        # name = st.text_input("Name")
-        # phone = st.text_input("Phone")
-        # email = st.text_input("Email")
-        # address = st.text_area("Address")
+                        col1, col2 = st.columns(2)
+                        with col1:
+                            if st.button("💾 Update Patient"):
+                                cursor.execute(
+                                    "UPDATE patients SET name=?, phone=?, email=?, address=? WHERE patient_id=?",
+                                    (new_name, new_phone, new_email, new_address, selected_pid)
+                                )
+                                conn.commit()
+                                st.success("Patient updated successfully!")
+                                st.rerun()
 
-        # if st.button("Register") and name and phone:
-        #     cursor.execute(
-        #         "INSERT INTO patients(name,phone,email,address) VALUES (?,?,?,?)",
-        #         (name, phone, email, address)
-        #     )
-        #     conn.commit()
-        #     pid = cursor.execute("SELECT last_insert_rowid()").fetchone()[0]
-        #     st.success(f"Registered – Patient ID: {pid}")
-        #     st.link_button("📲 Send WhatsApp", send_wa_reg(phone, name, pid))
+                        with col2:
+                            if st.button("🗑️ Delete Patient"):
+                                cursor.execute("DELETE FROM patients WHERE patient_id=?", (selected_pid,))
+                                conn.commit()
+                                st.warning("Patient deleted successfully!")
+                                st.rerun()
+                    else:
+                        st.info("No patients registered yet.")
 
-    #         if st.button("Register") and name and phone:
-    #             cursor.execute(
-    #                 "INSERT INTO patients(name,phone,email,address) VALUES (?,?,?,?)",
-    #                 (name, phone, email, address)
-    #             )
-    #            conn.commit()
-    #            pid = cursor.execute("SELECT last_insert_rowid()").fetchone()[0]
-    #            st.success(f"Registered – Patient ID: {pid}")
-
-    # # WhatsApp link
-    #           wa_link = send_wa_reg(phone, name, pid)
-    #           st.markdown(f"[📲 Send WhatsApp]({wa_link})", unsafe_allow_html=True)
 
 # ---------------- DOCTOR ----------------
     elif menu == "Doctor":
