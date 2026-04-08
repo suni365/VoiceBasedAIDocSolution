@@ -159,7 +159,7 @@ else:
                         st.warning("Patient deleted successfully!")
                         st.rerun()
     else:
-                        st.info("No patients registered yet.")
+        st.info("No patients registered yet.")
 
 
 
