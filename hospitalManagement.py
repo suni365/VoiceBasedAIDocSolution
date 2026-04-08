@@ -109,10 +109,35 @@ else:
     elif menu == "Registration":
         st.title("📝 Patient Registration")
 
-        name = st.text_input("Name")
-        phone = st.text_input("Phone")
-        email = st.text_input("Email")
-        address = st.text_area("Address")
+        elif menu == "Registration":
+    st.title("📝 Patient Registration")
+
+    name = st.text_input("Name")
+    phone = st.text_input("Phone")
+    email = st.text_input("Email")
+    address = st.text_area("Address")
+
+    if st.button("Register") and name and phone:
+        # Insert patient into DB
+        cursor.execute(
+            "INSERT INTO patients(name,phone,email,address) VALUES (?,?,?,?)",
+            (name, phone, email, address)
+        )
+        conn.commit()
+
+        # Get last inserted patient ID
+        pid = cursor.execute("SELECT last_insert_rowid()").fetchone()[0]
+
+        st.success(f"Registered – Patient ID: {pid}")
+
+        # WhatsApp link
+        wa_link = send_wa_reg(phone, name, pid)
+        st.markdown(f"[📲 Send WhatsApp]({wa_link})", unsafe_allow_html=True)
+
+        # name = st.text_input("Name")
+        # phone = st.text_input("Phone")
+        # email = st.text_input("Email")
+        # address = st.text_area("Address")
 
         # if st.button("Register") and name and phone:
         #     cursor.execute(
