@@ -244,55 +244,88 @@ elif menu == "Doctor":
 
 
 # ---------------- LAB ----------------
-    elif menu == "Lab":
-        st.title("🔬 Lab")
-        vid = st.number_input("Visit ID", 1)
+    # elif menu == "Lab":
+    #     st.title("🔬 Lab")
+    #     vid = st.number_input("Visit ID", 1)
 
-        visit = cursor.execute("""
-            SELECT v.tests, p.name
-            FROM visits v
-            JOIN patients p ON v.patient_id = p.patient_id
-            WHERE v.visit_id=?
-        """, (vid,)).fetchone()
+    #     visit = cursor.execute("""
+    #         SELECT v.tests, p.name
+    #         FROM visits v
+    #         JOIN patients p ON v.patient_id = p.patient_id
+    #         WHERE v.visit_id=?
+    #     """, (vid,)).fetchone()
 
-        if visit:
-            st.info(f"👤 Patient: {visit[1]}")
-            st.warning(f"🧪 Tests Prescribed by Doctor: {visit[0]}")
-        else:
-            st.error("Invalid Visit ID")
-            st.stop()
+    #     if visit:
+    #         st.info(f"👤 Patient: {visit[1]}")
+    #         st.warning(f"🧪 Tests Prescribed by Doctor: {visit[0]}")
+    #     else:
+    #         st.error("Invalid Visit ID")
+    #         st.stop()
 
-        visit_contact = cursor.execute(
-            "SELECT p.phone, p.name FROM visits v JOIN patients p ON v.patient_id=p.patient_id WHERE v.visit_id=?",
-            (vid,)
-        ).fetchone()
+    #     visit_contact = cursor.execute(
+    #         "SELECT p.phone, p.name FROM visits v JOIN patients p ON v.patient_id=p.patient_id WHERE v.visit_id=?",
+    #         (vid,)
+    #     ).fetchone()
 
-        df = st.data_editor(
-            pd.DataFrame(columns=["Test", "Result", "Price"]),
-            num_rows="dynamic"
-        )
+    #     df = st.data_editor(
+    #         pd.DataFrame(columns=["Test", "Result", "Price"]),
+    #         num_rows="dynamic"
+    #     )
 
-        total = df["Price"].sum() if not df.empty else 0.0
-        file = st.file_uploader("Upload PDF")
+    #     total = df["Price"].sum() if not df.empty else 0.0
+    #     file = st.file_uploader("Upload PDF")
 
-        if st.button("Save Lab"):
-            path = ""
-            if file:
-                path = os.path.join(UPLOAD_DIR, f"LAB_{vid}.pdf")
-                with open(path, "wb") as f:
-                    f.write(file.getbuffer())
+    #     if st.button("Save Lab"):
+    #         path = ""
+    #         if file:
+    #             path = os.path.join(UPLOAD_DIR, f"LAB_{vid}.pdf")
+    #             with open(path, "wb") as f:
+    #                 f.write(file.getbuffer())
 
-            cursor.execute("""
-                UPDATE visits SET lab_json=?, lab_fee=?, report_path=? WHERE visit_id=?
-            """, (df.to_json(), total, path, vid))
+    #         cursor.execute("""
+    #             UPDATE visits SET lab_json=?, lab_fee=?, report_path=? WHERE visit_id=?
+    #         """, (df.to_json(), total, path, vid))
 
-            conn.commit()
-            st.success("Lab data saved")
+    #         conn.commit()
+    #         st.success("Lab data saved")
 
-            if visit_contact:
-                st.link_button("📲 Send Lab WhatsApp", send_wa_report(visit_contact[0], visit_contact[1]))
+    #         if visit_contact:
+    #             st.link_button("📲 Send Lab WhatsApp", send_wa_report(visit_contact[0], visit_contact[1]))
 
 # ---------------- PHARMACY ----------------
+elif menu == "Lab":
+    st.title("s🔬 Lab Module")
+
+    lab_df = pd.read_sql(
+        """
+        SELECT v.visit_id, v.visit_date, p.name, v.tests, v.lab_json, v.lab_fee, v.lab_status
+        FROM visits v
+        JOIN patients p ON v.patient_id = p.patient_id
+        WHERE v.tests IS NOT NULL AND v.tests != '' AND v.lab_status='pending'
+        """,
+        conn
+    )
+
+    if not lab_df.empty:
+        for _, row in lab_df.iterrows():
+            with st.expander(f"{row['name']} – Visit {row['visit_id']}"):
+                st.write(f"Date: {row['visit_date']}")
+                st.write(f"Tests Recommended: {row['tests']}")
+                st.write(f"Lab Fee: {row['lab_fee']}")
+                show_json_table(row["lab_json"])
+
+                report_file = st.file_uploader("Upload Lab Report", type=["pdf"], key=f"lab_{row['visit_id']}")
+                if report_file:
+                    report_path = os.path.join(UPLOAD_DIR, f"report_{row['visit_id']}.pdf")
+                    with open(report_path, "wb") as f:
+                        f.write(report_file.read())
+                    cursor.execute("UPDATE visits SET report_path=?, lab_status='completed' WHERE visit_id=?", (report_path, row["visit_id"]))
+                    conn.commit()
+                    st.success("Report uploaded and marked completed!")
+                    st.rerun()
+    else:
+        st.info("No pending lab tests.")
+
     elif menu == "Pharmacy":
         st.title("💊 Pharmacy")
         vid = st.number_input("Visit ID", 1)
