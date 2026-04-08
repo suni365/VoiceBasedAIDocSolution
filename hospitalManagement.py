@@ -83,8 +83,8 @@ if not st.session_state.logged_in:
     if st.button("Login") and u == "admin" and p == "clinic123":
         st.session_state.logged_in = True
         st.rerun()
-else:
 
+else:
     menu = st.sidebar.radio(
         "Navigation",
         ["Dashboard", "Registration", "Doctor", "Lab", "Pharmacy", "Billing", "Monthly Report"]
@@ -106,7 +106,7 @@ else:
         st.dataframe(df[df.visit_date == today])
 
 # ---------------- REGISTRATION ----------------
-    if menu == "Registration":
+    elif menu == "Registration":
         st.title("📝 Patient Registration")
 
         name = st.text_input("Name")
@@ -125,7 +125,7 @@ else:
             st.link_button("📲 Send WhatsApp", send_wa_reg(phone, name, pid))
 
 # ---------------- DOCTOR ----------------
-    if menu == "Doctor":
+    elif menu == "Doctor":
         st.title("👨‍⚕️ Doctor Consultation")
         pid = st.number_input("Patient ID", 1)
 
@@ -141,37 +141,42 @@ else:
                 "SELECT visit_id, visit_date, diagnosis FROM visits WHERE patient_id=?",
                 conn, params=(pid,)
             )
-            st.dataframe(history)
 
-            history = pd.read_sql(
-    "SELECT visit_id, visit_date, diagnosis FROM visits WHERE patient_id=?",
-    conn, params=(pid,)
-)
-# st.dataframe(history)
-symptoms = st.text_area("Symptoms")
-diagnosis = st.text_area("Diagnosis")
-tests = st.text_input("Tests Recommended")
-prescription = st.text_area("Prescription")
-fee = st.number_input("Consultation Fee", value=300.0)
-if st.button("Save Visit"):
-    cursor.execute("""
-        INSERT INTO visits
-        (patient_id, visit_date, symptoms, diagnosis, tests, prescription, consultation_fee)
-        VALUES (?,?,?,?,?,?,?)
-    """, (pid, str(date.today()), symptoms, diagnosis, tests, prescription, fee))
-    conn.commit()
-    st.success("Visit saved")
+            if not history.empty:
+                st.dataframe(history)
+            else:
+                st.info("No previous visits found")
 
- # ---------------- LAB ----------------
-    if menu == "Lab":
+            symptoms = st.text_area("Symptoms")
+            diagnosis = st.text_area("Diagnosis")
+            tests = st.text_input("Tests Recommended")
+            prescription = st.text_area("Prescription")
+            fee = st.number_input("Consultation Fee", value=300.0)
+
+            if st.button("Save Visit"):
+                cursor.execute("""
+                    INSERT INTO visits
+                    (patient_id, visit_date, symptoms, diagnosis, tests, prescription, consultation_fee)
+                    VALUES (?,?,?,?,?,?,?)
+                """, (pid, str(date.today()), symptoms, diagnosis, tests, prescription, fee))
+
+                conn.commit()
+                st.success("Visit saved")
+        else:
+            st.warning("⚠️ Patient not found")
+
+# ---------------- LAB ----------------
+    elif menu == "Lab":
         st.title("🔬 Lab")
         vid = st.number_input("Visit ID", 1)
+
         visit = cursor.execute("""
             SELECT v.tests, p.name
             FROM visits v
             JOIN patients p ON v.patient_id = p.patient_id
             WHERE v.visit_id=?
         """, (vid,)).fetchone()
+
         if visit:
             st.info(f"👤 Patient: {visit[1]}")
             st.warning(f"🧪 Tests Prescribed by Doctor: {visit[0]}")
@@ -179,7 +184,7 @@ if st.button("Save Visit"):
             st.error("Invalid Visit ID")
             st.stop()
 
-        visit = cursor.execute(
+        visit_contact = cursor.execute(
             "SELECT p.phone, p.name FROM visits v JOIN patients p ON v.patient_id=p.patient_id WHERE v.visit_id=?",
             (vid,)
         ).fetchone()
@@ -188,6 +193,7 @@ if st.button("Save Visit"):
             pd.DataFrame(columns=["Test", "Result", "Price"]),
             num_rows="dynamic"
         )
+
         total = df["Price"].sum() if not df.empty else 0.0
         file = st.file_uploader("Upload PDF")
 
@@ -201,14 +207,15 @@ if st.button("Save Visit"):
             cursor.execute("""
                 UPDATE visits SET lab_json=?, lab_fee=?, report_path=? WHERE visit_id=?
             """, (df.to_json(), total, path, vid))
+
             conn.commit()
             st.success("Lab data saved")
 
-            if visit:
-                st.link_button("📲 Send Lab WhatsApp", send_wa_report(visit[0], visit[1]))
+            if visit_contact:
+                st.link_button("📲 Send Lab WhatsApp", send_wa_report(visit_contact[0], visit_contact[1]))
 
 # ---------------- PHARMACY ----------------
-    if menu == "Pharmacy":
+    elif menu == "Pharmacy":
         st.title("💊 Pharmacy")
         vid = st.number_input("Visit ID", 1)
 
@@ -229,15 +236,17 @@ if st.button("Save Visit"):
             cursor.execute("""
                 UPDATE visits SET med_json=?, med_fee=? WHERE visit_id=?
             """, (meds.to_json(), total, vid))
+
             conn.commit()
             st.success("Pharmacy saved")
 
 # ---------------- BILLING ----------------
-    if menu == "Billing":
+    elif menu == "Billing":
         st.title("🧾 Billing")
         vid = st.number_input("Visit ID", 1)
 
         v = cursor.execute("SELECT * FROM visits WHERE visit_id=?", (vid,)).fetchone()
+
         if v:
             total = (v[11] or 0) + (v[7] or 0) + (v[9] or 0)
             st.metric("Total Payable", f"₹{total}")
@@ -250,7 +259,7 @@ if st.button("Save Visit"):
             show_json_table(v[8])
 
 # ---------------- MONTHLY REPORT ----------------
-    if menu == "Monthly Report":
+    elif menu == "Monthly Report":
         st.title("📅 Monthly Report")
         start = st.date_input("Start")
         end = st.date_input("End")
