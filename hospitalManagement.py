@@ -1,7 +1,7 @@
 import streamlit as st
 import sqlite3
 import pandas as pd
-import oshttps://github.com/suni365/VoiceBasedAIDocSolution/pulse
+# import oshttps://github.com/suni365/VoiceBasedAIDocSolution/pulse
 import urllib.parse
 from datetime import date
 
