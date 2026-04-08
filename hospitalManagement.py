@@ -131,34 +131,34 @@ else:
                     st.error(f"Registration failed: {e}")
 
     # --- Patient List with Edit/Delete ---
-                    st.subheader("👥 Existing Patients")
-                    patients_df = pd.read_sql("SELECT * FROM patients", conn)
+    st.subheader("👥 Existing Patients")
+    patients_df = pd.read_sql("SELECT * FROM patients", conn)
+    
+    if not patients_df.empty:
+        for _, row in patients_df.iterrows():
+            with st.expander(f"🧑 {row['name']} (ID: {row['patient_id']})"):
+                new_name = st.text_input("Name", row["name"], key=f"name_{row['patient_id']}")
+                new_phone = st.text_input("Phone", row["phone"], key=f"phone_{row['patient_id']}")
+                new_email = st.text_input("Email", row["email"], key=f"email_{row['patient_id']}")
+                new_address = st.text_area("Address", row["address"], key=f"addr_{row['patient_id']}")
 
-                    if not patients_df.empty:
-                        for _, row in patients_df.iterrows():
-                            with st.expander(f"🧑 {row['name']} (ID: {row['patient_id']})"):
-                                new_name = st.text_input("Name", row["name"], key=f"name_{row['patient_id']}")
-                                new_phone = st.text_input("Phone", row["phone"], key=f"phone_{row['patient_id']}")
-                                new_email = st.text_input("Email", row["email"], key=f"email_{row['patient_id']}")
-                                new_address = st.text_area("Address", row["address"], key=f"addr_{row['patient_id']}")
-
-                                col1, col2 = st.columns(2)
-                                with col1:
-                                    if st.button("💾 Update", key=f"update_{row['patient_id']}"):
-                                        cursor.execute(
-                                            "UPDATE patients SET name=?, phone=?, email=?, address=? WHERE patient_id=?",
-                                             (new_name, new_phone, new_email, new_address, row["patient_id"])
-                                        )
-                                        conn.commit()
-                                        st.success("Patient updated successfully!")
-                                        st.rerun()
-                                with col2:
-                                    if st.button("🗑️ Delete", key=f"delete_{row['patient_id']}"):
-                                        cursor.execute("DELETE FROM patients WHERE patient_id=?", (row["patient_id"],))
-                                        conn.commit()
-                                        st.warning("Patient deleted successfully!")
-                                        st.rerun()
-                    else:
+                col1, col2 = st.columns(2)
+                with col1:
+                    if st.button("💾 Update", key=f"update_{row['patient_id']}"):
+                        cursor.execute(
+                            "UPDATE patients SET name=?, phone=?, email=?, address=? WHERE patient_id=?",
+                                (new_name, new_phone, new_email, new_address, row["patient_id"])
+                        )
+                        conn.commit()
+                        st.success("Patient updated successfully!")
+                        st.rerun()
+                with col2:
+                    if st.button("🗑️ Delete", key=f"delete_{row['patient_id']}"):
+                        cursor.execute("DELETE FROM patients WHERE patient_id=?", (row["patient_id"],))
+                        conn.commit()
+                        st.warning("Patient deleted successfully!")
+                        st.rerun()
+    else:
                         st.info("No patients registered yet.")
 
 
