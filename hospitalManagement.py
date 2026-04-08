@@ -124,18 +124,18 @@ else:
         #     st.success(f"Registered – Patient ID: {pid}")
         #     st.link_button("📲 Send WhatsApp", send_wa_reg(phone, name, pid))
 
-          if st.button("Register") and name and phone:
-              cursor.execute(
-                 "INSERT INTO patients(name,phone,email,address) VALUES (?,?,?,?)",
+        if st.button("Register") and name and phone:
+            cursor.execute(
+                "INSERT INTO patients(name,phone,email,address) VALUES (?,?,?,?)",
                  (name, phone, email, address)
-              )
-              conn.commit()
-              pid = cursor.execute("SELECT last_insert_rowid()").fetchone()[0]
-              st.success(f"Registered – Patient ID: {pid}")
+            )
+            conn.commit()
+            pid = cursor.execute("SELECT last_insert_rowid()").fetchone()[0]
+            st.success(f"Registered – Patient ID: {pid}")
 
     # WhatsApp link
-              wa_link = send_wa_reg(phone, name, pid)
-              st.markdown(f"[📲 Send WhatsApp]({wa_link})", unsafe_allow_html=True)
+            wa_link = send_wa_reg(phone, name, pid)
+            st.markdown(f"[📲 Send WhatsApp]({wa_link})", unsafe_allow_html=True)
 
 # ---------------- DOCTOR ----------------
     elif menu == "Doctor":
