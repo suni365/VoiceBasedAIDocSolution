@@ -354,16 +354,16 @@ elif menu == "Billing":
     vid = st.number_input("Visit ID", 1)
 
     v = cursor.execute("SELECT * FROM visits WHERE visit_id=?", (vid,)).fetchone()
-        if v:
-            total = (v[11] or 0) + (v[7] or 0) + (v[9] or 0)
-            st.metric("Total Payable", f"₹{total}")
+    if v:
+        total = (v[11] or 0) + (v[7] or 0) + (v[9] or 0)
+        st.metric("Total Payable", f"₹{total}")
 
-            st.write("### Lab")
-            show_json_table(v[6])
-            display_pdf(v[12])
+        st.write("### Lab")
+        show_json_table(v[6])
+        display_pdf(v[12])
 
-            st.write("### Pharmacy")
-            show_json_table(v[8])
+        st.write("### Pharmacy")
+        show_json_table(v[8])
 
 # ---------------- MONTHLY REPORT ----------------
     elif menu == "Monthly Report":
