@@ -45,6 +45,20 @@ CREATE TABLE IF NOT EXISTS visits (
 """)
 conn.commit()
 
+try:
+    cursor.execute("ALTER TABLE visits ADD COLUMN lab_status TEXT DEFAULT 'pending'")
+except sqlite3.OperationalError:
+    # Column already exists
+    pass
+
+try:
+    cursor.execute("ALTER TABLE visits ADD COLUMN pharmacy_status TEXT DEFAULT 'pending'")
+except sqlite3.OperationalError:
+    # Column already exists
+    pass
+
+conn.commit()
+
 # ---------------- HELPERS ----------------
 def send_wa_reg(phone, name, pid):
     phone = ''.join(filter(str.isdigit, phone))
