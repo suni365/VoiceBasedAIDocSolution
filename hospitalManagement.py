@@ -307,12 +307,46 @@ elif menu == "Doctor":
     #             st.link_button("📲 Send Lab WhatsApp", send_wa_report(visit_contact[0], visit_contact[1]))
 
 # ---------------- PHARMACY ----------------
+# elif menu == "Lab":
+#     st.title("s🔬 Lab Module")
+
+#     lab_df = pd.read_sql(
+#         """
+#         SELECT v.visit_id, v.visit_date, p.name, v.tests, v.lab_json, v.lab_fee, v.lab_status
+#         FROM visits v
+#         JOIN patients p ON v.patient_id = p.patient_id
+#         WHERE v.tests IS NOT NULL AND v.tests != '' AND v.lab_status='pending'
+#         """,
+#         conn
+#     )
+
+#     if not lab_df.empty:
+#         for _, row in lab_df.iterrows():
+#             with st.expander(f"{row['name']} – Visit {row['visit_id']}"):
+#                 st.write(f"Date: {row['visit_date']}")
+#                 st.write(f"Tests Recommended: {row['tests']}")
+#                 st.write(f"Lab Fee: {row['lab_fee']}")
+#                 show_json_table(row["lab_json"])
+
+#                 report_file = st.file_uploader("Upload Lab Report", type=["pdf"], key=f"lab_{row['visit_id']}")
+#                 if report_file:
+#                     report_path = os.path.join(UPLOAD_DIR, f"report_{row['visit_id']}.pdf")
+#                     with open(report_path, "wb") as f:
+#                         f.write(report_file.read())
+#                     cursor.execute("UPDATE visits SET report_path=?, lab_status='completed' WHERE visit_id=?", (report_path, row["visit_id"]))
+#                     conn.commit()
+#                     st.success("Report uploaded and marked completed!")
+#                     st.rerun()
+#     else:
+#         st.info("No pending lab tests.")
+
 elif menu == "Lab":
-    st.title("s🔬 Lab Module")
+    st.title("🔬 Lab Module")
 
     lab_df = pd.read_sql(
         """
-        SELECT v.visit_id, v.visit_date, p.name, v.tests, v.lab_json, v.lab_fee, v.lab_status
+        SELECT v.visit_id, v.visit_date, p.name, p.phone, v.tests, v.lab_json,
+               v.lab_fee, v.lab_status, v.report_path
         FROM visits v
         JOIN patients p ON v.patient_id = p.patient_id
         WHERE v.tests IS NOT NULL AND v.tests != '' AND v.lab_status='pending'
@@ -320,14 +354,28 @@ elif menu == "Lab":
         conn
     )
 
+    total_expense = 0
+
     if not lab_df.empty:
         for _, row in lab_df.iterrows():
             with st.expander(f"{row['name']} – Visit {row['visit_id']}"):
                 st.write(f"Date: {row['visit_date']}")
                 st.write(f"Tests Recommended: {row['tests']}")
-                st.write(f"Lab Fee: {row['lab_fee']}")
-                show_json_table(row["lab_json"])
 
+                # Enter lab details and fee
+                test_details = st.text_area("Enter Test Details", row["lab_json"] or "", key=f"labdet_{row['visit_id']}")
+                lab_fee = st.number_input("Lab Fee", value=row["lab_fee"] if row["lab_fee"] else 0.0, key=f"labfee_{row['visit_id']}")
+
+                if st.button("💾 Save Lab Record", key=f"savelab_{row['visit_id']}"):
+                    cursor.execute(
+                        "UPDATE visits SET lab_json=?, lab_fee=? WHERE visit_id=?",
+                        (test_details, lab_fee, row["visit_id"])
+                    )
+                    conn.commit()
+                    st.success("Lab details saved successfully!")
+                    st.rerun()
+
+                # Upload report
                 report_file = st.file_uploader("Upload Lab Report", type=["pdf"], key=f"lab_{row['visit_id']}")
                 if report_file:
                     report_path = os.path.join(UPLOAD_DIR, f"report_{row['visit_id']}.pdf")
@@ -337,6 +385,19 @@ elif menu == "Lab":
                     conn.commit()
                     st.success("Report uploaded and marked completed!")
                     st.rerun()
+
+                # WhatsApp link to send report
+                if row["report_path"]:
+                    wa_link = send_wa_report(row["phone"], row["name"])
+                    st.markdown(f"[📲 Send Report via WhatsApp]({wa_link})", unsafe_allow_html=True)
+
+                # Add to total expense
+                if lab_fee:
+                    total_expense += lab_fee
+
+        # Show total lab expense
+        st.subheader("💰 Total Lab Expense")
+        st.metric("Total", total_expense)
     else:
         st.info("No pending lab tests.")
 
