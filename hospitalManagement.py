@@ -125,7 +125,7 @@ if "logged_in" not in st.session_state:
 
 # Login screen
 if not st.session_state.logged_in:
-    st.title("🏥 SAMPATH M.B.B.S Clinic")
+    st.title("🏥 Swapna's Clinic ")
     u = st.text_input("Username")
     p = st.text_input("Password", type="password")
     if st.button("Login") and u == "admin" and p == "clinic123":
