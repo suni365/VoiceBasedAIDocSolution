@@ -87,9 +87,43 @@ def display_pdf(path):
             st.download_button("📄 Download Lab Report", f, file_name=os.path.basename(path))
 
 # ---------------- LOGIN ----------------
+# if "logged_in" not in st.session_state:
+#     st.session_state.logged_in = False
+
+# if not st.session_state.logged_in:
+#     st.title("🏥 Clinic Management System")
+#     u = st.text_input("Username")
+#     p = st.text_input("Password", type="password")
+#     if st.button("Login") and u == "admin" and p == "clinic123":
+#         st.session_state.logged_in = True
+#         st.rerun()
+
+# else:
+#     menu = st.sidebar.radio(
+#         "Navigation",
+#         ["Dashboard", "Registration", "Doctor", "Lab", "Pharmacy", "Billing", "Monthly Report"]
+#     )
+
+
+#     # ---------------- DASHBOARD ----------------
+# if menu == "Dashboard":
+#     st.title("📊 Dashboard")
+#     today = str(date.today())
+
+#     df = pd.read_sql("""
+#         SELECT p.name, v.visit_date,
+#         (v.consultation_fee + COALESCE(v.lab_fee,0) + COALESCE(v.med_fee,0)) AS revenue
+#         FROM visits v JOIN patients p ON v.patient_id = p.patient_id
+#     """, conn)
+
+#     st.metric("Total Visits", len(df))
+#     st.metric("Today's Revenue", df[df.visit_date == today]["revenue"].sum())
+#     st.dataframe(df[df.visit_date == today])
+
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
 
+# Login screen
 if not st.session_state.logged_in:
     st.title("🏥 Clinic Management System")
     u = st.text_input("Username")
@@ -98,27 +132,27 @@ if not st.session_state.logged_in:
         st.session_state.logged_in = True
         st.rerun()
 
+# Main app after login
 else:
     menu = st.sidebar.radio(
         "Navigation",
         ["Dashboard", "Registration", "Doctor", "Lab", "Pharmacy", "Billing", "Monthly Report"]
     )
 
-
     # ---------------- DASHBOARD ----------------
-if menu == "Dashboard":
-    st.title("📊 Dashboard")
-    today = str(date.today())
+    if menu == "Dashboard":
+        st.title("📊 Dashboard")
+        today = str(date.today())
 
-    df = pd.read_sql("""
-        SELECT p.name, v.visit_date,
-        (v.consultation_fee + COALESCE(v.lab_fee,0) + COALESCE(v.med_fee,0)) AS revenue
-        FROM visits v JOIN patients p ON v.patient_id = p.patient_id
-    """, conn)
+        df = pd.read_sql("""
+            SELECT p.name, v.visit_date,
+            (v.consultation_fee + COALESCE(v.lab_fee,0) + COALESCE(v.med_fee,0)) AS revenue
+            FROM visits v JOIN patients p ON v.patient_id = p.patient_id
+        """, conn)
 
-    st.metric("Total Visits", len(df))
-    st.metric("Today's Revenue", df[df.visit_date == today]["revenue"].sum())
-    st.dataframe(df[df.visit_date == today])
+        st.metric("Total Visits", len(df))
+        st.metric("Today's Revenue", df[df.visit_date == today]["revenue"].sum())
+        st.dataframe(df[df.visit_date == today])
 
 # ---------------- REGISTRATION ----------------
 elif menu == "Registration":
