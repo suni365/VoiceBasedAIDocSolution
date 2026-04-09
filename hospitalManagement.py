@@ -387,21 +387,21 @@ else:
             show_json_table(v[8])
 
 # ---------------- MONTHLY REPORT ----------------
-        elif menu == "Monthly Report":
-            st.title("📅 Monthly Report")
-            start = st.date_input("Start")
-            end = st.date_input("End")
+    elif menu == "Monthly Report":
+        st.title("📅 Monthly Report")
+        start = st.date_input("Start")
+        end = st.date_input("End")
 
-            df = pd.read_sql("""
-                SELECT visit_date,
-                consultation_fee + COALESCE(lab_fee,0) + COALESCE(med_fee,0) AS revenue
-                FROM visits
-                WHERE visit_date BETWEEN ? AND ?
-            """, conn, params=(str(start), str(end)))
+        df = pd.read_sql("""
+            SELECT visit_date,
+            consultation_fee + COALESCE(lab_fee,0) + COALESCE(med_fee,0) AS revenue
+            FROM visits
+            WHERE visit_date BETWEEN ? AND ?
+        """, conn, params=(str(start), str(end)))
 
-            st.metric("Total Revenue", df["revenue"].sum())
-            st.line_chart(df.groupby("visit_date")["revenue"].sum())
+        st.metric("Total Revenue", df["revenue"].sum())
+        st.line_chart(df.groupby("visit_date")["revenue"].sum())
 
-        if st.sidebar.button("Logout"):
-            st.session_state.logged_in = False
-            st.rerun()
+    if st.sidebar.button("Logout"):
+        st.session_state.logged_in = False
+        st.rerun()
