@@ -274,22 +274,9 @@ else:
                 st.success("Consultation saved successfully!")
                 st.rerun()
 
-            # if st.button("💾 Save Consultation"):
-            #     today = str(date.today())
-            #     try:
-            #         cursor.execute(
-            #             """
-            #             INSERT INTO visits(patient_id, visit_date, symptoms, diagnosis, tests,
-            #                            prescription, consultation_fee)
-            #             VALUES (?, ?, ?, ?, ?, ?, ?)
-            #             """,
-            #             (pid, today, symptoms, diagnosis, tests, prescription, fee)
-            #         )
-            #         conn.commit()
-            #         st.success("Consultation saved successfully!")
-            #         st.rerun()
-                except Exception as e:
-                    st.error(f"Failed to save consultation: {e}")
+      
+                # except Exception as e:
+                #     st.error(f"Failed to save consultation: {e}")
 
         # Optional: show lab results and medicines if available
             st.subheader("🔬 Lab Results & Medicines")
