@@ -163,12 +163,13 @@ else:
             name = st.text_input("Name")
             email = st.text_input("Email")
             address = st.text_area("Address")
+            phone = st.text_area("Phone")
             submitted = st.form_submit_button("Register")
             if submitted and name and phone:
                 try:
                     cursor.execute(
-                        "INSERT INTO patients(name,phone,email,address) VALUES (?,?,?,?)",
-                        (name, phone, email, address)
+                        "INSERT INTO patients(name,phone,email,phone,address) VALUES (?,?,?,?,?)",
+                        (name, phone, email, phone, address)
                     )
                     conn.commit()
                     pid = cursor.execute("SELECT last_insert_rowid()").fetchone()[0]
@@ -189,6 +190,7 @@ else:
                     new_phone = st.text_input("Phone", row["phone"], key=f"phone_{row['patient_id']}")
                     new_email = st.text_input("Email", row["email"], key=f"email_{row['patient_id']}")
                     new_address = st.text_area("Address", row["address"], key=f"addr_{row['patient_id']}")
+                    # new_phone = st.text_area("Addre", row["phone"], key=f"addr_{row['patient_id']}")
 
                     col1, col2 = st.columns(2)
                     with col1:
