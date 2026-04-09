@@ -390,17 +390,42 @@ else:
         st.title("🧾 Billing")
         vid = st.number_input("Visit ID", 1)
 
-        v = cursor.execute("SELECT * FROM visits WHERE visit_id=?", (vid,)).fetchone()
-        if v:
-            total = (v[11] or 0) + (v[7] or 0) + (v[9] or 0)
+        bill = pd.read_sql(
+            """
+            SELECT v.visit_id, v.visit_date, p.name, p.phone,
+                v.consultation_fee, v.lab_fee, v.med_fee,
+                v.lab_json, v.med_json, v.report_path
+            FROM visits v
+            JOIN patients p ON v.patient_id = p.patient_id
+            WHERE v.visit_id = ?
+            """,
+            conn, params=(vid,)
+        )
+
+        if not bill.empty:
+            row = bill.iloc[0]
+
+            consultation = row["consultation_fee"] or 0
+            lab = row["lab_fee"] or 0
+            medicine = row["med_fee"] or 0
+            total = consultation + lab + medicine
+
             st.metric("Total Payable", f"₹{total}")
 
+            st.write("### Breakdown")
+            st.write(f"Consultation Fee: ₹{consultation}")
+            st.write(f"Lab Fee: ₹{lab}")
+            st.write(f"Medicine Fee: ₹{medicine}")
+
             st.write("### Lab")
-            show_json_table(v[6])
-            display_pdf(v[12])
+            show_json_table(row["lab_json"])
+            display_pdf(row["report_path"])
 
             st.write("### Pharmacy")
-            show_json_table(v[8])
+            show_json_table(row["med_json"])
+        else:
+            st.info("No billing record found for this Visit ID")
+
 
 # ---------------- MONTHLY REPORT ----------------
     elif menu == "Monthly Report":
