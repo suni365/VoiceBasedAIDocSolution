@@ -169,12 +169,12 @@ else:
                     cursor.execute(
                         "INSERT INTO patients(name,phone,email,address) VALUES (?,?,?,?)",
                         (name, phone, email, address)
-                        )
-                        conn.commit()
-                        pid = cursor.execute("SELECT last_insert_rowid()").fetchone()[0]
-                        st.success(f"Registered – Patient ID: {pid}")
-                        wa_link = send_wa_reg(phone, name, pid)
-                        st.markdown(f"[📲 Send WhatsApp]({wa_link})", unsafe_allow_html=True)
+                    )
+                    conn.commit()
+                    pid = cursor.execute("SELECT last_insert_rowid()").fetchone()[0]
+                    st.success(f"Registered – Patient ID: {pid}")
+                    wa_link = send_wa_reg(phone, name, pid)
+                    st.markdown(f"[📲 Send WhatsApp]({wa_link})", unsafe_allow_html=True)
                 except Exception as e:
                     st.error(f"Registration failed: {e}")
 
