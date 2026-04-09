@@ -361,29 +361,61 @@ else:
         vid = st.number_input("Visit ID", 1)
 
         meds = st.data_editor(
-        pd.DataFrame(columns=["Medicine", "Qty", "Price", "Timing (1-1-1)"]),
-        num_rows="dynamic"
+            pd.DataFrame(columns=["Medicine", "Qty", "Price", "Timing (1-1-1)"]),
+            num_rows="dynamic",
+            column_config={
+                "Qty": st.column_config.NumberColumn("Qty", min_value=0),
+                "Price": st.column_config.NumberColumn("Price", min_value=0.0, step=0.5),
+            }
         )
-        # if not meds.empty:
-        #     meds["Total"] = meds["Qty"] * meds["Price"]
-        #     total = meds["Total"].sum()
+
         if not meds.empty:
-    # Convert to numeric, replace invalid entries with 0
+        # Convert to numeric safely
             meds["Qty"] = pd.to_numeric(meds["Qty"], errors="coerce").fillna(0)
             meds["Price"] = pd.to_numeric(meds["Price"], errors="coerce").fillna(0)
             meds["Total"] = meds["Qty"] * meds["Price"]
             total = meds["Total"].sum()
-            st.metric("Total", f"₹{total}")
         else:
             total = 0
-            st.metric("Total", f"₹{total}")
-            if st.button("Save Pharmacy"):
-                cursor.execute("""
-                    UPDATE visits SET med_json=?, med_fee=? WHERE visit_id=?
-                """, (meds.to_json(), total, vid))
 
-                conn.commit()
-                st.success("Pharmacy saved")
+        st.metric("Total", f"₹{total}")
+
+        if st.button("Save Pharmacy"):
+            cursor.execute("""
+                UPDATE visits SET med_json=?, med_fee=? WHERE visit_id=?
+            """, (meds.to_json(), total, vid))
+            conn.commit()
+            st.success("Pharmacy saved")
+            st.rerun()
+
+    # elif menu == "Pharmacy":
+    #     st.title("💊 Pharmacy")
+    #     vid = st.number_input("Visit ID", 1)
+
+    #     meds = st.data_editor(
+    #     pd.DataFrame(columns=["Medicine", "Qty", "Price", "Timing (1-1-1)"]),
+    #     num_rows="dynamic"
+    #     )
+    #     # if not meds.empty:
+    #     #     meds["Total"] = meds["Qty"] * meds["Price"]
+    #     #     total = meds["Total"].sum()
+    #     if not meds.empty:
+    # # Convert to numeric, replace invalid entries with 0
+    #         meds["Qty"] = pd.to_numeric(meds["Qty"], errors="coerce").fillna(0)
+    #         meds["Price"] = pd.to_numeric(meds["Price"], errors="coerce").fillna(0)
+    #         meds["Total"] = meds["Qty"] * meds["Price"]
+    #         total = meds["Total"].sum()
+    #         st.metric("Total", f"₹{total}")
+    #     else:
+    #         total = 0
+    #         st.metric("Total", f"₹{total}")
+    #         if st.button("Save Pharmacy"):
+    #             cursor.execute("""
+    #                 UPDATE visits SET med_json=?, med_fee=? WHERE visit_id=?
+    #             """, (meds.to_json(), total, vid))
+
+    #             conn.commit()
+    #             st.success("Pharmacy saved")
 
 # ---------------- BILLING ----------------
     elif menu == "Billing":
