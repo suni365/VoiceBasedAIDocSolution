@@ -448,6 +448,72 @@ else:
                 show_json_table(row["med_json"])
 
 
+
+
+# ---------------- VISIT SUMMARY ----------------
+    elif menu == "Visit Summary":
+        st.title("📋 Visit Summary")
+
+    # Select patient
+        patients_df = pd.read_sql("SELECT patient_id, name FROM patients", conn)
+        patient_choice = st.selectbox("Select Patient", patients_df["name"]) if not patients_df.empty else None
+
+        if patient_choice:
+            pid = patients_df.loc[patients_df["name"] == patient_choice, "patient_id"].values[0]
+
+        # Show visits for this patient
+            visits_df = pd.read_sql(
+                """
+                SELECT v.visit_id, v.visit_date, v.symptoms, v.diagnosis, v.tests,
+                       v.prescription, v.consultation_fee, v.lab_fee, v.med_fee,
+                       v.lab_json, v.med_json, v.report_path, v.lab_status, v.pharmacy_status
+                FROM visits v
+                WHERE v.patient_id=?
+                """,
+                conn, params=(pid,)
+            )
+
+            if not visits_df.empty:
+                visit_choice = st.selectbox(
+                    "Select Visit",
+                    visits_df.apply(lambda r: f"Visit {r['visit_id']} ({r['visit_date']})", axis=1)
+                )
+                vid = int(visit_choice.split()[1])
+
+                row = visits_df.loc[visits_df["visit_id"] == vid].iloc[0]
+
+            # Doctor details
+                st.subheader("🩺 Doctor Consultation")
+                st.write(f"Symptoms: {row['symptoms']}")
+                st.write(f"Diagnosis: {row['diagnosis']}")
+                st.write(f"Tests Recommended: {row['tests']}")
+                st.write(f"Prescription: {row['prescription']}")
+                st.write(f"Consultation Fee: ₹{row['consultation_fee'] or 0}")
+
+            # Lab details
+                st.subheader("🔬 Lab Results")
+                st.write(f"Lab Status: {row['lab_status']}")
+                st.write(f"Lab Fee: ₹{row['lab_fee'] or 0}")
+                show_json_table(row["lab_json"])
+                display_pdf(row["report_path"])
+
+            # Pharmacy details
+                st.subheader("💊 Pharmacy")
+                st.write(f"Pharmacy Status: {row['pharmacy_status']}")
+                st.write(f"Medicine Fee: ₹{row['med_fee'] or 0}")
+                show_json_table(row["med_json"])
+
+            # Billing summary
+                st.subheader("🧾 Billing Summary")
+                consultation = row["consultation_fee"] or 0
+                lab = row["lab_fee"] or 0
+                medicine = row["med_fee"] or 0
+                total = consultation + lab + medicine
+                st.metric("Total Payable", f"₹{total}")
+            else:
+                st.info("No visits found for this patient.")
+
+    
 # ---------------- MONTHLY REPORT ----------------
     elif menu == "Monthly Report":
         st.title("📅 Monthly Report")
