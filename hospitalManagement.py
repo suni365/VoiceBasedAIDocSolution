@@ -170,8 +170,8 @@ else:
             if submitted and name and phone:
                 try:
                     cursor.execute(
-                        "INSERT INTO patients(name,phone,email,phone,address) VALUES (?,?,?,?,?)",
-                        (name, phone, email, phone, address)
+                        "INSERT INTO patients(name,phone,email,address) VALUES (?,?,?,?)",
+                        (name, phone, email,address)
                     )
                     conn.commit()
                     pid = cursor.execute("SELECT last_insert_rowid()").fetchone()[0]
