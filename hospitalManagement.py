@@ -341,20 +341,19 @@ else:
         else:
             st.info("No pending lab tests.")
 
-    # ---------------- PHARMACY ----------------
+
+# ---------------- PHARMACY ----------------
     elif menu == "Pharmacy":
         st.title("💊 Pharmacy")
 
-    # Select patient first
         patients_df = pd.read_sql("SELECT patient_id, name FROM patients", conn)
         patient_choice = st.selectbox("Select Patient", patients_df["name"]) if not patients_df.empty else None
 
         if patient_choice:
             pid = patients_df.loc[patients_df["name"] == patient_choice, "patient_id"].values[0]
 
-        # Show visits for this patient
             visits_df = pd.read_sql(
-                "SELECT visit_id, visit_date, diagnosis FROM visits WHERE patient_id=?",
+                "SELECT visit_id, visit_date, diagnosis, prescription, med_json, med_fee FROM visits WHERE patient_id=?",
                 conn, params=(pid,)
             )
 
@@ -363,11 +362,14 @@ else:
                     "Select Visit",
                     visits_df.apply(lambda r: f"Visit {r['visit_id']} ({r['visit_date']} – {r['diagnosis']})", axis=1)
                 )
-                vid = int(visit_choice.split()[1])  # extract visit_id
+                vid = int(visit_choice.split()[1])
 
-            # Load existing meds
-                row = cursor.execute("SELECT med_json FROM visits WHERE visit_id=?", (vid,)).fetchone()
-                meds = pd.read_json(io.StringIO(row[0])) if row and row[0] else pd.DataFrame(columns=["Medicine", "Qty", "Price", "Timing (1-1-1)"])
+                row = visits_df.loc[visits_df["visit_id"] == vid].iloc[0]
+
+                st.write("### Doctor Prescription")
+                st.text(row["prescription"] or "No prescription recorded")
+
+                meds = pd.read_json(io.StringIO(row["med_json"])) if row["med_json"] else pd.DataFrame(columns=["Medicine","Qty","Price","Timing (1-1-1)"])
 
                 meds = st.data_editor(
                     meds,
@@ -378,13 +380,10 @@ else:
                     }
                 )
 
-                if not meds.empty:
-                    meds["Qty"] = pd.to_numeric(meds["Qty"], errors="coerce").fillna(0)
-                    meds["Price"] = pd.to_numeric(meds["Price"], errors="coerce").fillna(0)
-                    meds["Total"] = meds["Qty"] * meds["Price"]
-                    total = meds["Total"].sum()
-                else:
-                    total = 0
+                meds["Qty"] = pd.to_numeric(meds["Qty"], errors="coerce").fillna(0)
+                meds["Price"] = pd.to_numeric(meds["Price"], errors="coerce").fillna(0)
+                meds["Total"] = meds["Qty"] * meds["Price"]
+                total = meds["Total"].sum()
 
                 st.metric("Total", f"₹{total}")
 
@@ -395,25 +394,21 @@ else:
                     conn.commit()
                     st.success("Pharmacy saved and marked completed!")
                     st.rerun()
-            else:
-                st.info("No visits found for this patient.")
 
 # ---------------- BILLING ----------------
     elif menu == "Billing":
         st.title("🧾 Billing")
 
-    # Select patient first
         patients_df = pd.read_sql("SELECT patient_id, name FROM patients", conn)
         patient_choice = st.selectbox("Select Patient", patients_df["name"]) if not patients_df.empty else None
 
         if patient_choice:
             pid = patients_df.loc[patients_df["name"] == patient_choice, "patient_id"].values[0]
 
-        # Show visits for this patient
             visits_df = pd.read_sql(
                 """
                 SELECT v.visit_id, v.visit_date, v.consultation_fee, v.lab_fee, v.med_fee,
-                       v.lab_json, v.med_json, v.report_path
+                       v.prescription, v.lab_json, v.med_json, v.report_path
                 FROM visits v
                 WHERE v.patient_id=?
                 """,
@@ -441,14 +436,125 @@ else:
                 st.write(f"Lab Fee: ₹{lab}")
                 st.write(f"Medicine Fee: ₹{medicine}")
 
+                st.write("### Doctor Prescription")
+                st.text(row["prescription"] or "No prescription recorded")
+
                 st.write("### Lab")
                 show_json_table(row["lab_json"])
                 display_pdf(row["report_path"])
 
                 st.write("### Pharmacy")
                 show_json_table(row["med_json"])
-            else:
-                st.info("No visits found for billing.")
+
+
+    
+    # elif menu == "Pharmacy":
+    #     st.title("💊 Pharmacy")
+
+    # # Select patient first
+    #     patients_df = pd.read_sql("SELECT patient_id, name FROM patients", conn)
+    #     patient_choice = st.selectbox("Select Patient", patients_df["name"]) if not patients_df.empty else None
+
+    #     if patient_choice:
+    #         pid = patients_df.loc[patients_df["name"] == patient_choice, "patient_id"].values[0]
+
+    #     # Show visits for this patient
+    #         visits_df = pd.read_sql(
+    #             "SELECT visit_id, visit_date, diagnosis FROM visits WHERE patient_id=?",
+    #             conn, params=(pid,)
+    #         )
+
+    #         if not visits_df.empty:
+    #             visit_choice = st.selectbox(
+    #                 "Select Visit",
+    #                 visits_df.apply(lambda r: f"Visit {r['visit_id']} ({r['visit_date']} – {r['diagnosis']})", axis=1)
+    #             )
+    #             vid = int(visit_choice.split()[1])  # extract visit_id
+
+    #         # Load existing meds
+    #             row = cursor.execute("SELECT med_json FROM visits WHERE visit_id=?", (vid,)).fetchone()
+    #             meds = pd.read_json(io.StringIO(row[0])) if row and row[0] else pd.DataFrame(columns=["Medicine", "Qty", "Price", "Timing (1-1-1)"])
+
+    #             meds = st.data_editor(
+    #                 meds,
+    #                 num_rows="dynamic",
+    #                 column_config={
+    #                     "Qty": st.column_config.NumberColumn("Qty", min_value=0),
+    #                     "Price": st.column_config.NumberColumn("Price", min_value=0.0, step=0.5),
+    #                 }
+    #             )
+
+    #             if not meds.empty:
+    #                 meds["Qty"] = pd.to_numeric(meds["Qty"], errors="coerce").fillna(0)
+    #                 meds["Price"] = pd.to_numeric(meds["Price"], errors="coerce").fillna(0)
+    #                 meds["Total"] = meds["Qty"] * meds["Price"]
+    #                 total = meds["Total"].sum()
+    #             else:
+    #                 total = 0
+
+    #             st.metric("Total", f"₹{total}")
+
+    #             if st.button("Save Pharmacy"):
+    #                 cursor.execute("""
+    #                     UPDATE visits SET med_json=?, med_fee=?, pharmacy_status='completed' WHERE visit_id=?
+    #                 """, (meds.to_json(), total, vid))
+    #                 conn.commit()
+    #                 st.success("Pharmacy saved and marked completed!")
+    #                 st.rerun()
+    #         else:
+    #             st.info("No visits found for this patient.")
+
+# ---------------- BILLING ----------------
+    # elif menu == "Billing":
+    #     st.title("🧾 Billing")
+
+    # # Select patient first
+    #     patients_df = pd.read_sql("SELECT patient_id, name FROM patients", conn)
+    #     patient_choice = st.selectbox("Select Patient", patients_df["name"]) if not patients_df.empty else None
+
+    #     if patient_choice:
+    #         pid = patients_df.loc[patients_df["name"] == patient_choice, "patient_id"].values[0]
+
+    #     # Show visits for this patient
+    #         visits_df = pd.read_sql(
+    #             """
+    #             SELECT v.visit_id, v.visit_date, v.consultation_fee, v.lab_fee, v.med_fee,
+    #                    v.lab_json, v.med_json, v.report_path
+    #             FROM visits v
+    #             WHERE v.patient_id=?
+    #             """,
+    #             conn, params=(pid,)
+    #         )
+
+    #         if not visits_df.empty:
+    #             visit_choice = st.selectbox(
+    #                 "Select Visit",
+    #                 visits_df.apply(lambda r: f"Visit {r['visit_id']} ({r['visit_date']})", axis=1)
+    #             )
+    #             vid = int(visit_choice.split()[1])
+
+    #             row = visits_df.loc[visits_df["visit_id"] == vid].iloc[0]
+
+    #             consultation = row["consultation_fee"] or 0
+    #             lab = row["lab_fee"] or 0
+    #             medicine = row["med_fee"] or 0
+    #             total = consultation + lab + medicine
+
+    #             st.metric("Total Payable", f"₹{total}")
+
+    #             st.write("### Breakdown")
+    #             st.write(f"Consultation Fee: ₹{consultation}")
+    #             st.write(f"Lab Fee: ₹{lab}")
+    #             st.write(f"Medicine Fee: ₹{medicine}")
+
+    #             st.write("### Lab")
+    #             show_json_table(row["lab_json"])
+    #             display_pdf(row["report_path"])
+
+    #             st.write("### Pharmacy")
+    #             show_json_table(row["med_json"])
+    #         else:
+    #             st.info("No visits found for billing.")
 
 
     # elif menu == "Pharmacy":
