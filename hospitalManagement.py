@@ -4,6 +4,7 @@ import pandas as pd
 import os 
 import urllib.parse
 from datetime import date
+import io
 
 # ---------------- CONFIG ----------------
 DB = "clinic_final.db"
@@ -361,6 +362,23 @@ else:
         st.title("💊 Pharmacy")
         vid = st.number_input("Visit ID", 1)
 
+        row = cursor.execute("SELECT med_json FROM visits WHERE visit_id=?", (vid,)).fetchone()
+        if row and row[0]:
+    # Convert JSON string from DB into DataFrame
+            meds = pd.read_json(io.StringIO(row[0]))
+        else:
+            meds = pd.DataFrame(columns=["Medicine", "Qty", "Price", "Timing (1-1-1)"])
+
+        meds = st.data_editor(
+            meds,
+            num_rows="dynamic",
+            column_config={
+                "Qty": st.column_config.NumberColumn("Qty", min_value=0),
+                "Price": st.column_config.NumberColumn("Price", min_value=0.0, step=0.5),
+            }
+        )
+
+
         # meds = st.data_editor(
         #     pd.DataFrame(columns=["Medicine", "Qty", "Price", "Timing (1-1-1)"]),
         #     num_rows="dynamic",
@@ -370,19 +388,20 @@ else:
         #     }
         # )
 
-        row = cursor.execute("SELECT med_json FROM visits WHERE visit_id=?", (vid,)).fetchone()
-        if row and row[0]:
-            meds = pd.read_json(row[0])
-        else:
-            meds = pd.DataFrame(columns=["Medicine", "Qty", "Price", "Timing (1-1-1)"])
-        meds = st.data_editor(
-            meds,
-            num_rows="dynamic",
-            column_config={
-                "Qty": st.column_config.NumberColumn("Qty", min_value=0),
-                "Price": st.column_config.NumberColumn("Price", min_value=0.0, step=0.5),
-            }
-        )
+        # row = cursor.execute("SELECT med_json FROM visits WHERE visit_id=?", (vid,)).fetchone()
+        # if row and row[0]:
+        #     meds = pd.read_json(row[0])
+        # else:
+        #     meds = pd.DataFrame(columns=["Medicine", "Qty", "Price", "Timing (1-1-1)"])
+        # meds = st.data_editor(
+        #     meds,
+        #     num_rows="dynamic",
+        #     column_config={
+        #         "Qty": st.column_config.NumberColumn("Qty", min_value=0),
+        #         "Price": st.column_config.NumberColumn("Price", min_value=0.0, step=0.5),
+        #     }
+        # )
+        
 
         if not meds.empty:
         # Convert to numeric safely
