@@ -161,9 +161,10 @@ else:
     # --- Registration Form ---
         with st.form("register_form", clear_on_submit=True):
             name = st.text_input("Name")
+            phone = st.text_input("Phone")
             email = st.text_input("Email")
+          
             address = st.text_area("Address")
-            phone = st.text_area("Phone")
             submitted = st.form_submit_button("Register")
             if submitted and name and phone:
                 try:
@@ -360,8 +361,22 @@ else:
         st.title("💊 Pharmacy")
         vid = st.number_input("Visit ID", 1)
 
+        # meds = st.data_editor(
+        #     pd.DataFrame(columns=["Medicine", "Qty", "Price", "Timing (1-1-1)"]),
+        #     num_rows="dynamic",
+        #     column_config={
+        #         "Qty": st.column_config.NumberColumn("Qty", min_value=0),
+        #         "Price": st.column_config.NumberColumn("Price", min_value=0.0, step=0.5),
+        #     }
+        # )
+
+        row = cursor.execute("SELECT med_json FROM visits WHERE visit_id=?", (vid,)).fetchone()
+        if row and row[0]:
+            meds = pd.read_json(row[0])
+        else:
+            meds = pd.DataFrame(columns=["Medicine", "Qty", "Price", "Timing (1-1-1)"])
         meds = st.data_editor(
-            pd.DataFrame(columns=["Medicine", "Qty", "Price", "Timing (1-1-1)"]),
+            meds,
             num_rows="dynamic",
             column_config={
                 "Qty": st.column_config.NumberColumn("Qty", min_value=0),
