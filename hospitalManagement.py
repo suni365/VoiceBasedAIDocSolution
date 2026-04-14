@@ -372,38 +372,37 @@ else:
 
     # 3️⃣ Update medicine total in visits
        
-        cursor.execute(
-            "UPDATE visits SET med_fee=? WHERE visit_id=?",
-            (total_med_fee, visit_id)
-        )
-        conn.commit()
-
-        st.success("Consultation and medicines saved successfully!")
-        st.rerun()
-        st.write(pd.read_sql("SELECT * FROM visit_medicines", conn))
-        st.subheader("🔬 Lab Results & Medicines")
-        if not history.empty:
-            for _, row in history.iterrows():
-                with st.expander(f"Visit {row['visit_id']} on {row['visit_date']}"):
-                    st.write(f"Diagnosis: {row['diagnosis']}")
-                    st.write(f"Symptoms: {row['symptoms']}")
-                    st.write(f"Tests: {row['tests']}")
-                    st.write(f"Prescription: {row['prescription']}")
-                    st.write(f"Consultation Fee: {row['consultation_fee']}")
-                    st.write(f"Medicine Fee: {row['med_fee']}")
-                    st.write(f"Lab Fee: {row['lab_fee']}")
-                    show_json_table(row["med_json"])
-                    show_json_table(row["lab_json"])
+    cursor.execute(
+        "UPDATE visits SET med_fee=? WHERE visit_id=?",
+        (total_med_fee, visit_id)
+    )
+    conn.commit()
+    st.success("Consultation and medicines saved successfully!")
+    st.rerun()
+    st.write(pd.read_sql("SELECT * FROM visit_medicines", conn))
+    st.subheader("🔬 Lab Results & Medicines")
+    if not history.empty:
+        for _, row in history.iterrows():
+            with st.expander(f"Visit {row['visit_id']} on {row['visit_date']}"):
+                st.write(f"Diagnosis: {row['diagnosis']}")
+                st.write(f"Symptoms: {row['symptoms']}")
+                st.write(f"Tests: {row['tests']}")
+                st.write(f"Prescription: {row['prescription']}")
+                st.write(f"Consultation Fee: {row['consultation_fee']}")
+                st.write(f"Medicine Fee: {row['med_fee']}")
+                st.write(f"Lab Fee: {row['lab_fee']}")
+                show_json_table(row["med_json"])
+                show_json_table(row["lab_json"])
 
     
                         # st.subheader("🔍 DEBUG CHECK")
-                    st.write("Visits Table:")
-                    st.dataframe(pd.read_sql("SELECT * FROM visits", conn))
+                st.write("Visits Table:")
+                st.dataframe(pd.read_sql("SELECT * FROM visits", conn))
 
-                    st.write("Visit Medicines Table:")
-                    st.dataframe(pd.read_sql("SELECT * FROM visit_medicines", conn))
-#                   st.write(pd.read_sql("SELECT * FROM visit_medicines", conn))
-#                   st.dataframe(pd.read_sql("SELECT * FROM visit_medicines", conn))
+                st.write("Visit Medicines Table:")
+                st.dataframe(pd.read_sql("SELECT * FROM visit_medicines", conn))
+#               st.write(pd.read_sql("SELECT * FROM visit_medicines", conn))
+#               st.dataframe(pd.read_sql("SELECT * FROM visit_medicines", conn))
 
 # ---------------- LAB ----------------
  
