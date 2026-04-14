@@ -313,53 +313,51 @@ else:
 
             if st.button("💾 Save Consultation"):
                 today = str(date.today())
+                cursor.execute(
+                    """ 
+                    INSERT INTO visits(
+                    patient_id, visit_date, symptoms, diagnosis, tests,
+                    prescription, med_json, consultation_fee
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    pid,
+                    today,
+                    symptoms,
+                    diagnosis,
+                    tests,
+                    prescription,
+                    meds.to_json(),
+                    fee,
+                )
+            )
+
+            visit_id = cursor.lastrowid  
+            total_med_fee = 0
+            for _, row in meds.iterrows():
+                if row["Medicine"]:
+                    qty = int(row["Qty"])
+                    price = float(row["Price"])
+                    timing = row["Timing (1-1-1)"]
+
+                    total_med_fee += qty * price
+
                     cursor.execute(
-                        """ 
-                        INSERT INTO visits(
-                        patient_id, visit_date, symptoms, diagnosis, tests,
-                        prescription, med_json, consultation_fee
-                    )
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                        """
+                        INSERT INTO visit_medicines
+                        (visit_id, patient_id, medicine, qty, price, timing)
+                        VALUES (?, ?, ?, ?, ?, ?)
                         """,
                         (
+                            visit_id,
                             pid,
-                            today,
-                            symptoms,
-                            diagnosis,
-                            tests,
-                            prescription,
-                            meds.to_json(),
-                            fee,
+                            row["Medicine"],
+                            qty,
+                            price,
+                            timing,
                         )
                     )
-
-                    visit_id = cursor.lastrowid  
-                    total_med_fee = 0
-
-    # 2️⃣ Insert medicines
-                    for _, row in meds.iterrows():
-                        if row["Medicine"]:
-                            qty = int(row["Qty"])
-                            price = float(row["Price"])
-                            timing = row["Timing (1-1-1)"]
-
-                            total_med_fee += qty * price
-
-                                cursor.execute(
-                                    """
-                                    INSERT INTO visit_medicines
-                                    (visit_id, patient_id, medicine, qty, price, timing)
-                                    VALUES (?, ?, ?, ?, ?, ?)
-                                    """,
-                                    (
-                                        visit_id,
-                                        pid,
-                                        row["Medicine"],
-                                        qty,
-                                        price,
-                                        timing,
-                                    )
-                                )
 
     # 3️⃣ Update med_fee safely (now variable exists)
     cursor.execute(
