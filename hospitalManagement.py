@@ -247,19 +247,34 @@ else:
                 pd.DataFrame(columns=["Medicine", "Qty", "Price", "Timing (1-1-1)"]),
                 num_rows="dynamic"
             )
-
+            
             if st.button("💾 Save Consultation"):
                 today = str(date.today())
                 cursor.execute(
-                    """ 
-                    INSERT INTO visits(patient_id, visit_date, symptoms, diagnosis, tests,
-                                       prescription, med_json, consultation_fee)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    """
+                    INSERT INTO visits(
+                        patient_id, visit_date, symptoms, diagnosis, tests,
+                        prescription, med_json, consultation_fee
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                     """,
                     (pid, today, symptoms, diagnosis, tests,
                     prescription, meds.to_json(), fee)
                 )
                 conn.commit()
+
+
+            # if st.button("💾 Save Consultation"):
+            #     today = str(date.today())
+            #     cursor.execute(
+            #         """ 
+            #         INSERT INTO visits(patient_id, visit_date, symptoms, diagnosis, tests,
+            #                            prescription, med_json, consultation_fee)
+            #         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            #         """,
+            #         (pid, today, symptoms, diagnosis, tests,
+            #         prescription, meds.to_json(), fee)
+            #     )
+            #     conn.commit()
                 st.success("Consultation saved successfully!")
                 st.rerun()
 
