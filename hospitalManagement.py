@@ -207,6 +207,14 @@ else:
 
     elif menu == "Doctor":
         st.title("👨‍⚕️ Doctor Consultation")
+        st.subheader("🔍 Database Tables Check")
+        st.write(
+            pd.read_sql(
+                "SELECT name FROM sqlite_master WHERE type='table'",
+                conn
+            )
+        )
+
         pid = st.number_input("Patient ID", 1)
 
         patient = cursor.execute(
