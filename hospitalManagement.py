@@ -296,9 +296,9 @@ else:
                         total_med_fee += qty * price
                             cursor.execute(
                                 """
-                                INSERT INTO visit_medicines
-                                (visit_id, patient_id, medicine, qty, price, timing)
-                                VALUES (?, ?, ?, ?, ?, ?)
+                                    INSERT INTO visit_medicines
+                                    (visit_id, patient_id, medicine, qty, price, timing)
+                                    VALUES (?, ?, ?, ?, ?, ?)
                                 """,
                             (    
                                 visit_id,
