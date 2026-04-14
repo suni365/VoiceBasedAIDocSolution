@@ -313,8 +313,6 @@ else:
 
             if st.button("💾 Save Consultation"):
                 today = str(date.today())
-
-            # 1️⃣ Insert visit
                     cursor.execute(
                         """ 
                         INSERT INTO visits(
