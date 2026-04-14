@@ -311,12 +311,13 @@ else:
                         )
 
     # 3️⃣ Update medicine total in visits
+       
         cursor.execute(
             "UPDATE visits SET med_fee=? WHERE visit_id=?",
             (total_med_fee, visit_id)
         )
-
         conn.commit()
+
         st.success("Consultation and medicines saved successfully!")
         st.rerun()
         st.write(pd.read_sql("SELECT * FROM visit_medicines", conn))
