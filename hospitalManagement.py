@@ -285,9 +285,7 @@ else:
                     (pid, today, symptoms, diagnosis, tests,
                     prescription, meds.to_json(), fee)
                 )
-                
-                 visit_id = cursor.lastrowid  # ✅ THIS IS CRITICAL
-
+                visit_id = cursor.lastrowid  # ✅ THIS IS CRITICAL
                 # 2️⃣ Insert medicines into visit_medicines
                 total_med_fee = 0
                 for _, row in meds.iterrows():
