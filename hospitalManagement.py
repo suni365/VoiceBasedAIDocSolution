@@ -294,12 +294,12 @@ else:
                         price = float(row["Price"])
                         timing = row["Timing (1-1-1)"]
                         total_med_fee += qty * price
-                            cursor.execute(
-                                """
-                                    INSERT INTO visit_medicines
-                                    (visit_id, patient_id, medicine, qty, price, timing)
-                                    VALUES (?, ?, ?, ?, ?, ?)
-                                """,
+                        cursor.execute(
+                            """
+                            INSERT INTO visit_medicines
+                            (visit_id, patient_id, medicine, qty, price, timing)
+                            VALUES (?, ?, ?, ?, ?, ?)
+                            """,
                             (    
                                 visit_id,
                                 pid,
