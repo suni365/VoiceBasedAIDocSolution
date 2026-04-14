@@ -341,8 +341,8 @@ else:
 
                     st.write("Visit Medicines Table:")
                     st.dataframe(pd.read_sql("SELECT * FROM visit_medicines", conn))
-                    st.write(pd.read_sql("SELECT * FROM visit_medicines", conn))
-
+#                   st.write(pd.read_sql("SELECT * FROM visit_medicines", conn))
+#                   st.dataframe(pd.read_sql("SELECT * FROM visit_medicines", conn))
 
 # ---------------- LAB ----------------
  
