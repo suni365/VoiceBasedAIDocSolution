@@ -461,8 +461,19 @@ else:
 
                 consultation = row["consultation_fee"] or 0
                 lab = row["lab_fee"] or 0
-                medicine = row["med_fee"] or 0
-                total = consultation + lab + medicine
+                # medicine = row["med_fee"] or 0
+                
+                med_total = cursor.execute(
+                    """
+                        SELECT SUM(qty * price)
+                        FROM visit_medicines
+                        WHERE visit_id=? AND status IN ('DISPENSED', 'BILLED')
+                        """,
+                        (vid,)
+                ).fetchone()[0] or 0
+
+                # total = consultation + lab + medicine
+                total = consultation + lab + med_total
 
                 st.metric("Total Payable", f"₹{total}")
 
@@ -479,8 +490,27 @@ else:
                 display_pdf(row["report_path"])
 
                 st.write("### Pharmacy")
-                show_json_table(row["med_json"])
+                # show_json_table(row["med_json"])
 
+
+                meds = pd.read_sql(
+                    """
+                        SELECT medicine, qty, price, timing
+                        FROM visit_medicines
+                        WHERE visit_id=?
+                    """,
+                    conn, params=(vid,)
+                )        
+
+            st.dataframe(meds)
+
+            if st.button("Finalize Bill"):
+                cursor.execute(
+                    "UPDATE visit_medicines SET status='BILLED' WHERE visit_id=?",
+                    (vid,)
+                )
+                conn.commit()
+                st.success("Bill finalized successfully!")
 
 
 
