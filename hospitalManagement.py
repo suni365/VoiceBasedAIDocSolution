@@ -294,12 +294,12 @@ else:
                         show_json_table(row["lab_json"])
 
     
-st.subheader("🔍 DEBUG CHECK")
-st.write("Visits Table:")
-st.dataframe(pd.read_sql("SELECT * FROM visits", conn))
+                        st.subheader("🔍 DEBUG CHECK")
+                        st.write("Visits Table:")
+                        st.dataframe(pd.read_sql("SELECT * FROM visits", conn))
 
-st.write("Visit Medicines Table:")
-st.dataframe(pd.read_sql("SELECT * FROM visit_medicines", conn))
+                        st.write("Visit Medicines Table:")
+                        st.dataframe(pd.read_sql("SELECT * FROM visit_medicines", conn))
 
 
 # ---------------- LAB ----------------
