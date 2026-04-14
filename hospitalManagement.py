@@ -46,6 +46,23 @@ CREATE TABLE IF NOT EXISTS visits (
 """)
 conn.commit()
 
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS visit_medicines (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    visit_id INTEGER,
+    patient_id INTEGER,
+    medicine TEXT,
+    qty INTEGER,
+    price REAL,
+    timing TEXT,
+    status TEXT DEFAULT 'PENDING',
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(visit_id) REFERENCES visits(visit_id),
+    FOREIGN KEY(patient_id) REFERENCES patients(patient_id)
+)
+""")
+conn.commit()
+
 try:
     cursor.execute("ALTER TABLE visits ADD COLUMN lab_status TEXT DEFAULT 'pending'")
 except sqlite3.OperationalError:
