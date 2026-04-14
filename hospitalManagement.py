@@ -483,19 +483,16 @@ else:
 
                 st.metric("Total Payable", f"₹{total}")
 
- 
-
-                    meds = pd.read_sql(
-                        """
-                            SELECT medicine, qty, price, timing
-                            FROM visit_medicines
-                            WHERE visit_id=?
-                        """,
-                        conn, params=(vid,)
-                    )        
+                meds = pd.read_sql(
+                    """
+                        SELECT medicine, qty, price, timing
+                        FROM visit_medicines
+                        WHERE visit_id=?
+                    """,
+                    conn, params=(vid,)
+                )        
 
                 st.dataframe(meds)
-
                 if st.button("Finalize Bill"):
                     cursor.execute(
                         "UPDATE visit_medicines SET status='BILLED' WHERE visit_id=?",
