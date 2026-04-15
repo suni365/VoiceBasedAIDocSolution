@@ -777,39 +777,39 @@ else:
 #         )
 #         conn.commit()
 #         st.success("Bill marked as Paid!")
-    elif menu == "Billing":
-        st.title("🧾 Billing")
-        patients_df = pd.read_sql("SELECT patient_id, name FROM patients", conn)
-        patient_choice = st.selectbox("Select Patient", patients_df["name"])
-        if patient_choice:
-            pid = patients_df.loc[patients_df["name"] == patient_choice, "patient_id"].values[0]
-            visits_df = pd.read_sql(
-                "SELECT visit_id, visit_date, consultation_fee, med_fee FROM visits WHERE patient_id=?",
-                conn, params=(pid,)
-            )
+    # elif menu == "Billing":
+    #     st.title("🧾 Billing")
+    #     patients_df = pd.read_sql("SELECT patient_id, name FROM patients", conn)
+    #     patient_choice = st.selectbox("Select Patient", patients_df["name"])
+    #     if patient_choice:
+    #         pid = patients_df.loc[patients_df["name"] == patient_choice, "patient_id"].values[0]
+    #         visits_df = pd.read_sql(
+    #             "SELECT visit_id, visit_date, consultation_fee, med_fee FROM visits WHERE patient_id=?",
+    #             conn, params=(pid,)
+    #         )
 
-            if not visits_df.empty:
-                visit_choice = st.selectbox(
-                    "Select Visit",
-                    visits_df.apply(lambda r: f"Visit {r['visit_id']} ({r['visit_date']})", axis=1),
-                )
-                vid = int(visit_choice.split()[1])
-                row = visits_df.loc[visits_df["visit_id"] == vid].iloc[0]
-                consultation = row["consultation_fee"] or 0
-                med_total = row["med_fee"] or 0
-                total = consultation + med_total
+    #         if not visits_df.empty:
+    #             visit_choice = st.selectbox(
+    #                 "Select Visit",
+    #                 visits_df.apply(lambda r: f"Visit {r['visit_id']} ({r['visit_date']})", axis=1),
+    #             )
+    #             vid = int(visit_choice.split()[1])
+    #             row = visits_df.loc[visits_df["visit_id"] == vid].iloc[0]
+    #             consultation = row["consultation_fee"] or 0
+    #             med_total = row["med_fee"] or 0
+    #             total = consultation + med_total
 
-                st.metric("Total Payable", f"₹{total}")
-                st.write(f"Consultation Fee: ₹{consultation}")
-                st.write(f"Medicine Fee: ₹{med_total}")
+    #             st.metric("Total Payable", f"₹{total}")
+    #             st.write(f"Consultation Fee: ₹{consultation}")
+    #             st.write(f"Medicine Fee: ₹{med_total}")
 
-                if st.button("Finalize Bill"):
-                    cursor.execute(
-                        "UPDATE visits SET billing_status='Paid' WHERE visit_id=?",
-                        (vid,)
-                    )
-                    conn.commit()
-                    st.success("Bill finalized successfully!")
+    #             if st.button("Finalize Bill"):
+    #                 cursor.execute(
+    #                     "UPDATE visits SET billing_status='Paid' WHERE visit_id=?",
+    #                     (vid,)
+    #                 )
+    #                 conn.commit()
+    #                 st.success("Bill finalized successfully!")
 
 
 # ---------------- VISIT SUMMARY ----------------
