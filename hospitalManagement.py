@@ -196,7 +196,7 @@ def doctor_module(conn, cursor, pid, patient_name, phone_number):
                         📲 Send Details via WhatsApp
                     </button>
                 </a>
-                """, unsafe_allow_value=True)
+                """, unsafe_allow_html=True)
             
             # Clear state for next patient
             st.session_state.med_list = []
