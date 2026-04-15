@@ -272,45 +272,6 @@ else:
                 pd.DataFrame(columns=["Medicine", "Qty", "Price", "Timing (1-1-1)"]),
                 num_rows="dynamic"
             )
-            
-            # if st.button("💾 Save Consultation"):
-            #     today = str(date.today())
-            #     cursor.execute(
-            #         """
-            #         INSERT INTO visits(
-            #             patient_id, visit_date, symptoms, diagnosis, tests,
-            #             prescription, med_json, consultation_fee
-            #         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            #         """,
-            #         (pid, today, symptoms, diagnosis, tests,
-            #         prescription, meds.to_json(), fee)
-            #     )
-            #     visit_id = cursor.lastrowid  # ✅ THIS IS CRITICAL
-            #     # 2️⃣ Insert medicines into visit_medicines
-            #     total_med_fee = 0
-            #     for _, row in meds.iterrows():
-            #         if row["Medicine"]:
-            #             qty = int(row["Qty"])
-            #             price = float(row["Price"])
-            #             timing = row["Timing (1-1-1)"]
-            #             total_med_fee += qty * price
-            #             cursor.execute(
-            #                 """
-            #                 INSERT INTO visit_medicines
-            #                 (visit_id, patient_id, medicine, qty, price, timing)
-            #                 VALUES (?, ?, ?, ?, ?, ?)
-            #                 """,
-            #                 (    
-            #                     visit_id,
-            #                     pid,
-            #                     row["Medicine"],
-            #                     qty,
-            #                     price,
-            #                     timing,
-            #                 )        
-            #             )
-
-
             if st.button("💾 Save Consultation"):
                 today = str(date.today())
                 cursor.execute(
@@ -318,92 +279,41 @@ else:
                     INSERT INTO visits(
                     patient_id, visit_date, symptoms, diagnosis, tests,
                     prescription, med_json, consultation_fee
-                )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                """,
-                (
-                    pid,
-                    today,
-                    symptoms,
-                    diagnosis,
-                    tests,
-                    prescription,
-                    meds.to_json(),
-                    fee,
-                )
-            )
-
-            visit_id = cursor.lastrowid  
-            total_med_fee = 0
-            for _, row in meds.iterrows():
-                if row["Medicine"]:
-                    qty = int(row["Qty"])
-                    price = float(row["Price"])
-                    timing = row["Timing (1-1-1)"]
-
-                    total_med_fee += qty * price
-
-                    cursor.execute(
-                        """
-                        INSERT INTO visit_medicines
-                        (visit_id, patient_id, medicine, qty, price, timing)
-                        VALUES (?, ?, ?, ?, ?, ?)
-                        """,
-                        (
-                            visit_id,
-                            pid,
-                            row["Medicine"],
-                            qty,
-                            price,
-                            timing,
-                        )
+                    )
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (pid, today, symptoms, diagnosis, tests, prescription, meds.to_json(), fee)
                     )
 
-    # 3️⃣ Update med_fee safely (now variable exists)
-    cursor.execute(
-        "UPDATE visits SET med_fee=? WHERE visit_id=?",
-        (total_med_fee, visit_id)
-    )
+                    visit_id = cursor.lastrowid  
+                    total_med_fee = 0
+                    for _, row in meds.iterrows():
+                        if row["Medicine"]:
+                            qty = int(row["Qty"])
+                            price = float(row["Price"])
+                            timing = row["Timing (1-1-1)"]
+                            total_med_fee += qty * price
 
-    conn.commit()
-    st.success("Consultation and medicines saved successfully!")
-    st.rerun()
-        
+                            cursor.execute(
+                            """
+                            INSERT INTO visit_medicines
+                            (visit_id, patient_id, medicine, qty, price, timing)
+                            VALUES (?, ?, ?, ?, ?, ?)
+                            """,
+                            (visit_id, pid, row["Medicine"], qty, price, timing)
+                            )
 
-    # 3️⃣ Update medicine total in visits
-       
-    cursor.execute(
-        "UPDATE visits SET med_fee=? WHERE visit_id=?",
-        (total_med_fee, visit_id)
-    )
-    conn.commit()
-    st.success("Consultation and medicines saved successfully!")
-    st.rerun()
-    st.write(pd.read_sql("SELECT * FROM visit_medicines", conn))
-    st.subheader("🔬 Lab Results & Medicines")
-    if not history.empty:
-        for _, row in history.iterrows():
-            with st.expander(f"Visit {row['visit_id']} on {row['visit_date']}"):
-                st.write(f"Diagnosis: {row['diagnosis']}")
-                st.write(f"Symptoms: {row['symptoms']}")
-                st.write(f"Tests: {row['tests']}")
-                st.write(f"Prescription: {row['prescription']}")
-                st.write(f"Consultation Fee: {row['consultation_fee']}")
-                st.write(f"Medicine Fee: {row['med_fee']}")
-                st.write(f"Lab Fee: {row['lab_fee']}")
-                show_json_table(row["med_json"])
-                show_json_table(row["lab_json"])
+    # ✅ MOVE THIS INSIDE THE BUTTON BLOCK (Align with 'visit_id = ...')
+                    cursor.execute(
+                        "UPDATE visits SET med_fee=? WHERE visit_id=?",
+                        (total_med_fee, visit_id)
+                    ) 
+                    conn.commit()
+                    st.success("Consultation and medicines saved successfully!")
+                    st.rerun()
+            
 
-    
-                        # st.subheader("🔍 DEBUG CHECK")
-                st.write("Visits Table:")
-                st.dataframe(pd.read_sql("SELECT * FROM visits", conn))
-
-                st.write("Visit Medicines Table:")
-                st.dataframe(pd.read_sql("SELECT * FROM visit_medicines", conn))
-#               st.write(pd.read_sql("SELECT * FROM visit_medicines", conn))
-#               st.dataframe(pd.read_sql("SELECT * FROM visit_medicines", conn))
-
+         
 # ---------------- LAB ----------------
  
     elif menu == "Lab":
