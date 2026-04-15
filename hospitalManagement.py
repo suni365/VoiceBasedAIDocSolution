@@ -5,6 +5,7 @@ import os
 import urllib.parse
 from datetime import date
 import io
+import json
 
 # ---------------- CONFIG ----------------
 DB = "clinic_final.db"
