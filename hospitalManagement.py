@@ -53,6 +53,7 @@ CREATE TABLE IF NOT EXISTS visit_medicines (
     visit_id INTEGER,
     patient_id INTEGER,
     medicine TEXT,
+    days INTEGER,
     qty INTEGER,
     price REAL,
     timing TEXT,
