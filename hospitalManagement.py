@@ -106,7 +106,7 @@ def display_pdf(path):
 
 
 def doctor_module(conn, cursor, pid, patient_name, phone_number):
-    st.title(f"👨‍⚕️ Consultation: {patient_name} (ID: {pid})")
+    st.title(f"👨‍⚕️ Consultation: {patient_name} (ID: {pid}) {phone},{email},{address}")
 
     # 1. Clinical Inputs
     col1, col2 = st.columns(2)
@@ -352,7 +352,10 @@ else:
                 cursor=cursor, 
                 pid=pid, 
                 patient_name=patient[0], 
-                phone_number=patient[1]
+                phone_number=patient[1],
+                patient_phone=patient[2],
+                patient_address=patient[3]
+                
             )
         else:
             st.warning("Patient not found. Please check the ID.")
