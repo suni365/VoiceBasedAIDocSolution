@@ -126,8 +126,8 @@ def doctor_module(conn, cursor, pid, patient_name, phone_number):
     with st.form("med_form", clear_on_submit=True):
         m_col1, m_col2, m_col3 = st.columns([3, 2, 2])
         m_name = m_col1.text_input("Medicine Name")
-        m_timing = m_col2.selectbox("Timing", ["1-1-1", "1-0-1", "0-0-1", "1-0-0", "SOS"])
-        m_days = m_col3.number_input("Days", min_value=1, value=5)
+        m_timing = m_col2.selectbox("Timing", ["1-1-1", "1-0-1", "1-1-0","0-1-1","0-0-1", "1-0-0","0-1-0" "SOS"])
+        m_days = m_col3.number_input("Days", min_value=1, value=60)
         
         if st.form_submit_button("➕ Add Medicine"):
             if m_name:
@@ -342,7 +342,7 @@ else:
     
     # 2. Fetch basic patient details to pass to the function
         patient = cursor.execute(
-            "SELECT name, phone FROM patients WHERE patient_id=?", (pid,)
+            "SELECT name, phone,patient_phone,patient_address FROM patients WHERE patient_id=?", (pid,)
         ).fetchone()
 
         if patient:
