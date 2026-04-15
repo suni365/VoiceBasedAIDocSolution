@@ -336,7 +336,26 @@ else:
 
 # ---------------- DOCTOR ----------------
 
+    elif menu == "Doctor":
+    # 1. First, get the Patient ID (You can keep this part from your old code)
+        pid = st.number_input("Enter Patient ID", min_value=1)
+    
+    # 2. Fetch basic patient details to pass to the function
+        patient = cursor.execute(
+            "SELECT name, phone FROM patients WHERE patient_id=?", (pid,)
+        ).fetchone()
 
+        if patient:
+        # 3. CALL THE NEW IMPROVED FUNCTION HERE
+            doctor_module(
+                conn=conn, 
+                cursor=cursor, 
+                pid=pid, 
+                patient_name=patient[0], 
+                phone_number=patient[1]
+            )
+        else:
+            st.warning("Patient not found. Please check the ID.")
 
     # elif menu == "Doctor":
     #     st.title("👨‍⚕️ Doctor Consultation")
