@@ -104,6 +104,122 @@ def display_pdf(path):
         with open(path, "rb") as f:
             st.download_button("📄 Download Lab Report", f, file_name=os.path.basename(path))
 
+
+def doctor_module(conn, cursor, pid, patient_name, phone_number):
+    st.title(f"👨‍⚕️ Consultation: {patient_name} (ID: {pid})")
+
+    # 1. Clinical Inputs
+    col1, col2 = st.columns(2)
+    with col1:
+        symptoms = st.text_area("Symptoms")
+        diagnosis = st.text_area("Diagnosis")
+    with col2:
+        tests = st.text_area("Lab Tests Recommended")
+        fee = st.number_input("Consultation Fee", min_value=0, value=300)
+
+    st.subheader("💊 Prescription")
+    
+    # Medicine Input UI
+    if "med_list" not in st.session_state:
+        st.session_state.med_list = []
+
+    with st.form("med_form", clear_on_submit=True):
+        m_col1, m_col2, m_col3 = st.columns([3, 2, 2])
+        m_name = m_col1.text_input("Medicine Name")
+        m_timing = m_col2.selectbox("Timing", ["1-1-1", "1-0-1", "0-0-1", "1-0-0", "SOS"])
+        m_days = m_col3.number_input("Days", min_value=1, value=5)
+        
+        if st.form_submit_button("➕ Add Medicine"):
+            if m_name:
+                st.session_state.med_list.append({
+                    "Medicine": m_name,
+                    "Timing": m_timing,
+                    "Days": m_days
+                })
+
+    # Show added medicines in a table
+    if st.session_state.med_list:
+        meds_df = pd.DataFrame(st.session_state.med_list)
+        st.table(meds_df)
+        if st.button("🗑️ Clear List"):
+            st.session_state.med_list = []
+            st.rerun()
+
+    # 2. Save Logic
+    if st.button("💾 Save Consultation & Generate WhatsApp"):
+        if not diagnosis:
+            st.error("Please enter a diagnosis before saving.")
+        else:
+            today = str(date.today())
+            med_json = json.dumps(st.session_state.med_list)
+            
+            # Insert into visits (med_fee starts at 0 for Pharmacy to fill)
+            cursor.execute(
+                """INSERT INTO visits (patient_id, visit_date, symptoms, diagnosis, tests, prescription, med_json, consultation_fee, med_fee) 
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                (pid, today, symptoms, diagnosis, tests, "See Med Table", med_json, fee, 0)
+            )
+            visit_id = cursor.lastrowid
+
+            # Insert individual medicines for Pharmacy module
+            for m in st.session_state.med_list:
+                cursor.execute(
+                    "INSERT INTO visit_medicines (visit_id, patient_id, medicine, timing, days, status) VALUES (?, ?, ?, ?, ?, ?)",
+                    (visit_id, pid, m['Medicine'], m['Timing'], m['Days'], "Pending")
+                )
+            
+            conn.commit()
+
+            # 3. Construct WhatsApp Message
+            med_summary = "\n".join([f"- {m['Medicine']} ({m['Timing']} for {m['Days']} days)" for m in st.session_state.med_list])
+            
+            whatsapp_msg = (
+                f"*Visit Summary - {today}*\n\n"
+                f"*Patient ID:* {pid}\n"
+                f"*Patient Name:* {patient_name}\n"
+                f"*Diagnosis:* {diagnosis}\n"
+                f"*Recommended Tests:* {tests if tests else 'None'}\n\n"
+                f"*Prescription:*\n{med_summary}\n\n"
+                f"Please visit the Pharmacy/Lab for further processing."
+            )
+            
+            # Encode for URL
+            encoded_msg = urllib.parse.quote(whatsapp_msg)
+            wa_link = f"https://wa.me/{phone_number}?text={encoded_msg}"
+            
+            st.success("✅ Consultation Saved Successfully!")
+            st.markdown(f"""
+                <a href="{wa_link}" target="_blank">
+                    <button style="background-color: #25D366; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer;">
+                        📲 Send Details via WhatsApp
+                    </button>
+                </a>
+                """, unsafe_allow_value=True)
+            
+            # Clear state for next patient
+            st.session_state.med_list = []
+
+    # 4. Professional History View
+    st.divider()
+    st.subheader("📜 Previous Visit History")
+    history = pd.read_sql(f"SELECT * FROM visits WHERE patient_id={pid} ORDER BY visit_id DESC", conn)
+    
+    if not history.empty:
+        for _, row in history.iterrows():
+            with st.expander(f"🗓️ Visit on {row['visit_date']} (ID: {row['visit_id']})"):
+                h_col1, h_col2 = st.columns(2)
+                h_col1.write(f"**Symptoms:** {row['symptoms']}")
+                h_col1.write(f"**Diagnosis:** {row['diagnosis']}")
+                h_col2.write(f"**Tests:** {row['tests']}")
+                
+                if row["med_json"]:
+                    st.write("**Medicines:**")
+                    try:
+                        h_meds = pd.DataFrame(json.loads(row["med_json"]))
+                        st.table(h_meds)
+                    except:
+                        st.write("No medicine data found.")
+
 # ---------------- LOGIN ----------------
 # if "logged_in" not in st.session_state:
 #     st.session_state.logged_in = False
@@ -222,95 +338,96 @@ else:
 
 
 
-    elif menu == "Doctor":
-        st.title("👨‍⚕️ Doctor Consultation")
-        st.subheader("🔍 Database Tables Check")
-        st.write(
-            pd.read_sql(
-                "SELECT name FROM sqlite_master WHERE type='table'",
-                conn
-            )
-        )
+    # elif menu == "Doctor":
+    #     st.title("👨‍⚕️ Doctor Consultation")
+    #     st.subheader("🔍 Database Tables Check")
+    #     st.write(
+    #         pd.read_sql(
+    #             "SELECT name FROM sqlite_master WHERE type='table'",
+    #             conn
+    #         )
+    #     )
 
-        pid = st.number_input("Patient ID", 1)
+    #     pid = st.number_input("Patient ID", 1)
 
-        patient = cursor.execute(
-            "SELECT * FROM patients WHERE patient_id=?", (pid,)
-        ).fetchone()
+    #     patient = cursor.execute(
+    #         "SELECT * FROM patients WHERE patient_id=?", (pid,)
+    #     ).fetchone()
 
-        if patient:
-            st.subheader(patient[1])
-            st.write(f"📞 {patient[2]} | 🏠 {patient[4]}")
+    #     if patient:
+    #         st.subheader(patient[1])
+    #         st.write(f"📞 {patient[2]} | 🏠 {patient[4]}")
 
-        # Show full visit history with more details
-            history = pd.read_sql(
-                """
-                SELECT visit_id, visit_date, symptoms, diagnosis, tests,
-                    prescription, med_json, med_fee, lab_json, lab_fee,
-                    consultation_fee
-                FROM visits
-                WHERE patient_id=?
-                """,
-                conn, params=(pid,)
-            )
+    #     # Show full visit history with more details
+    #         history = pd.read_sql(
+    #             """
+    #             SELECT visit_id, visit_date, symptoms, diagnosis, tests,
+    #                 prescription, med_json, med_fee, lab_json, lab_fee,
+    #                 consultation_fee
+    #             FROM visits
+    #             WHERE patient_id=?
+    #             """,
+    #             conn, params=(pid,)
+    #         )
 
-            if not history.empty:
-                st.subheader("📜 Previous Visit History")
-                st.dataframe(history)
-            else:
-                st.info("No previous visits found")
+    #         if not history.empty:
+    #             st.subheader("📜 Previous Visit History")
+    #             st.dataframe(history)
+    #         else:
+    #             st.info("No previous visits found")
 
-        # New consultation entry
-            st.subheader("🩺 New Consultation")
-            symptoms = st.text_area("Symptoms")
-            diagnosis = st.text_area("Diagnosis")
-            tests = st.text_input("Tests Recommended")
-            prescription = st.text_area("Prescription")
-            fee = st.number_input("Consultation Fee", value=300.0)
+    #     # New consultation entry
+    #         st.subheader("🩺 New Consultation")
+    #         symptoms = st.text_area("Symptoms")
+    #         diagnosis = st.text_area("Diagnosis")
+    #         tests = st.text_input("Tests Recommended")
+    #         prescription = st.text_area("Prescription")
+    #         fee = st.number_input("Consultation Fee", value=300.0)
 
-            meds = st.data_editor(
-                pd.DataFrame(columns=["Medicine", "Qty", "Price", "Timing (1-1-1)"]),
-                num_rows="dynamic"
-            )
-            if st.button("💾 Save Consultation"):
-                today = str(date.today())
-                cursor.execute(
-                    """ 
-                    INSERT INTO visits(
-                    patient_id, visit_date, symptoms, diagnosis, tests,
-                    prescription, med_json, consultation_fee
-                    )
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                    """,
-                    (pid, today, symptoms, diagnosis, tests, prescription, meds.to_json(), fee)
-                )
-                visit_id = cursor.lastrowid  
-                total_med_fee = 0
-                for _, row in meds.iterrows():
-                    if row["Medicine"]:
-                        qty = int(row["Qty"])
-                        price = float(row["Price"])
-                        timing = row["Timing (1-1-1)"]
-                        total_med_fee += qty * price
-                        cursor.execute(
-                            """
-                            INSERT INTO visit_medicines
-                            (visit_id, patient_id, medicine, qty, price, timing)
-                            VALUES (?, ?, ?, ?, ?, ?)
-                            """,
-                            (visit_id, pid, row["Medicine"], qty, price, timing)
-                        )
+    #         meds = st.data_editor(
+    #             pd.DataFrame(columns=["Medicine", "Qty", "Price", "Timing (1-1-1)"]),
+    #             num_rows="dynamic"
+    #         )
+    #         if st.button("💾 Save Consultation"):
+    #             today = str(date.today())
+    #             cursor.execute(
+    #                 """ 
+    #                 INSERT INTO visits(
+    #                 patient_id, visit_date, symptoms, diagnosis, tests,
+    #                 prescription, med_json, consultation_fee
+    #                 )
+    #                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    #                 """,
+    #                 (pid, today, symptoms, diagnosis, tests, prescription, meds.to_json(), fee)
+    #             )
+    #             visit_id = cursor.lastrowid  
+    #             total_med_fee = 0
+    #             for _, row in meds.iterrows():
+    #                 if row["Medicine"]:
+    #                     qty = int(row["Qty"])
+    #                     price = float(row["Price"])
+    #                     timing = row["Timing (1-1-1)"]
+    #                     total_med_fee += qty * price
+    #                     cursor.execute(
+    #                         """
+    #                         INSERT INTO visit_medicines
+    #                         (visit_id, patient_id, medicine, qty, price, timing)
+    #                         VALUES (?, ?, ?, ?, ?, ?)
+    #                         """,
+    #                         (visit_id, pid, row["Medicine"], qty, price, timing)
+    #                     )
 
-    # ✅ MOVE THIS INSIDE THE BUTTON BLOCK (Align with 'visit_id = ...')
-                cursor.execute(
-                    "UPDATE visits SET med_fee=? WHERE visit_id=?",
-                    (total_med_fee, visit_id)
-                ) 
-                conn.commit()
-                st.success("Consultation and medicines saved successfully!")
-                st.rerun()
+    # # ✅ MOVE THIS INSIDE THE BUTTON BLOCK (Align with 'visit_id = ...')
+    #             cursor.execute(
+    #                 "UPDATE visits SET med_fee=? WHERE visit_id=?",
+    #                 (total_med_fee, visit_id)
+    #             ) 
+    #             conn.commit()
+    #             st.success("Consultation and medicines saved successfully!")
+    #             st.rerun()
             
 
+    
          
 # ---------------- LAB ----------------
  
