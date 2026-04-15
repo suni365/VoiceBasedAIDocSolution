@@ -444,24 +444,16 @@ else:
                     visits_df.apply(lambda r: f"Visit {r['visit_id']} ({r['visit_date']})", axis=1),
                 )
                 vid = int(visit_choice.split()[1])
-                meds = pd.read_sql(
-                    "SELECT id, medicine, timing, days FROM visit_medicines WHERE visit_id=? AND status='Pending'",
-                    conn, params=(vid,)
-                )
-
-                if meds.empty:
-                    st.info("No pending medicines for this visit.")
-                else:
+                if not meds.empty:
                     total = 0
                     for idx, row in meds.iterrows():
                         qty = st.number_input(f"Qty for {row['medicine']}", min_value=1, value=1, key=f"qty_{idx}")
                         price = st.number_input(f"Price per unit for {row['medicine']}", min_value=0, value=10, key=f"price_{idx}")
                         total += qty * price
-
                         if st.button(f"Dispense {row['medicine']}", key=f"dispense_{idx}"):
                             cursor.execute(
-                                "UPDATE visit_medicines SET status=?, qty=?, price=? WHERE id=?",
-                                ("Dispensed", qty, price, row["id"])
+                                "UPDATE visit_medicines SET status=?, qty=?, price=? WHERE visit_id=? AND medicine=?",
+                                ("Dispensed", qty, price, vid, row["medicine"])
                             )
                             cursor.execute(
                                 "UPDATE visits SET med_fee = med_fee + ? WHERE visit_id=?",
@@ -471,7 +463,36 @@ else:
                             st.success(f"{row['medicine']} dispensed successfully!")
                             st.rerun()
 
-                    # st.metric("Total Medicine Fee", f"₹{total}")
+                    st.metric("Total Medicine Fee", f"₹{total}")
+
+                # meds = pd.read_sql(
+                #     "SELECT id, medicine, timing, days FROM visit_medicines WHERE visit_id=? AND status='Pending'",
+                #     conn, params=(vid,)
+                # )
+
+                # if meds.empty:
+                #     st.info("No pending medicines for this visit.")
+                # else:
+                #     total = 0
+                #     for idx, row in meds.iterrows():
+                #         qty = st.number_input(f"Qty for {row['medicine']}", min_value=1, value=1, key=f"qty_{idx}")
+                #         price = st.number_input(f"Price per unit for {row['medicine']}", min_value=0, value=10, key=f"price_{idx}")
+                #         total += qty * price
+
+                #         if st.button(f"Dispense {row['medicine']}", key=f"dispense_{idx}"):
+                #             cursor.execute(
+                #                 "UPDATE visit_medicines SET status=?, qty=?, price=? WHERE id=?",
+                #                 ("Dispensed", qty, price, row["id"])
+                #             )
+                #             cursor.execute(
+                #                 "UPDATE visits SET med_fee = med_fee + ? WHERE visit_id=?",
+                #                 (qty * price, vid)
+                #             )
+                #             conn.commit()
+                #             st.success(f"{row['medicine']} dispensed successfully!")
+                #             st.rerun()
+
+                #     # st.metric("Total Medicine Fee", f"₹{total}")
 
 
 
