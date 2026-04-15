@@ -342,7 +342,7 @@ else:
     
     # 2. Fetch basic patient details to pass to the function
         patient = cursor.execute(
-            "SELECT name, phone,patient_phone,patient_address FROM patients WHERE patient_id=?", (pid,)
+            "SELECT name, phone FROM patients WHERE patient_id=?", (pid,)
         ).fetchone()
 
         if patient:
@@ -353,8 +353,8 @@ else:
                 pid=pid, 
                 patient_name=patient[0], 
                 phone_number=patient[1],
-                patient_phone=patient[2],
-                patient_address=patient[3]
+                # patient_phone=patient[2],
+                # patient_address=patient[3]
                 
             )
         else:
