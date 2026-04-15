@@ -283,34 +283,32 @@ else:
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                     """,
                     (pid, today, symptoms, diagnosis, tests, prescription, meds.to_json(), fee)
-                    )
-
-                    visit_id = cursor.lastrowid  
-                    total_med_fee = 0
-                    for _, row in meds.iterrows():
-                        if row["Medicine"]:
-                            qty = int(row["Qty"])
-                            price = float(row["Price"])
-                            timing = row["Timing (1-1-1)"]
-                            total_med_fee += qty * price
-
-                            cursor.execute(
+                )
+                visit_id = cursor.lastrowid  
+                total_med_fee = 0
+                for _, row in meds.iterrows():
+                    if row["Medicine"]:
+                        qty = int(row["Qty"])
+                        price = float(row["Price"])
+                        timing = row["Timing (1-1-1)"]
+                        total_med_fee += qty * price
+                        cursor.execute(
                             """
                             INSERT INTO visit_medicines
                             (visit_id, patient_id, medicine, qty, price, timing)
                             VALUES (?, ?, ?, ?, ?, ?)
                             """,
                             (visit_id, pid, row["Medicine"], qty, price, timing)
-                            )
+                        )
 
     # ✅ MOVE THIS INSIDE THE BUTTON BLOCK (Align with 'visit_id = ...')
-                    cursor.execute(
-                        "UPDATE visits SET med_fee=? WHERE visit_id=?",
-                        (total_med_fee, visit_id)
-                    ) 
-                    conn.commit()
-                    st.success("Consultation and medicines saved successfully!")
-                    st.rerun()
+                cursor.execute(
+                    "UPDATE visits SET med_fee=? WHERE visit_id=?",
+                    (total_med_fee, visit_id)
+                ) 
+                conn.commit()
+                st.success("Consultation and medicines saved successfully!")
+                st.rerun()
             
 
          
