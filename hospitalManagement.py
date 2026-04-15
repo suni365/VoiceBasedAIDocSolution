@@ -456,20 +456,37 @@ else:
                     for idx, row in meds.iterrows():
                         qty = st.number_input(f"Qty for {row['medicine']}", min_value=1, value=row["days"], key=f"qty_{idx}")
                         price = st.number_input(f"Price per unit for {row['medicine']}", min_value=0, value=10, key=f"price_{idx}")
-                        total += qty * price
-
                         if st.button(f"Dispense {row['medicine']}", key=f"dispense_{idx}"):
+                            total = qty * price
                             cursor.execute(
                                 "UPDATE visit_medicines SET status=?, qty=?, price=? WHERE id=?",
                                 ("Dispensed", qty, price, row["id"])
                             )
                             cursor.execute(
                                 "UPDATE visits SET med_fee = med_fee + ? WHERE visit_id=?",
-                                (qty * price, vid)
+                                (total, vid)
                             )
                             conn.commit()
                             st.success(f"{row['medicine']} dispensed successfully!")
                             st.rerun()
+
+                    # for idx, row in meds.iterrows():
+                    #     qty = st.number_input(f"Qty for {row['medicine']}", min_value=1, value=row["days"], key=f"qty_{idx}")
+                    #     price = st.number_input(f"Price per unit for {row['medicine']}", min_value=0, value=10, key=f"price_{idx}")
+                    #     total += qty * price
+
+                    #     if st.button(f"Dispense {row['medicine']}", key=f"dispense_{idx}"):
+                    #         cursor.execute(
+                    #             "UPDATE visit_medicines SET status=?, qty=?, price=? WHERE id=?",
+                    #             ("Dispensed", qty, price, row["id"])
+                    #         )
+                    #         cursor.execute(
+                    #             "UPDATE visits SET med_fee = med_fee + ? WHERE visit_id=?",
+                    #             (qty * price, vid)
+                    #         )
+                    #         conn.commit()
+                    #         st.success(f"{row['medicine']} dispensed successfully!")
+                    #         st.rerun()
 
                     st.metric("Total Medicine Fee (this visit)", f"₹{total}")
     elif menu == "Billing":
