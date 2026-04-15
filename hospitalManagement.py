@@ -106,7 +106,7 @@ def display_pdf(path):
 
 
 def doctor_module(conn, cursor, pid, patient_name, phone_number):
-    st.title(f"👨‍⚕️ Consultation: {patient_name} (ID: {pid}) {phone},{email},{address}")
+    st.title(f"👨‍⚕️ Consultation: {patient_name} (ID: {pid})")
 
     # 1. Clinical Inputs
     col1, col2 = st.columns(2)
