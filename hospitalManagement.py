@@ -167,7 +167,7 @@ def doctor_module(conn, cursor, pid, patient_name, phone_number):
             for m in st.session_state.med_list:
                 cursor.execute(
                     "INSERT INTO visit_medicines (visit_id, patient_id, medicine, timing, days, status) VALUES (?, ?, ?, ?, ?, ?)",
-                    (visit_id, pid, m['Medicine'], m['Timing'], m['Days'], "Pending")
+                    (visit_id, pid, m['Medicine'], m['Timing'], m['Days'], "pending")
                 )
             
             conn.commit()
