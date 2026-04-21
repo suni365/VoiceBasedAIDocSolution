@@ -543,7 +543,7 @@ else:
                             price = st.session_state[f"price_{idx}"]
                             cursor.execute(
                                 "UPDATE visit_medicines SET status=?, qty=?, price=? WHERE id=?",
-                                ("Dispensed", qty, price, row["id"])
+                                ("dispensed", qty, price, row["id"])
                             )
                             cursor.execute(
                                 "UPDATE visits SET med_fee = med_fee + ? WHERE visit_id=?",
