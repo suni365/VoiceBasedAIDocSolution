@@ -490,6 +490,69 @@ else:
 
     #                 st.metric("Total Medicine Fee (this visit)", f"₹{total}")
 
+    # elif menu == "Pharmacy":
+    #     st.title("💊 Pharmacy")
+    #     patients_df = pd.read_sql("SELECT patient_id, name FROM patients", conn)
+    #     patient_choice = st.selectbox("Select Patient", patients_df["name"])
+    #     if patient_choice:
+    #         pid = patients_df.loc[patients_df["name"] == patient_choice, "patient_id"].values[0]
+    #         visits_df = pd.read_sql(
+    #             "SELECT visit_id, visit_date, diagnosis FROM visits WHERE patient_id=?",
+    #             conn, params=(pid,)
+    #         )
+
+    #         if not visits_df.empty:
+    #             visit_choice = st.selectbox(
+    #                 "Select Visit",
+    #                 visits_df.apply(lambda r: f"Visit {r['visit_id']} ({r['visit_date']})", axis=1),
+    #             )
+    #             vid = int(visit_choice.split()[1])
+    #             meds = pd.read_sql(
+    #                 "SELECT id, medicine, days, timing, qty, price, status FROM visit_medicines WHERE visit_id=? AND status='pending'",
+    #                 conn, params=(vid,)
+    #             )
+
+    #             if meds.empty:
+    #                 st.info("No pending medicines for this visit.")
+    #             else:
+    #                 st.subheader("📝 Enter Qty & Price")
+    #                 total_fee = 0
+
+    #                 # Collect qty/price for each medicine
+    #                 for idx, row in meds.iterrows():
+    #                     qty = st.number_input(
+    #                         f"Qty for {row['medicine']}", 
+    #                         min_value=1, 
+    #                         value=row["days"], 
+    #                         key=f"qty_{idx}"
+    #                     )
+    #                     price = st.number_input(
+    #                         f"Price per unit for {row['medicine']}", 
+    #                         min_value=0, 
+    #                         value=10, 
+    #                         key=f"price_{idx}"
+    #                     )
+    #                     total_fee += qty * price
+
+    #                 st.metric("Total Medicine Fee (this visit)", f"₹{total_fee}")
+
+    #                 # Dispense all medicines together
+    #                 if st.button("✅ Dispense All Medicines"):
+    #                     for idx, row in meds.iterrows():
+    #                         qty = st.session_state[f"qty_{idx}"]
+    #                         price = st.session_state[f"price_{idx}"]
+    #                         cursor.execute(
+    #                             "UPDATE visit_medicines SET status=?, qty=?, price=? WHERE id=?",
+    #                             ("dispensed", qty, price, row["id"])
+    #                         )
+    #                         cursor.execute(
+    #                             "UPDATE visits SET med_fee = med_fee + ? WHERE visit_id=?",
+    #                             (qty * price, vid)
+    #                         )
+    #                     conn.commit()
+    #                     st.success("All medicines dispensed successfully!")
+    #                     st.rerun()
+
     elif menu == "Pharmacy":
         st.title("💊 Pharmacy")
         patients_df = pd.read_sql("SELECT patient_id, name FROM patients", conn)
@@ -507,6 +570,8 @@ else:
                     visits_df.apply(lambda r: f"Visit {r['visit_id']} ({r['visit_date']})", axis=1),
                 )
                 vid = int(visit_choice.split()[1])
+
+            # ✅ Query pending medicines (lowercase status)
                 meds = pd.read_sql(
                     "SELECT id, medicine, days, timing, qty, price, status FROM visit_medicines WHERE visit_id=? AND status='pending'",
                     conn, params=(vid,)
@@ -518,7 +583,7 @@ else:
                     st.subheader("📝 Enter Qty & Price")
                     total_fee = 0
 
-                    # Collect qty/price for each medicine
+                # Collect qty/price for each medicine
                     for idx, row in meds.iterrows():
                         qty = st.number_input(
                             f"Qty for {row['medicine']}", 
@@ -536,22 +601,22 @@ else:
 
                     st.metric("Total Medicine Fee (this visit)", f"₹{total_fee}")
 
-                    # Dispense all medicines together
+                # ✅ Dispense all medicines together
                     if st.button("✅ Dispense All Medicines"):
                         for idx, row in meds.iterrows():
                             qty = st.session_state[f"qty_{idx}"]
                             price = st.session_state[f"price_{idx}"]
                             cursor.execute(
                                 "UPDATE visit_medicines SET status=?, qty=?, price=? WHERE id=?",
-                                ("dispensed", qty, price, row["id"])
-                            )
+                                ("dispensed", qty, price, row["id"])   # ✅ lowercase status
+                            )    
                             cursor.execute(
                                 "UPDATE visits SET med_fee = med_fee + ? WHERE visit_id=?",
                                 (qty * price, vid)
                             )
-                        conn.commit()
-                        st.success("All medicines dispensed successfully!")
-                        st.rerun()
+                            conn.commit()
+                            st.success("All medicines dispensed successfully!")
+                            st.rerun()
 
     elif menu == "Billing":
         st.title("🧾 Billing")
