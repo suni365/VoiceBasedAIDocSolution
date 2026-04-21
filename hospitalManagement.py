@@ -57,7 +57,7 @@ CREATE TABLE IF NOT EXISTS visit_medicines (
     qty INTEGER,
     price REAL,
     timing TEXT,
-    status TEXT DEFAULT 'PENDING',
+    status TEXT DEFAULT 'pending',
     created_at TEXT DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY(visit_id) REFERENCES visits(visit_id),
     FOREIGN KEY(patient_id) REFERENCES patients(patient_id)
@@ -128,7 +128,7 @@ def doctor_module(conn, cursor, pid, patient_name, phone_number):
     with st.form("med_form", clear_on_submit=True):
         m_col1, m_col2, m_col3 = st.columns([3, 2, 2])
         m_name = m_col1.text_input("Medicine Name")
-        m_timing = m_col2.selectbox("Timing", ["1-1-1", "1-0-1", "1-1-0","0-1-1","0-0-1", "1-0-0","0-1-0" "SOS"])
+        m_timing = m_col2.selectbox("Timing", ["1-1-1", "1-0-1", "1-1-0","0-1-1","0-0-1", "1-0-0","0-1-0", "SOS"])
         m_days = m_col3.number_input("Days", min_value=1, value=60)
         
         if st.form_submit_button("➕ Add Medicine"):
@@ -445,7 +445,7 @@ else:
     #             )
     #             vid = int(visit_choice.split()[1])
     #             meds = pd.read_sql(
-    #             "SELECT id, medicine, days, timing FROM visit_medicines WHERE visit_id=? AND status='Pending'",
+    #             "SELECT id, medicine, days, timing FROM visit_medicines WHERE visit_id=? AND status='pending'",
     #             conn, params=(vid,)
     #             )
 
@@ -508,7 +508,7 @@ else:
                 )
                 vid = int(visit_choice.split()[1])
                 meds = pd.read_sql(
-                    "SELECT id, medicine, days, timing, qty, price, status FROM visit_medicines WHERE visit_id=? AND status='Pending'",
+                    "SELECT id, medicine, days, timing, qty, price, status FROM visit_medicines WHERE visit_id=? AND status='pending'",
                     conn, params=(vid,)
                 )
 
