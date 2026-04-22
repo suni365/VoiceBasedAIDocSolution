@@ -147,7 +147,7 @@ def doctor_module(conn, cursor, pid, patient_name, phone_number):
             st.session_state.med_list = []
             st.rerun()
 
-    # 2. Save Logic
+   # 2. Save Logic (Inside doctor_module)
     if st.button("💾 Save Consultation & Generate WhatsApp"):
         if not diagnosis:
             st.error("Please enter a diagnosis before saving.")
@@ -155,72 +155,108 @@ def doctor_module(conn, cursor, pid, patient_name, phone_number):
             today = str(date.today())
             med_json = json.dumps(st.session_state.med_list)
             
-            # Insert into visits (med_fee starts at 0 for Pharmacy to fill)
-            cursor.execute(
-                """INSERT INTO visits (patient_id, visit_date, symptoms, diagnosis, tests, prescription, med_json, consultation_fee, med_fee) 
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-                (pid, today, symptoms, diagnosis, tests, "See Med Table", med_json, fee, 0)
-            )
-            visit_id = cursor.lastrowid
+            try:
+                # Use a transaction block for safety
+                with conn:
+                    # Insert into visits AND set pharmacy_status
+                    cursor.execute(
+                        """INSERT INTO visits (patient_id, visit_date, symptoms, diagnosis, tests, prescription, med_json, consultation_fee, med_fee, pharmacy_status) 
+                           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                        (pid, today, symptoms, diagnosis, tests, "See Med Table", med_json, fee, 0, 'pending')
+                    )
+                    
+                    # Capture the ID immediately
+                    visit_id = cursor.lastrowid
 
-            # Insert individual medicines for Pharmacy module
-            for m in st.session_state.med_list:
-                cursor.execute(
-                    "INSERT INTO visit_medicines (visit_id, patient_id, medicine, timing, days, status) VALUES (?, ?, ?, ?, ?, ?)",
-                    (visit_id, pid, m['Medicine'], m['Timing'], m['Days'], "pending")
-                )
-            
-            conn.commit()
-
-            # 3. Construct WhatsApp Message
-            med_summary = "\n".join([f"- {m['Medicine']} ({m['Timing']} for {m['Days']} days)" for m in st.session_state.med_list])
-            
-            whatsapp_msg = (
-                f"*Visit Summary - {today}*\n\n"
-                f"*Patient ID:* {pid}\n"
-                f"*Patient Name:* {patient_name}\n"
-                f"*Diagnosis:* {diagnosis}\n"
-                f"*Recommended Tests:* {tests if tests else 'None'}\n\n"
-                f"*Prescription:*\n{med_summary}\n\n"
-                f"Please visit the Pharmacy/Lab for further processing."
-            )
-            
-            # Encode for URL
-            encoded_msg = urllib.parse.quote(whatsapp_msg)
-            wa_link = f"https://wa.me/{phone_number}?text={encoded_msg}"
-            
-            st.success("✅ Consultation Saved Successfully!")
-            st.markdown(f"""
-                <a href="{wa_link}" target="_blank">
-                    <button style="background-color: #25D366; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer;">
-                        📲 Send Details via WhatsApp
-                    </button>
-                </a>
-                """, unsafe_allow_html=True)
-            
-            # Clear state for next patient
-            st.session_state.med_list = []
-
-    # 4. Professional History View
-    st.divider()
-    st.subheader("📜 Previous Visit History")
-    history = pd.read_sql(f"SELECT * FROM visits WHERE patient_id={pid} ORDER BY visit_id DESC", conn)
-    
-    if not history.empty:
-        for _, row in history.iterrows():
-            with st.expander(f"🗓️ Visit on {row['visit_date']} (ID: {row['visit_id']})"):
-                h_col1, h_col2 = st.columns(2)
-                h_col1.write(f"**Symptoms:** {row['symptoms']}")
-                h_col1.write(f"**Diagnosis:** {row['diagnosis']}")
-                h_col2.write(f"**Tests:** {row['tests']}")
+                    # Insert individual medicines
+                    for m in st.session_state.med_list:
+                        cursor.execute(
+                            "INSERT INTO visit_medicines (visit_id, patient_id, medicine, timing, days, status) VALUES (?, ?, ?, ?, ?, ?)",
+                            (visit_id, pid, m['Medicine'], m['Timing'], m['Days'], "pending")
+                        )
                 
-                if row["med_json"]:
-                    st.write("**Medicines:**")
-                    try:
-                        h_meds = pd.DataFrame(json.loads(row["med_json"]))
-                        st.table(h_meds)
-                    except:
-                        st.write("No medicine data found.")
+                st.success(f"✅ Saved Successfully! (Visit ID: {visit_id})")
+                # ... (Keep your WhatsApp link code here) ...
+                st.session_state.med_list = []
+                st.rerun() # Force refresh so other modules see the data
+
+            except Exception as e:
+                st.error(f"Database Error: {e}")
+
+    # 2. Save Logic
+    # if st.button("💾 Save Consultation & Generate WhatsApp"):
+    #     if not diagnosis:
+    #         st.error("Please enter a diagnosis before saving.")
+    #     else:
+    #         today = str(date.today())
+    #         med_json = json.dumps(st.session_state.med_list)
+            
+    #         # Insert into visits (med_fee starts at 0 for Pharmacy to fill)
+    #         cursor.execute(
+    #             """INSERT INTO visits (patient_id, visit_date, symptoms, diagnosis, tests, prescription, med_json, consultation_fee, med_fee) 
+    #                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+    #             (pid, today, symptoms, diagnosis, tests, "See Med Table", med_json, fee, 0)
+    #         )
+    #         visit_id = cursor.lastrowid
+
+    #         # Insert individual medicines for Pharmacy module
+    #         for m in st.session_state.med_list:
+    #             cursor.execute(
+    #                 "INSERT INTO visit_medicines (visit_id, patient_id, medicine, timing, days, status) VALUES (?, ?, ?, ?, ?, ?)",
+    #                 (visit_id, pid, m['Medicine'], m['Timing'], m['Days'], "pending")
+    #             )
+            
+    #         conn.commit()
+
+    #         # 3. Construct WhatsApp Message
+    #         med_summary = "\n".join([f"- {m['Medicine']} ({m['Timing']} for {m['Days']} days)" for m in st.session_state.med_list])
+            
+    #         whatsapp_msg = (
+    #             f"*Visit Summary - {today}*\n\n"
+    #             f"*Patient ID:* {pid}\n"
+    #             f"*Patient Name:* {patient_name}\n"
+    #             f"*Diagnosis:* {diagnosis}\n"
+    #             f"*Recommended Tests:* {tests if tests else 'None'}\n\n"
+    #             f"*Prescription:*\n{med_summary}\n\n"
+    #             f"Please visit the Pharmacy/Lab for further processing."
+    #         )
+            
+    #         # Encode for URL
+    #         encoded_msg = urllib.parse.quote(whatsapp_msg)
+    #         wa_link = f"https://wa.me/{phone_number}?text={encoded_msg}"
+            
+    #         st.success("✅ Consultation Saved Successfully!")
+    #         st.markdown(f"""
+    #             <a href="{wa_link}" target="_blank">
+    #                 <button style="background-color: #25D366; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer;">
+    #                     📲 Send Details via WhatsApp
+    #                 </button>
+    #             </a>
+    #             """, unsafe_allow_html=True)
+            
+    #         # Clear state for next patient
+    #         st.session_state.med_list = []
+
+    # # 4. Professional History View
+    # st.divider()
+    # st.subheader("📜 Previous Visit History")
+    # history = pd.read_sql(f"SELECT * FROM visits WHERE patient_id={pid} ORDER BY visit_id DESC", conn)
+    
+    # if not history.empty:
+    #     for _, row in history.iterrows():
+    #         with st.expander(f"🗓️ Visit on {row['visit_date']} (ID: {row['visit_id']})"):
+    #             h_col1, h_col2 = st.columns(2)
+    #             h_col1.write(f"**Symptoms:** {row['symptoms']}")
+    #             h_col1.write(f"**Diagnosis:** {row['diagnosis']}")
+    #             h_col2.write(f"**Tests:** {row['tests']}")
+                
+    #             if row["med_json"]:
+    #                 st.write("**Medicines:**")
+    #                 try:
+    #                     h_meds = pd.DataFrame(json.loads(row["med_json"]))
+    #                     st.table(h_meds)
+    #                 except:
+    #                     st.write("No medicine data found.")
 
 # ---------------- LOGIN ----------------
 # if "logged_in" not in st.session_state:
@@ -564,12 +600,22 @@ else:
                 conn, params=(pid,)
             )
 
-            if not visits_df.empty:
-                visit_choice = st.selectbox(
-                    "Select Visit",
-                    visits_df.apply(lambda r: f"Visit {r['visit_id']} ({r['visit_date']})", axis=1),
-                )
-                vid = int(visit_choice.split()[1])
+            # if not visits_df.empty:
+            #     visit_choice = st.selectbox(
+            #         "Select Visit",
+            #         visits_df.apply(lambda r: f"Visit {r['visit_id']} ({r['visit_date']})", axis=1),
+            #     )
+            #     vid = int(visit_choice.split()[1])
+        if not visits_df.empty:
+            visit_map = {f"Visit {row['visit_id']} ({row['visit_date']})": row['visit_id'] for _, row in visits_df.iterrows()}
+            visit_choice = st.selectbox("Select Visit", options=list(visit_map.keys()))
+            vid = visit_map[visit_choice]
+
+            # Use a fresh query - check status carefully
+            meds = pd.read_sql(
+                "SELECT id, medicine, days, timing, qty, price, status FROM visit_medicines WHERE visit_id=? AND status='pending'",
+                conn, params=(int(vid),)
+            )
 
             # ✅ Query pending medicines (lowercase status)
                 meds = pd.read_sql(
