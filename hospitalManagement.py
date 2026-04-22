@@ -618,33 +618,31 @@ else:
             )
 
             # ✅ Query pending medicines (lowercase status)
-                meds = pd.read_sql(
-                    "SELECT id, medicine, days, timing, qty, price, status FROM visit_medicines WHERE visit_id=? AND status='pending'",
+            meds = pd.read_sql(
+                "SELECT id, medicine, days, timing, qty, price, status FROM visit_medicines WHERE visit_id=? AND status='pending'",
                     conn, params=(vid,)
-                )
-
-                if meds.empty:
-                    st.info("No pending medicines for this visit.")
-                else:
-                    st.subheader("📝 Enter Qty & Price")
-                    total_fee = 0
+            )
+            if meds.empty:
+                st.info("No pending medicines for this visit.")
+            else:
+                st.subheader("📝 Enter Qty & Price")
+                total_fee = 0
 
                 # Collect qty/price for each medicine
-                    for idx, row in meds.iterrows():
-                        qty = st.number_input(
-                            f"Qty for {row['medicine']}", 
-                            min_value=1, 
-                            value=row["days"], 
-                            key=f"qty_{idx}"
-                        )
-                        price = st.number_input(
-                            f"Price per unit for {row['medicine']}", 
-                            min_value=0, 
-                            value=10, 
-                            key=f"price_{idx}"
-                        )
-                        total_fee += qty * price
-
+                for idx, row in meds.iterrows():
+                    qty = st.number_input(
+                        f"Qty for {row['medicine']}", 
+                        min_value=1, 
+                        value=row["days"], 
+                        key=f"qty_{idx}"
+                    )
+                    price = st.number_input(
+                        f"Price per unit for {row['medicine']}", 
+                        min_value=0, 
+                        value=10, 
+                        key=f"price_{idx}"
+                    )
+                    total_fee += qty * price
                     st.metric("Total Medicine Fee (this visit)", f"₹{total_fee}")
 
                 # ✅ Dispense all medicines together
