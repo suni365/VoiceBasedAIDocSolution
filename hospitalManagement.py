@@ -289,16 +289,53 @@ def doctor_module(conn, cursor, pid, patient_name, phone_number):
             tests = c2.text_area("Recommended Lab Tests", value=row['tests'] if row is not None else "")
             cons_fee = c2.number_input("Consultation Fee", value=int(row['consultation_fee']) if row is not None else 300)
 
-        st.subheader("💊 Medication Plan")
-        # Logic for managing st.session_state.med_list goes here (similar to your previous code)
-        # ... (Add/Delete medicine UI) ...
+                # --- TAB 1: Inside the medication plan section ---
+            st.subheader("💊 Medication Plan")
 
-        # if st.button("💾 Finalize & Save Consultation", type="primary"):
-        #     save_consultation(edit_visit_id, sym, diag, tests, cons_fee)
+            # Initialize the list in session state if it doesn't exist
+            if "med_list" not in st.session_state:
+                st.session_state.med_list = []
 
-        if st.button("💾 Finalize & Save Consultation", type="primary"):
-    # Send all 8 arguments required by the definition
-            save_consultation(edit_visit_id, sym, diag, tests, cons_fee, pid, phone_number, patient_name)
+            # Input container for NEW medicine    
+            with st.container(border=True):
+                m1, m2, m3 = st.columns([3, 2, 1])
+                m_name = m1.text_input("Medicine Name", key="m_name_input")
+                m_time = m2.selectbox("Timing", ["1-0-1", "1-1-1", "0-0-1", "1-0-0", "Before Food"], key="m_time_input")
+                m_days = m3.number_input("Days", min_value=1, value=5, key="m_days_input")
+    
+                if st.button("➕ Add Medicine"):
+                    if m_name:
+                        st.session_state.med_list.append({
+                            "Medicine": m_name,
+                            "Timing": m_time,
+                            "Days": m_days
+                        })
+            # Clear input by re-running (Streamlit specific trick)
+                        st.rerun()
+                    else:
+                        st.error("Please enter a medicine name.")
+
+# Display the medicines added so far
+                if st.session_state.med_list:
+                    for i, med in enumerate(st.session_state.med_list):
+                        cols = st.columns([3, 2, 1, 1])
+                        cols[0].write(f"**{med['Medicine']}**")
+                        cols[1].write(med['Timing'])
+                        cols[2].write(f"{med['Days']} Days")
+                            if cols[3].button("❌", key=f"del_med_{i}"):
+                                st.session_state.med_list.pop(i)
+                                st.rerun()
+
+    #     st.subheader("💊 Medication Plan")
+    #     # Logic for managing st.session_state.med_list goes here (similar to your previous code)
+    #     # ... (Add/Delete medicine UI) ...
+
+    #     # if st.button("💾 Finalize & Save Consultation", type="primary"):
+    #     #     save_consultation(edit_visit_id, sym, diag, tests, cons_fee)
+
+    #     if st.button("💾 Finalize & Save Consultation", type="primary"):
+    # # Send all 8 arguments required by the definition
+    #         save_consultation(edit_visit_id, sym, diag, tests, cons_fee, pid, phone_number, patient_name)
 
     # ---------------------------------------------------------
     # TAB 2: PATIENT HISTORY (Lab Results & Medicines)
