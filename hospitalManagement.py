@@ -219,7 +219,33 @@ def save_consultation(edit_visit_id, symptoms, diagnosis, tests, cons_fee, pid, 
 
     except Exception as e:
         st.error(f"Database Error: {e}")
-
+def generate_wa_message(name, row):
+    # Parse the medicines from the JSON string
+    meds = json.loads(row['med_json']) if row['med_json'] else []
+    med_lines = "\n".join([f"• {m['Medicine']} ({m['Timing']}) x {m['Days']} days" for m in meds])
+    
+    # Calculate total safely
+    cons = row.get('consultation_fee', 0) or 0
+    m_fee = row.get('med_fee', 0) or 0
+    l_fee = row.get('lab_fee', 0) or 0
+    total = cons + m_fee + l_fee
+    
+    msg = (
+        f"🏥 *SAMAPTH M.B.B.S CLINIC VISIT SUMMARY*\n"
+        f"Date: {row['visit_date']}\n"
+        f"Patient: {name}\n\n"
+        f"*Diagnosis:* {row['diagnosis']}\n\n"
+        f"*Medicines:* \n{med_lines if med_lines else 'None'}\n\n"
+        f"*Lab Tests:* {row['tests'] if row['tests'] else 'None'}\n"
+        f"*Lab Status:* {row['lab_status']}\n\n"
+        f"*Billing Summary:*\n"
+        f"- Consultation: ₹{cons}\n"
+        f"- Pharmacy: ₹{m_fee}\n"
+        f"- Laboratory: ₹{l_fee}\n"
+        f"*Total Payable: ₹{total}*\n\n"
+        f"Get well soon!"
+    )
+    return msg
 
 def doctor_module(conn, cursor, pid, patient_name, phone_number):
     st.title(f"🩺 Clinical Dashboard: {patient_name}")
