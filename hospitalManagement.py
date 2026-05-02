@@ -495,7 +495,7 @@ else:
                 col3.metric("Lab", f"₹{labs}")
 
                 st.divider()
-                    st.header(f"Total Payable: ₹{total}")
+                st.header(f"Total Payable: ₹{total}")
 
                 if st.button("Finalize Bill & Mark Paid"):
                     cursor.execute(
