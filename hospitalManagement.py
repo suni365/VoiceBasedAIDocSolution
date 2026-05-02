@@ -172,40 +172,7 @@ def doctor_module(conn, cursor, pid, patient_name, phone_number):
                         )
             except Exception as e:
                 st.error(f"Database Error: {e}")
-
-                        
-# No need for conn.commit() inside 'with conn:' context, it's automatic.
-                # Inside your Doctor save button logic
-               
-
-    
-                # Use a transaction block for safety
-                # with conn:
-                #     # Insert into visits AND set pharmacy_status
-                #     cursor.execute(
-                #         """INSERT INTO visits (patient_id, visit_date, symptoms, diagnosis, tests, prescription, med_json, consultation_fee, med_fee, pharmacy_status) 
-                #            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-                #         (pid, today, symptoms, diagnosis, tests, "See Med Table", med_json, fee, 0, 'pending')
-                #     )
-                    
-                #     # Capture the ID immediately
-                #     visit_id = cursor.lastrowid
-
-                #     # Insert individual medicines
-                #     for m in st.session_state.med_list:
-                #         cursor.execute(
-                #             "INSERT INTO visit_medicines (visit_id, patient_id, medicine, timing, days, status) VALUES (?, ?, ?, ?, ?, ?)",
-                #             (visit_id, pid, m['Medicine'], m['Timing'], m['Days'], "pending")
-                #         )
-                
-                # st.success(f"✅ Saved Successfully! (Visit ID: {visit_id})")
-                # # ... (Keep your WhatsApp link code here) ...
-                # st.session_state.med_list = []
-                # st.rerun() # Force refresh so other modules see the data
-
-          
-
-
+                     
 
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
@@ -483,86 +450,62 @@ else:
 
 
     elif menu == "Billing":
-    # ... (selection logic remains same) ...
-        if not visits_df.empty:
-        # Ensure we fetch lab_fee too
-            row_data = pd.read_sql("SELECT consultation_fee, med_fee, lab_fee FROM visits WHERE visit_id=?", 
-                                   conn, params=(vid,)).iloc[0]
-        
-            cons = row_data["consultation_fee"] or 0
-            meds = row_data["med_fee"] or 0
-            labs = row_data["lab_fee"] or 0 # Don't forget lab!
-        
-            grand_total = cons + meds + labs
-        
-            st.metric("Total Payable", f"₹{grand_total}")
-            st.write(f"Consultation: ₹{cons}")
-            st.write(f"Pharmacy: ₹{meds}")
-            st.write(f"Laboratory: ₹{labs}")
-          
-# ---------------- VISIT SUMMARY ----------------
-    elif menu == "Visit Summary":
-        st.title("📋 Visit Summary")
+        st.title("🧾 Billing")
+    
+    # 1. Initialize an empty dataframe to prevent NameError
+        visits_df = pd.DataFrame() 
 
-    # Select patient
         patients_df = pd.read_sql("SELECT patient_id, name FROM patients", conn)
-        patient_choice = st.selectbox("Select Patient", patients_df["name"]) if not patients_df.empty else None
+        patient_choice = st.selectbox("Select Patient", [""] + list(patients_df["name"])) # Added empty default
 
-        if patient_choice:
-            pid = patients_df.loc[patients_df["name"] == patient_choice, "patient_id"].values[0]
+        if patient_choice and patient_choice != "":
+        # Get the PID safely
+            pid_val = patients_df.loc[patients_df["name"] == patient_choice, "patient_id"].values[0]
+            pid = int(pid_val)
 
-        # Show visits for this patient
+        # 2. Populate the visits_df inside the choice block
             visits_df = pd.read_sql(
-                """
-                SELECT v.visit_id, v.visit_date, v.symptoms, v.diagnosis, v.tests,
-                       v.prescription, v.consultation_fee, v.lab_fee, v.med_fee,
-                       v.lab_json, v.med_json, v.report_path, v.lab_status, v.pharmacy_status
-                FROM visits v
-                WHERE v.patient_id=?
-                """,
+                "SELECT visit_id, visit_date, consultation_fee, med_fee, lab_fee FROM visits WHERE patient_id=?",
                 conn, params=(pid,)
             )
 
             if not visits_df.empty:
-                visit_choice = st.selectbox(
-                    "Select Visit",
-                    visits_df.apply(lambda r: f"Visit {r['visit_id']} ({r['visit_date']})", axis=1)
-                )
-                vid = int(visit_choice.split()[1])
+            # 3. Create the selection map
+                visit_map = {f"Visit {row['visit_id']} ({row['visit_date']})": row['visit_id'] for _, row in visits_df.iterrows()}
+                visit_choice = st.selectbox("Select Visit", options=list(visit_map.keys()))
+            
+            # Force vid to be a clean integer
+                vid = int(visit_map[visit_choice])
 
-                row = visits_df.loc[visits_df["visit_id"] == vid].iloc[0]
+            # 4. Fetch the most recent data for this specific visit
+                visit_data = pd.read_sql(
+                    "SELECT consultation_fee, med_fee, lab_fee FROM visits WHERE visit_id=?", 
+                    conn, params=(vid,)
+                ).iloc[0]
 
-            # Doctor details
-                st.subheader("🩺 Doctor Consultation")
-                st.write(f"Symptoms: {row['symptoms']}")
-                st.write(f"Diagnosis: {row['diagnosis']}")
-                st.write(f"Tests Recommended: {row['tests']}")
-                st.write(f"Prescription: {row['prescription']}")
-                st.write(f"Consultation Fee: ₹{row['consultation_fee'] or 0}")
+                cons = visit_data["consultation_fee"] or 0
+                meds = visit_data["med_fee"] or 0
+                labs = visit_data["lab_fee"] or 0
+                total = cons + meds + labs
 
-            # Lab details
-                st.subheader("🔬 Lab Results")
-                st.write(f"Lab Status: {row['lab_status']}")
-                st.write(f"Lab Fee: ₹{row['lab_fee'] or 0}")
-                show_json_table(row["lab_json"])
-                display_pdf(row["report_path"])
+                st.subheader("Payment Breakdown")
+                col1, col2, col3 = st.columns(3)
+                col1.metric("Consultation", f"₹{cons}")
+                col2.metric("Pharmacy", f"₹{meds}")
+                col3.metric("Lab", f"₹{labs}")
 
-            # Pharmacy details
-                st.subheader("💊 Pharmacy")
-                st.write(f"Pharmacy Status: {row['pharmacy_status']}")
-                st.write(f"Medicine Fee: ₹{row['med_fee'] or 0}")
-                show_json_table(row["med_json"])
+                st.divider()
+                    st.header(f"Total Payable: ₹{total}")
 
-            # Billing summary
-                st.subheader("🧾 Billing Summary")
-                consultation = row["consultation_fee"] or 0
-                lab = row["lab_fee"] or 0
-                medicine = row["med_fee"] or 0
-                total = consultation + lab + medicine
-                st.metric("Total Payable", f"₹{total}")
+                if st.button("Finalize Bill & Mark Paid"):
+                    cursor.execute(
+                        "UPDATE visits SET billing_status='Paid' WHERE visit_id=?",
+                        (vid,)
+                    )
+                    conn.commit()
+                    st.success("Transaction completed!")
             else:
-                st.info("No visits found for this patient.")
-
+                st.info("No visit history found for this patient.")
     
 # ---------------- MONTHLY REPORT ----------------
     elif menu == "Monthly Report":
