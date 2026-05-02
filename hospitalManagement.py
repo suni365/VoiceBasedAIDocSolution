@@ -322,9 +322,9 @@ def doctor_module(conn, cursor, pid, patient_name, phone_number):
                         cols[0].write(f"**{med['Medicine']}**")
                         cols[1].write(med['Timing'])
                         cols[2].write(f"{med['Days']} Days")
-                            if cols[3].button("❌", key=f"del_med_{i}"):
-                                st.session_state.med_list.pop(i)
-                                st.rerun()
+                        if cols[3].button("❌", key=f"del_med_{i}"):
+                            st.session_state.med_list.pop(i)
+                            st.rerun()
 
     #     st.subheader("💊 Medication Plan")
     #     # Logic for managing st.session_state.med_list goes here (similar to your previous code)
