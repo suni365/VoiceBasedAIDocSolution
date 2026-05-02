@@ -200,8 +200,8 @@ def save_consultation(edit_visit_id, symptoms, diagnosis, tests, cons_fee, pid, 
             else:
                 # 3. Insert New Visit
                 cursor.execute(
-                    """INSERT INTO visits (patient_id, visit_date, symptoms, diagnosis, tests, prescription, med_json, consultation_fee, med_fee, pharmacy_status, lab_status) 
-                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0.0, 'pending', 'pending')""",
+                    """INSERT INTO visits (patient_id, visit_date, symptoms, diagnosis, tests, prescription, med_json, consultation_fee, med_fee,lab_fee, pharmacy_status, lab_status) 
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0.0,0.0, 'pending', 'pending')""",
                     (pid, today, symptoms, diagnosis, tests, "See Med Table", med_json, cons_fee)
                 )
                 new_vid = cursor.lastrowid
@@ -267,8 +267,12 @@ def doctor_module(conn, cursor, pid, patient_name, phone_number):
         # Logic for managing st.session_state.med_list goes here (similar to your previous code)
         # ... (Add/Delete medicine UI) ...
 
+        # if st.button("💾 Finalize & Save Consultation", type="primary"):
+        #     save_consultation(edit_visit_id, sym, diag, tests, cons_fee)
+
         if st.button("💾 Finalize & Save Consultation", type="primary"):
-            save_consultation(edit_visit_id, sym, diag, tests, cons_fee)
+    # Send all 8 arguments required by the definition
+            save_consultation(edit_visit_id, sym, diag, tests, cons_fee, pid, phone_number, patient_name)
 
     # ---------------------------------------------------------
     # TAB 2: PATIENT HISTORY (Lab Results & Medicines)
