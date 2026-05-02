@@ -174,6 +174,53 @@ def display_pdf(path):
 #                 st.error(f"Database Error: {e}")
 
 
+def save_consultation(edit_visit_id, symptoms, diagnosis, tests, cons_fee, pid, phone_number, patient_name):
+    today = str(date.today())
+    # Ensure meds are pulled from session state
+    med_json = json.dumps(st.session_state.get('med_list', []))
+    
+    try:
+        with conn:
+            if edit_visit_id:
+                # 1. Update Existing Visit
+                cursor.execute("""
+                    UPDATE visits 
+                    SET symptoms=?, diagnosis=?, tests=?, med_json=?, consultation_fee=?
+                    WHERE visit_id=?
+                """, (symptoms, diagnosis, tests, med_json, cons_fee, edit_visit_id))
+                
+                # 2. Sync individual medicine rows (Clear and Re-insert)
+                cursor.execute("DELETE FROM visit_medicines WHERE visit_id=?", (edit_visit_id,))
+                for m in st.session_state.get('med_list', []):
+                    cursor.execute(
+                        "INSERT INTO visit_medicines (visit_id, patient_id, medicine, timing, days, status) VALUES (?, ?, ?, ?, ?, ?)",
+                        (edit_visit_id, pid, m['Medicine'], m['Timing'], m['Days'], "pending")
+                    )
+                st.success(f"✅ Visit {edit_visit_id} updated successfully!")
+            else:
+                # 3. Insert New Visit
+                cursor.execute(
+                    """INSERT INTO visits (patient_id, visit_date, symptoms, diagnosis, tests, prescription, med_json, consultation_fee, med_fee, pharmacy_status, lab_status) 
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0.0, 'pending', 'pending')""",
+                    (pid, today, symptoms, diagnosis, tests, "See Med Table", med_json, cons_fee)
+                )
+                new_vid = cursor.lastrowid
+                
+                for m in st.session_state.get('med_list', []):
+                    cursor.execute(
+                        "INSERT INTO visit_medicines (visit_id, patient_id, medicine, timing, days, status) VALUES (?, ?, ?, ?, ?, ?)",
+                        (new_vid, pid, m['Medicine'], m['Timing'], m['Days'], "pending")
+                    )
+                st.success(f"✅ New consultation saved! (Visit ID: {new_vid})")
+
+        # Clear state and refresh
+        st.session_state.med_list = []
+        st.rerun()
+
+    except Exception as e:
+        st.error(f"Database Error: {e}")
+
+
 def doctor_module(conn, cursor, pid, patient_name, phone_number):
     st.title(f"🩺 Clinical Dashboard: {patient_name}")
     st.caption(f"Patient ID: {pid} | Contact: {phone_number}")
