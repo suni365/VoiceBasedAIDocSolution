@@ -84,7 +84,7 @@ def send_wa_reg(phone, name, pid):
     phone = ''.join(filter(str.isdigit, phone))
     if len(phone) == 10:
         phone = "91" + phone
-    msg = f"🏥 Clinic Registration\nHi {name}, your Patient ID is {pid}"
+    msg = f"🏥 SAMPATH'S Clinic Registration\nHi {name},Welcome to Sampaths Clinic, your Patient ID is {pid}"
     return f"https://wa.me/{phone}?text={urllib.parse.quote(msg)}"
 
 def send_wa_report(phone, name):
@@ -107,72 +107,164 @@ def display_pdf(path):
             st.download_button("📄 Download Lab Report", f, file_name=os.path.basename(path))
 
 
-def doctor_module(conn, cursor, pid, patient_name, phone_number):
-    st.title(f"👨‍⚕️ Consultation: {patient_name} (ID: {pid})")
+# def doctor_module(conn, cursor, pid, patient_name, phone_number):
+#     st.title(f"👨‍⚕️ Consultation: {patient_name} (ID: {pid})")
 
-    # 1. Clinical Inputs
-    col1, col2 = st.columns(2)
-    with col1:
-        symptoms = st.text_area("Symptoms")
-        diagnosis = st.text_area("Diagnosis")
-    with col2:
-        tests = st.text_area("Lab Tests Recommended")
-        fee = st.number_input("Consultation Fee", min_value=0, value=300)
+#     # 1. Clinical Inputs
+#     col1, col2 = st.columns(2)
+#     with col1:
+#         symptoms = st.text_area("Symptoms")
+#         diagnosis = st.text_area("Diagnosis")
+#     with col2:
+#         tests = st.text_area("Lab Tests Recommended")
+#         fee = st.number_input("Consultation Fee", min_value=0, value=300)
 
-    st.subheader("💊 Prescription")
+#     st.subheader("💊 Prescription")
     
-    # Medicine Input UI
-    if "med_list" not in st.session_state:
-        st.session_state.med_list = []
+#     # Medicine Input UI
+#     if "med_list" not in st.session_state:
+#         st.session_state.med_list = []
 
-    with st.form("med_form", clear_on_submit=True):
-        m_col1, m_col2, m_col3 = st.columns([3, 2, 2])
-        m_name = m_col1.text_input("Medicine Name")
-        m_timing = m_col2.selectbox("Timing", ["1-1-1", "1-0-1", "1-1-0","0-1-1","0-0-1", "1-0-0","0-1-0", "SOS"])
-        m_days = m_col3.number_input("Days", min_value=1, value=60)
+#     with st.form("med_form", clear_on_submit=True):
+#         m_col1, m_col2, m_col3 = st.columns([3, 2, 2])
+#         m_name = m_col1.text_input("Medicine Name")
+#         m_timing = m_col2.selectbox("Timing", ["1-1-1", "1-0-1", "1-1-0","0-1-1","0-0-1", "1-0-0","0-1-0", "SOS"])
+#         m_days = m_col3.number_input("Days", min_value=1, value=60)
         
-        if st.form_submit_button("➕ Add Medicine"):
-            if m_name:
-                st.session_state.med_list.append({
-                    "Medicine": m_name,
-                    "Timing": m_timing,
-                    "Days": m_days
-                })
+#         if st.form_submit_button("➕ Add Medicine"):
+#             if m_name:
+#                 st.session_state.med_list.append({
+#                     "Medicine": m_name,
+#                     "Timing": m_timing,
+#                     "Days": m_days
+#                 })
 
-    # Show added medicines in a table
-    if st.session_state.med_list:
-        meds_df = pd.DataFrame(st.session_state.med_list)
-        st.table(meds_df)
-        if st.button("🗑️ Clear List"):
-            st.session_state.med_list = []
-            st.rerun()
+#     # Show added medicines in a table
+#     if st.session_state.med_list:
+#         meds_df = pd.DataFrame(st.session_state.med_list)
+#         st.table(meds_df)
+#         if st.button("🗑️ Clear List"):
+#             st.session_state.med_list = []
+#             st.rerun()
 
-   # 2. Save Logic (Inside doctor_module)
-    if st.button("💾 Save Consultation & Generate WhatsApp"):
-        if not diagnosis:
-            st.error("Please enter a diagnosis before saving.")
-        else:
-            today = str(date.today())
-            med_json = json.dumps(st.session_state.med_list)
+#    # 2. Save Logic (Inside doctor_module)
+#     if st.button("💾 Save Consultation & Generate WhatsApp"):
+#         if not diagnosis:
+#             st.error("Please enter a diagnosis before saving.")
+#         else:
+#             today = str(date.today())
+#             med_json = json.dumps(st.session_state.med_list)
             
-            try:
-                # Inside doctor_module Save Logic
-                with conn:
-                    cursor.execute(
-                        """INSERT INTO visits (patient_id, visit_date, symptoms, diagnosis, tests, prescription, med_json, consultation_fee, med_fee, pharmacy_status, lab_status) 
-                           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-                        (pid, today, symptoms, diagnosis, tests, "See Med Table", med_json, fee, 0.0, 'pending', 'pending')
-                    )
-                    visit_id = cursor.lastrowid
+#             try:
+#                 # Inside doctor_module Save Logic
+#                 with conn:
+#                     cursor.execute(
+#                         """INSERT INTO visits (patient_id, visit_date, symptoms, diagnosis, tests, prescription, med_json, consultation_fee, med_fee, pharmacy_status, lab_status) 
+#                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+#                         (pid, today, symptoms, diagnosis, tests, "See Med Table", med_json, fee, 0.0, 'pending', 'pending')
+#                     )
+#                     visit_id = cursor.lastrowid
 
-                    for m in st.session_state.med_list:
-                        cursor.execute(
-                            "INSERT INTO visit_medicines (visit_id, patient_id, medicine, timing, days, status) VALUES (?, ?, ?, ?, ?, ?)",
-                            (int(visit_id), int(pid), m['Medicine'], m['Timing'], m['Days'], "pending")
-                        )
-            except Exception as e:
-                st.error(f"Database Error: {e}")
-                     
+#                     for m in st.session_state.med_list:
+#                         cursor.execute(
+#                             "INSERT INTO visit_medicines (visit_id, patient_id, medicine, timing, days, status) VALUES (?, ?, ?, ?, ?, ?)",
+#                             (int(visit_id), int(pid), m['Medicine'], m['Timing'], m['Days'], "pending")
+#                         )
+#             except Exception as e:
+#                 st.error(f"Database Error: {e}")
+
+
+def doctor_module(conn, cursor, pid, patient_name, phone_number):
+    st.title(f"🩺 Clinical Dashboard: {patient_name}")
+    st.caption(f"Patient ID: {pid} | Contact: {phone_number}")
+
+    # --- TOP ROW: QUICK ACTIONS ---
+    col_a, col_b, col_c = st.columns([2, 2, 1])
+    with col_a:
+        mode = st.radio("Task", ["New Consultation", "Update Previous"], horizontal=True)
+    
+    # --- DATA PREPARATION ---
+    # We fetch ALL history first to populate the dashboard
+    history_query = """
+        SELECT visit_id, visit_date, symptoms, diagnosis, tests, 
+               med_json, lab_json, lab_status, report_path, med_fee, lab_fee, consultation_fee
+        FROM visits WHERE patient_id = ? ORDER BY visit_id DESC
+    """
+    history_df = pd.read_sql(history_query, conn, params=(pid,))
+
+    # --- TABBED INTERFACE ---
+    tab1, tab2, tab3 = st.tabs(["📋 Current Consultation", "📜 Patient History", "💳 Billing & Reports"])
+
+    # ---------------------------------------------------------
+    # TAB 1: CURRENT CONSULTATION (Input & Update)
+    # ---------------------------------------------------------
+    with tab1:
+        edit_visit_id = None
+        # Pre-fill logic if 'Update' is selected
+        if mode == "Update Previous" and not history_df.empty:
+            v_choice = st.selectbox("Select Visit to Update", 
+                                   history_df.apply(lambda r: f"Visit {r['visit_id']} ({r['visit_date']})", axis=1))
+            edit_visit_id = int(v_choice.split()[1])
+            row = history_df[history_df['visit_id'] == edit_visit_id].iloc[0]
+        else:
+            row = None
+
+        with st.container(border=True):
+            c1, c2 = st.columns(2)
+            sym = c1.text_area("Symptoms", value=row['symptoms'] if row is not None else "")
+            diag = c1.text_area("Diagnosis", value=row['diagnosis'] if row is not None else "")
+            tests = c2.text_area("Recommended Lab Tests", value=row['tests'] if row is not None else "")
+            cons_fee = c2.number_input("Consultation Fee", value=int(row['consultation_fee']) if row is not None else 300)
+
+        st.subheader("💊 Medication Plan")
+        # Logic for managing st.session_state.med_list goes here (similar to your previous code)
+        # ... (Add/Delete medicine UI) ...
+
+        if st.button("💾 Finalize & Save Consultation", type="primary"):
+            save_consultation(edit_visit_id, sym, diag, tests, cons_fee)
+
+    # ---------------------------------------------------------
+    # TAB 2: PATIENT HISTORY (Lab Results & Medicines)
+    # ---------------------------------------------------------
+    with tab2:
+        if history_df.empty:
+            st.info("No clinical history available.")
+        else:
+            for _, h in history_df.iterrows():
+                with st.expander(f"📅 {h['visit_date']} - {h['diagnosis'][:40]}..."):
+                    m1, m2 = st.columns(2)
+                    with m1:
+                        st.markdown("**💊 Prescribed Medicines:**")
+                        m_list = json.loads(h['med_json']) if h['med_json'] else []
+                        for m in m_list:
+                            st.write(f"- {m['Medicine']} ({m['Timing']}) for {m['Days']} days")
+                    
+                    with m2:
+                        st.markdown("**🔬 Lab Results:**")
+                        st.write(f"Tests: {h['tests']}")
+                        st.info(f"Result: {h['lab_json'] if h['lab_json'] else 'Results Pending'}")
+                        if h['report_path']:
+                            with open(h['report_path'], "rb") as f:
+                                st.download_button("Download PDF Report", f, file_name=f"Report_{h['visit_id']}.pdf")
+
+    # ---------------------------------------------------------
+    # TAB 3: BILLING & WHATSAPP
+    # ---------------------------------------------------------
+    with tab3:
+        if not history_df.empty:
+            latest = history_df.iloc[0] # Focus on latest visit for billing
+            st.subheader(f"Latest Visit Summary (ID: {latest['visit_id']})")
+            
+            b1, b2, b3 = st.columns(3)
+            b1.metric("Consultation", f"₹{latest['consultation_fee']}")
+            b2.metric("Pharmacy", f"₹{latest['med_fee']}")
+            b3.metric("Laboratory", f"₹{latest['lab_fee']}")
+            
+            # --- COMPREHENSIVE WHATSAPP BUTTON ---
+            st.divider()
+            wa_msg = generate_wa_message(patient_name, latest)
+            wa_url = f"https://wa.me/91{phone_number}?text={urllib.parse.quote(wa_msg)}"
+            st.link_button("📲 Send Visit Summary via WhatsApp", wa_url, use_container_width=True)
 
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
