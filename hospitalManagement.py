@@ -156,25 +156,29 @@ def doctor_module(conn, cursor, pid, patient_name, phone_number):
             med_json = json.dumps(st.session_state.med_list)
             
             try:
-                # Inside your Doctor save button logic
-                with conn: # This ensures a solid transaction
+                # Inside doctor_module Save Logic
+                with conn:
                     cursor.execute(
-                        """INSERT INTO visits (patient_id, visit_date, symptoms, diagnosis, tests, 
-                           prescription, med_json, consultation_fee, med_fee, lab_fee, pharmacy_status) 
-                           VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0.0, 0.0, 'pending')""",
-                        (int(pid), today, symptoms, diagnosis, tests, "See Med Table", med_json, fee)
+                        """INSERT INTO visits (patient_id, visit_date, symptoms, diagnosis, tests, prescription, med_json, consultation_fee, med_fee, pharmacy_status, lab_status) 
+                           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                        (pid, today, symptoms, diagnosis, tests, "See Med Table", med_json, fee, 0.0, 'pending', 'pending')
                     )
-                    visit_id = cursor.lastrowid # This is an integer
+                    visit_id = cursor.lastrowid
 
-    for m in st.session_state.med_list:
-        cursor.execute(
-            """INSERT INTO visit_medicines (visit_id, patient_id, medicine, timing, days, status) 
-               VALUES (?, ?, ?, ?, ?, ?)""",
-            (int(visit_id), int(pid), m['Medicine'], m['Timing'], m['Days'], "pending")
-        )
-        st.success(f"Saved! Visit ID: {visit_id}")
-        st.session_state.med_list = []
-        st.rerun()
+                    for m in st.session_state.med_list:
+                        cursor.execute(
+                            "INSERT INTO visit_medicines (visit_id, patient_id, medicine, timing, days, status) VALUES (?, ?, ?, ?, ?, ?)",
+                            (int(visit_id), int(pid), m['Medicine'], m['Timing'], m['Days'], "pending")
+                        )
+            except Exception as e:
+                st.error(f"Database Error: {e}")
+
+                        
+# No need for conn.commit() inside 'with conn:' context, it's automatic.
+                # Inside your Doctor save button logic
+               
+
+    
                 # Use a transaction block for safety
                 # with conn:
                 #     # Insert into visits AND set pharmacy_status
@@ -199,9 +203,7 @@ def doctor_module(conn, cursor, pid, patient_name, phone_number):
                 # st.session_state.med_list = []
                 # st.rerun() # Force refresh so other modules see the data
 
-            except Exception as e:
-                st.error(f"Database Error: {e}")
-
+          
 
 
 
