@@ -238,7 +238,7 @@ st.title("🤖 Intelligent AI-Chatbot")
 
 # Sidebar User Greeting
 try:
-    img_base = get_base64_image("A-ZBlueProject/suntita.png.jpg")
+    img_base = get_base64_image("A-ZBlueProject/suntita_panicker.png.jpg")
     st.markdown(f"""<div style="position:fixed;top:50px;right:10px;background:#333;padding:10px;border-radius:10px;color:white;z-index:999;">
         <img src="data:image/png;base64,{img_base}" width="50"><br><b>{st.session_state['logged_in_user']}</b></div>""", unsafe_allow_html=True)
 except: pass
