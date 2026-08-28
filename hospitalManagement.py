@@ -84,7 +84,7 @@ def send_wa_reg(phone, name, pid):
     phone = ''.join(filter(str.isdigit, phone))
     if len(phone) == 10:
         phone = "91" + phone
-    msg = f"🏥 SAMPATH'S Clinic Registration\nHi {name},Welcome to Sampaths Clinic, your Patient ID is {pid}"
+    msg = f"🏥 HOSPITAL MANAGEMENT SYSTEM \nHi {name},Welcome to Sampaths Clinic, your Patient ID is {pid}"
     return f"https://wa.me/{phone}?text={urllib.parse.quote(msg)}"
 
 def send_wa_report(phone, name):
