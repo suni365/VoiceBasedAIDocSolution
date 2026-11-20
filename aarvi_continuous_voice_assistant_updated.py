@@ -1092,4 +1092,18 @@ if voice_command and isinstance(voice_command, dict):
         st.session_state["last_aarvi_command_nonce"] = command_nonce
         process_command(command_text, mode, chunks)
         st.rerun()
+st.markdown("""
+<div style="
+    margin-top: 40px;
+    padding: 18px;
+    text-align: center;
+    border-top: 1px solid #cccccc;
+">
+    <div style="font-size: 13px; color: #888;">
+        Designed & Created with ❤️ by
+    </div>
+    <div style="
+        font-size: 21px;
+        font-weight: 600;
+
 
