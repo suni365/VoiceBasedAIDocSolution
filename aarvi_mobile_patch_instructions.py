@@ -2,8 +2,8 @@ Android mobile playback patch for Aarvi Voice Document Assistant
 
 1. In VOICE_HTML, immediately after the opening <div id="aarvi-voice-root">, insert:
 <div class="aarvi-controls aarvi-mobile-controls">
-  <button id="aarvi-mobile-read">🔊  Listen to entire document (mobile)</button>
-  <button id="aarvi-mobile-page">🔊  Listen to selected PDF page (mobile)</button>
+  <button id="aarvi-mobile-read"> Listen to entire document (mobile)</button>
+  <button id="aarvi-mobile-page"> Listen to selected PDF page (mobile)</button>
 </div>
 
 2. In VOICE_JS, after the stopReadingButton declaration, insert:
